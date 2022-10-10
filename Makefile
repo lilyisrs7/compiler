@@ -37,8 +37,8 @@ manyargs
 
 do_test: $(TESTS:%=test/%.cmp)
 
-.PRECIOUS: test/%.s test/% test/%.res test/%.ans test/%.cmp
-TRASH = $(TESTS:%=test/%.s) $(TESTS:%=test/%) $(TESTS:%=test/%.res) $(TESTS:%=test/%.ans) $(TESTS:%=test/%.cmp)
+.PRECIOUS: test/%.s test/% test/%.res test/%.ans test/%.cmp test/%.parsed test/%.normalized
+TRASH = $(TESTS:%=test/%.s) $(TESTS:%=test/%) $(TESTS:%=test/%.res) $(TESTS:%=test/%.ans) $(TESTS:%=test/%.cmp) $(TESTS:%=test/%.parsed) $(TESTS:%=test/%.normalized)
 
 test/%.s: $(RESULT) test/%.ml
 	./$(RESULT) test/$*
