@@ -52,11 +52,11 @@ let rec g oc = function (* 命令列のアセンブリ生成 (caml2html: emit_g) *) (* ここ
 and g' oc = function (* 各命令のアセンブリ生成 (caml2html: emit_gprime) *)
   (* 末尾でなかったら計算結果をdestにセット (caml2html: emit_nontail) *)
   | NonTail(_), Nop -> ()
-  | NonTail(x), Set(i) -> Printf.fprintf oc "\tli\t$%d, %s\n" i x (* 即値を変数に入れる liとか使っていいのか…？ *)
-  | NonTail(x), SetL(Id.L(y)) -> Printf.fprintf oc "\tmv\t$%s, %s\n" y x
+  | NonTail(x), Set(i) -> Printf.fprintf oc "\tli\t$%s, %d\n" x i (* 即値を変数に入れる liとか使っていいのか…？ *)
+  | NonTail(x), SetL(Id.L(y)) -> Printf.fprintf oc "\tmv\t$%s, %s\n" x y
                                  (* トップレベル関数やグローバル配列のラベルから変数に値を移す よく分からない mv使ってよい？ *)
   | NonTail(x), Mov(y) ->
-      if x <> y then Printf.fprintf oc "\tmv\t%s, %s\n" y x (* 変数から変数に値を移す mv使ってよい？ *)
+      if x <> y then Printf.fprintf oc "\tmv\t%s, %s\n" x y (* 変数から変数に値を移す mv使ってよい？ *)
   | NonTail(x), Neg(y) ->
       if x <> y then Printf.fprintf oc "\tmovl\t%s, %s\n" y x;
       Printf.fprintf oc "\tnegl\t%s\n" x (* 符号反転 どう実装する？ *)
@@ -65,64 +65,34 @@ and g' oc = function (* 各命令のアセンブリ生成 (caml2html: emit_gprime) *)
   | NonTail(x), Sub(y, z') -> (Printf.fprintf oc "\tsub\t%s, %s, %s\n" x y z'
   | NonTail(x), Mul(y, z') -> Printf.fprintf oc "\tmul\t%s, %s, %s\n" x y z'
   | NonTail(x), Div(y, z') -> (Printf.fprintf oc "\tdiv\t%s, %s, %s\n" x y z'
-  | NonTail(x), Ld(y, V(z), i) -> Printf.fprintf oc "\tmovl\t(%s,%s,%d), %s\n" y z i x
-  | NonTail(x), Ld(y, C(j), i) -> Printf.fprintf oc "\tmovl\t%d(%s), %s\n" (j * i) y x
-  | NonTail(_), St(x, y, V(z), i) -> Printf.fprintf oc "\tmovl\t%s, (%s,%s,%d)\n" x y z i
-  | NonTail(_), St(x, y, C(j), i) -> Printf.fprintf oc "\tmovl\t%s, %d(%s)\n" x (j * i) y
+  | NonTail(x), Ld(y, i) -> Printf.fprintf oc "\tlw\t%s, %d(%s)\n" x i y
+  | NonTail(_), St(x, y, i) -> Printf.fprintf oc "\tsw\t%s, %d(%s)\n" x i y
   | NonTail(x), FMovD(y) ->
-      if x <> y then Printf.fprintf oc "\tmovsd\t%s, %s\n" y x
+      if x <> y then Printf.fprintf oc "\tmv\t%s, %s\n" x y (* 変数から変数に値を移す mv使ってよい？ *)
   | NonTail(x), FNegD(y) ->
       if x <> y then Printf.fprintf oc "\tmovsd\t%s, %s\n" y x;
-      Printf.fprintf oc "\txorpd\tmin_caml_fnegd, %s\n" x
-  | NonTail(x), FAddD(y, z) ->
-      if x = z then
-        Printf.fprintf oc "\taddsd\t%s, %s\n" y x
-      else
-        (if x <> y then Printf.fprintf oc "\tmovsd\t%s, %s\n" y x;
-         Printf.fprintf oc "\taddsd\t%s, %s\n" z x)
-  | NonTail(x), FSubD(y, z) ->
-      if x = z then (* [XXX] ugly *)
-        let ss = stacksize () in
-        Printf.fprintf oc "\tmovsd\t%s, %d(%s)\n" z ss reg_sp;
-        if x <> y then Printf.fprintf oc "\tmovsd\t%s, %s\n" y x;
-        Printf.fprintf oc "\tsubsd\t%d(%s), %s\n" ss reg_sp x
-      else
-        (if x <> y then Printf.fprintf oc "\tmovsd\t%s, %s\n" y x;
-         Printf.fprintf oc "\tsubsd\t%s, %s\n" z x)
-  | NonTail(x), FMulD(y, z) ->
-      if x = z then
-        Printf.fprintf oc "\tmulsd\t%s, %s\n" y x
-      else
-        (if x <> y then Printf.fprintf oc "\tmovsd\t%s, %s\n" y x;
-         Printf.fprintf oc "\tmulsd\t%s, %s\n" z x)
-  | NonTail(x), FDivD(y, z) ->
-      if x = z then (* [XXX] ugly *)
-        let ss = stacksize () in
-        Printf.fprintf oc "\tmovsd\t%s, %d(%s)\n" z ss reg_sp;
-        if x <> y then Printf.fprintf oc "\tmovsd\t%s, %s\n" y x;
-        Printf.fprintf oc "\tdivsd\t%d(%s), %s\n" ss reg_sp x
-      else
-        (if x <> y then Printf.fprintf oc "\tmovsd\t%s, %s\n" y x;
-         Printf.fprintf oc "\tdivsd\t%s, %s\n" z x)
-  | NonTail(x), LdDF(y, V(z), i) -> Printf.fprintf oc "\tmovsd\t(%s,%s,%d), %s\n" y z i x
-  | NonTail(x), LdDF(y, C(j), i) -> Printf.fprintf oc "\tmovsd\t%d(%s), %s\n" (j * i) y x
-  | NonTail(_), StDF(x, y, V(z), i) -> Printf.fprintf oc "\tmovsd\t%s, (%s,%s,%d)\n" x y z i
-  | NonTail(_), StDF(x, y, C(j), i) -> Printf.fprintf oc "\tmovsd\t%s, %d(%s)\n" x (j * i) y
+      Printf.fprintf oc "\txorpd\tmin_caml_fnegd, %s\n" x (* 符号反転 どう実装する？ *)
+  | NonTail(x), FAddD(y, z) -> Printf.fprintf oc "\tfadd\t%s, %s, %s\n" x y z
+  | NonTail(x), FSubD(y, z) -> Printf.fprintf oc "\tfsub\t%s, %s, %s\n" x y z
+  | NonTail(x), FMulD(y, z) -> Printf.fprintf oc "\tfmul\t%s, %s, %s\n" x y z
+  | NonTail(x), FDivD(y, z) -> Printf.fprintf oc "\tfdiv\t%s, %s, %s\n" x y z
+  | NonTail(x), LdDF(y, i) -> Printf.fprintf oc "\tflw\t%s, %d(%s)\n" x i y
+  | NonTail(_), StDF(x, y, i) -> Printf.fprintf oc "\tfsw\t%s, %d(%s)\n" x i y
   | NonTail(_), Comment(s) -> Printf.fprintf oc "\t# %s\n" s
-  (* 退避の仮想命令の実装 (caml2html: emit_save) *)
+  (* 退避の仮想命令の実装 (caml2html: emit_save) *) (* ？ *)
   | NonTail(_), Save(x, y) when List.mem x allregs && not (S.mem y !stackset) ->
       save y;
-      Printf.fprintf oc "\tmovl\t%s, %d(%s)\n" x (offset y) reg_sp
+      Printf.fprintf oc "\tsw\t%s, %d(%s)\n" x (offset y) reg_sp
   | NonTail(_), Save(x, y) when List.mem x allfregs && not (S.mem y !stackset) ->
       savef y;
-      Printf.fprintf oc "\tmovsd\t%s, %d(%s)\n" x (offset y) reg_sp
+      Printf.fprintf oc "\tfsw\t%s, %d(%s)\n" x (offset y) reg_sp
   | NonTail(_), Save(x, y) -> assert (S.mem y !stackset); ()
   (* 復帰の仮想命令の実装 (caml2html: emit_restore) *)
   | NonTail(x), Restore(y) when List.mem x allregs ->
-      Printf.fprintf oc "\tmovl\t%d(%s), %s\n" (offset y) reg_sp x
+      Printf.fprintf oc "\tlw\t%s, %d(%s)\n" (offset y) reg_sp x
   | NonTail(x), Restore(y) ->
       assert (List.mem x allfregs);
-      Printf.fprintf oc "\tmovsd\t%d(%s), %s\n" (offset y) reg_sp x
+      Printf.fprintf oc "\tflw\t%s, %d(%s)\n" (offset y) reg_sp x
   (* 末尾だったら計算結果を第一レジスタにセットしてret (caml2html: emit_tailret) *)
   | Tail, (Nop | St _ | StDF _ | Comment _ | Save _ as exp) ->
       g' oc (NonTail(Id.gentmp Type.Unit), exp);
