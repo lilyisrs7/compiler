@@ -24,9 +24,9 @@ let locate x =
 let offset x = 4 * List.hd (locate x)
 let stacksize () = align (List.length !stackmap * 4)
 
-let pp_id_or_imm = function
+(*let pp_id_or_imm = function
   | V(x) -> x
-  | C(i) -> "$" ^ string_of_int i
+  | C(i) -> "$" ^ string_of_int i*)
 
 (* 関数呼び出しのために引数を並べ替える(register shuffling) (caml2html: emit_shuffle) *)
 let rec shuffle sw xys =
@@ -44,7 +44,7 @@ let rec shuffle sw xys =
   | xys, acyc -> acyc @ shuffle sw xys
 
 type dest = Tail | NonTail of Id.t (* 末尾かどうかを表すデータ型 (caml2html: emit_dest) *)
-let rec g oc = function (* 命令列のアセンブリ生成 (caml2html: emit_g) *)
+let rec g oc = function (* 命令列のアセンブリ生成 (caml2html: emit_g) *) (* ここをISA5に対応 PowerPCに寄せるかも *)
   | dest, Ans(exp) -> g' oc (dest, exp)
   | dest, Let((x, t), exp, e) ->
       g' oc (NonTail(x), exp);
@@ -52,26 +52,19 @@ let rec g oc = function (* 命令列のアセンブリ生成 (caml2html: emit_g) *)
 and g' oc = function (* 各命令のアセンブリ生成 (caml2html: emit_gprime) *)
   (* 末尾でなかったら計算結果をdestにセット (caml2html: emit_nontail) *)
   | NonTail(_), Nop -> ()
-  | NonTail(x), Set(i) -> Printf.fprintf oc "\tmovl\t$%d, %s\n" i x
-  | NonTail(x), SetL(Id.L(y)) -> Printf.fprintf oc "\tmovl\t$%s, %s\n" y x
+  | NonTail(x), Set(i) -> Printf.fprintf oc "\tli\t$%d, %s\n" i x (* 即値を変数に入れる liとか使っていいのか…？ *)
+  | NonTail(x), SetL(Id.L(y)) -> Printf.fprintf oc "\tmv\t$%s, %s\n" y x
+                                 (* トップレベル関数やグローバル配列のラベルから変数に値を移す よく分からない mv使ってよい？ *)
   | NonTail(x), Mov(y) ->
-      if x <> y then Printf.fprintf oc "\tmovl\t%s, %s\n" y x
+      if x <> y then Printf.fprintf oc "\tmv\t%s, %s\n" y x (* 変数から変数に値を移す mv使ってよい？ *)
   | NonTail(x), Neg(y) ->
       if x <> y then Printf.fprintf oc "\tmovl\t%s, %s\n" y x;
-      Printf.fprintf oc "\tnegl\t%s\n" x
-  | NonTail(x), Add(y, z') ->
-      if V(x) = z' then
-        Printf.fprintf oc "\taddl\t%s, %s\n" y x
-      else
-        (if x <> y then Printf.fprintf oc "\tmovl\t%s, %s\n" y x;
-         Printf.fprintf oc "\taddl\t%s, %s\n" (pp_id_or_imm z') x)
-  | NonTail(x), Sub(y, z') ->
-      if V(x) = z' then
-        (Printf.fprintf oc "\tsubl\t%s, %s\n" y x;
-         Printf.fprintf oc "\tnegl\t%s\n" x)
-      else
-        (if x <> y then Printf.fprintf oc "\tmovl\t%s, %s\n" y x;
-         Printf.fprintf oc "\tsubl\t%s, %s\n" (pp_id_or_imm z') x)
+      Printf.fprintf oc "\tnegl\t%s\n" x (* 符号反転 どう実装する？ *)
+  | NonTail(x), Add(y, V(z)) -> Printf.fprintf oc "\tadd\t%s, %s, %s\n" x y z
+  | NonTail(x), Add(y, C(z)) -> Printf.fprintf oc "\taddi\t%s, %s, %d\n" x y z
+  | NonTail(x), Sub(y, z') -> (Printf.fprintf oc "\tsub\t%s, %s, %s\n" x y z'
+  | NonTail(x), Mul(y, z') -> Printf.fprintf oc "\tmul\t%s, %s, %s\n" x y z'
+  | NonTail(x), Div(y, z') -> (Printf.fprintf oc "\tdiv\t%s, %s, %s\n" x y z'
   | NonTail(x), Ld(y, V(z), i) -> Printf.fprintf oc "\tmovl\t(%s,%s,%d), %s\n" y z i x
   | NonTail(x), Ld(y, C(j), i) -> Printf.fprintf oc "\tmovl\t%d(%s), %s\n" (j * i) y x
   | NonTail(_), St(x, y, V(z), i) -> Printf.fprintf oc "\tmovl\t%s, (%s,%s,%d)\n" x y z i
