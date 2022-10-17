@@ -52,14 +52,13 @@ let rec g oc = function (* 命令列のアセンブリ生成 (caml2html: emit_g) *) (* ここ
 and g' oc = function (* 各命令のアセンブリ生成 (caml2html: emit_gprime) *)
   (* 末尾でなかったら計算結果をdestにセット (caml2html: emit_nontail) *)
   | NonTail(_), Nop -> ()
-  | NonTail(x), Set(i) -> Printf.fprintf oc "\tli\t$%s, %d\n" x i (* 即値を変数に入れる liとか使っていいのか…？ *)
-  | NonTail(x), SetL(Id.L(y)) -> Printf.fprintf oc "\tmv\t$%s, %s\n" x y
-                                 (* トップレベル関数やグローバル配列のラベルから変数に値を移す よく分からない mv使ってよい？ *)
+  | NonTail(x), Set(i) -> Printf.fprintf oc "\tlui\t$%s, %d\n" x i (* 即値を変数に入れる *)
+  | NonTail(x), SetL(Id.L(y)) -> Printf.fprintf oc "\taddi\t$%s, %s, 0\n" x y
+                                 (* トップレベル関数やグローバル配列のラベルから変数に値を移す よく分からない *)
   | NonTail(x), Mov(y) ->
-      if x <> y then Printf.fprintf oc "\tmv\t%s, %s\n" x y (* 変数から変数に値を移す mv使ってよい？ *)
+      if x <> y then Printf.fprintf oc "\taddi\t%s, %s, 0\n" x y (* 変数から変数に値を移す よく分からない *)
   | NonTail(x), Neg(y) ->
-      if x <> y then Printf.fprintf oc "\tmovl\t%s, %s\n" y x;
-      Printf.fprintf oc "\tnegl\t%s\n" x (* 符号反転 どう実装する？ *)
+      if x <> y then Printf.fprintf oc "\tsub\t%s, x0, %s\n" x y (* 符号反転  *)
   | NonTail(x), Add(y, V(z)) -> Printf.fprintf oc "\tadd\t%s, %s, %s\n" x y z
   | NonTail(x), Add(y, C(z)) -> Printf.fprintf oc "\taddi\t%s, %s, %d\n" x y z
   | NonTail(x), Sub(y, z') -> (Printf.fprintf oc "\tsub\t%s, %s, %s\n" x y z'
@@ -152,7 +151,7 @@ and g' oc = function (* 各命令のアセンブリ生成 (caml2html: emit_gprime) *)
   (* 関数呼び出しの仮想命令の実装 (caml2html: emit_call) *)
   | Tail, CallCls(x, ys, zs) -> (* 末尾呼び出し (caml2html: emit_tailcall) *)
       g'_args oc [(x, reg_cl)] ys zs;
-      Printf.fprintf oc "\tjmp\t*(%s)\n" reg_cl;
+      Printf.fprintf oc "\tjalr\tx0, %s, 0\n" reg_cl;
   | Tail, CallDir(Id.L(x), ys, zs) -> (* 末尾呼び出し *)
       g'_args oc [] ys zs;
       Printf.fprintf oc "\tjmp\t%s\n" x;
@@ -228,7 +227,7 @@ and g'_args oc x_reg_cl ys zs =
       (0, x_reg_cl)
       ys in
   List.iter
-    (fun (y, r) -> Printf.fprintf oc "\tmovl\t%s, %s\n" y r)
+    (fun (y, r) -> Printf.fprintf oc "\taddi\t%s, %s, 0\n" r y)
     (shuffle sw yrs);
   let (d, zfrs) =
     List.fold_left
@@ -236,7 +235,7 @@ and g'_args oc x_reg_cl ys zs =
       (0, [])
       zs in
   List.iter
-    (fun (z, fr) -> Printf.fprintf oc "\tmovsd\t%s, %s\n" z fr)
+    (fun (z, fr) -> Printf.fprintf oc "\taddi\t%s, %s, 0\n" fr z) (* fなのでaddiは無理 *)
     (shuffle sw zfrs)
 
 let h oc { name = Id.L(x); args = _; fargs = _; body = e; ret = _ } =
