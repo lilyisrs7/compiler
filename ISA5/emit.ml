@@ -89,56 +89,66 @@ and g' oc = function (* 各命令のアセンブリ生成 (caml2html: emit_gprime) *)
   | NonTail(_), Save(x, y) -> assert (S.mem y !stackset); ()
   (* 復帰の仮想命令の実装 (caml2html: emit_restore) *)
   | NonTail(x), Restore(y) when List.mem x allregs ->
-      Printf.fprintf oc "\tlw\t%s, %d(%s)\n" (offset y) reg_sp x
+      Printf.fprintf oc "\tlw\t%s, %d(%s)\n" x (offset y) reg_sp
   | NonTail(x), Restore(y) ->
       assert (List.mem x allfregs);
-      Printf.fprintf oc "\tflw\t%s, %d(%s)\n" (offset y) reg_sp x
+      Printf.fprintf oc "\tflw\t%s, %d(%s)\n" x (offset y) reg_sp
   (* 末尾だったら計算結果を第一レジスタにセットしてret (caml2html: emit_tailret) *)
   | Tail, (Nop | St _ | StDF _ | Comment _ | Save _ as exp) ->
       g' oc (NonTail(Id.gentmp Type.Unit), exp);
-      Printf.fprintf oc "\tret\n";
+      Printf.fprintf oc "\tjalr\tx0, x1, 0\n";
   | Tail, (Set _ | SetL _ | Mov _ | Neg _ | Add _ | Sub _ | Ld _ as exp) ->
       g' oc (NonTail(regs.(0)), exp);
-      Printf.fprintf oc "\tret\n";
+      Printf.fprintf oc "\tjalr\tx0, x1, 0\n";
   | Tail, (FMovD _ | FNegD _ | FAddD _ | FSubD _ | FMulD _ | FDivD _ | LdDF _  as exp) ->
       g' oc (NonTail(fregs.(0)), exp);
-      Printf.fprintf oc "\tret\n";
+      Printf.fprintf oc "\tjalr\tx0, x1, 0\n";
   | Tail, (Restore(x) as exp) ->
       (match locate x with
       | [i] -> g' oc (NonTail(regs.(0)), exp)
       | [i; j] when i + 1 = j -> g' oc (NonTail(fregs.(0)), exp)
       | _ -> assert false);
-      Printf.fprintf oc "\tret\n";
+      Printf.fprintf oc "\tjalr\tx0, x1, 0\n";
   | Tail, IfEq(x, y', e1, e2) ->
-      Printf.fprintf oc "\tcmpl\t%s, %s\n" (pp_id_or_imm y') x;
-      g'_tail_if oc e1 e2 "je" "jne"
+      (*Printf.fprintf oc "\tcmpl\t%s, %s, \n" (pp_id_or_imm y') x;
+        g'_tail_if oc e1 e2 "je" "jne"*)
+      g'_tail_if oc x y' e1 e2 "beq"
   | Tail, IfLE(x, y', e1, e2) ->
-      Printf.fprintf oc "\tcmpl\t%s, %s\n" (pp_id_or_imm y') x;
-      g'_tail_if oc e1 e2 "jle" "jg"
+      (*Printf.fprintf oc "\tcmpl\t%s, %s\n" (pp_id_or_imm y') x;
+      g'_tail_if oc e1 e2 "jle" "jg"*)
+      g'_tail_if oc x y' e1 e2 "blt"
   | Tail, IfGE(x, y', e1, e2) ->
-      Printf.fprintf oc "\tcmpl\t%s, %s\n" (pp_id_or_imm y') x;
-      g'_tail_if oc e1 e2 "jge" "jl"
+      (*Printf.fprintf oc "\tcmpl\t%s, %s\n" (pp_id_or_imm y') x;
+      g'_tail_if oc e1 e2 "jge" "jl"*)
+      g'_tail_if oc x y' e1 e2 "bge"
   | Tail, IfFEq(x, y, e1, e2) ->
-      Printf.fprintf oc "\tcomisd\t%s, %s\n" y x;
-      g'_tail_if oc e1 e2 "je" "jne"
+      (*Printf.fprintf oc "\tcomisd\t%s, %s\n" y x;
+      g'_tail_if oc e1 e2 "je" "jne"*)
+      g'_tail_if oc x y' e1 e2 "feq"
   | Tail, IfFLE(x, y, e1, e2) ->
-      Printf.fprintf oc "\tcomisd\t%s, %s\n" y x;
-      g'_tail_if oc e1 e2 "jbe" "ja"
+      (*Printf.fprintf oc "\tcomisd\t%s, %s\n" y x;
+      g'_tail_if oc e1 e2 "jbe" "ja"*)
+      g'_tail_if oc x y' e1 e2 "flt"
   | NonTail(z), IfEq(x, y', e1, e2) ->
-      Printf.fprintf oc "\tcmpl\t%s, %s\n" (pp_id_or_imm y') x;
-      g'_non_tail_if oc (NonTail(z)) e1 e2 "je" "jne"
+      (*Printf.fprintf oc "\tcmpl\t%s, %s\n" (pp_id_or_imm y') x;
+      g'_non_tail_if oc (NonTail(z)) e1 e2 "je" "jne"*)
+      g'_non_tail_if oc (NonTail(z)) x y' e1 e2 "beq"
   | NonTail(z), IfLE(x, y', e1, e2) ->
-      Printf.fprintf oc "\tcmpl\t%s, %s\n" (pp_id_or_imm y') x;
-      g'_non_tail_if oc (NonTail(z)) e1 e2 "jle" "jg"
+      (*Printf.fprintf oc "\tcmpl\t%s, %s\n" (pp_id_or_imm y') x;
+      g'_non_tail_if oc (NonTail(z)) e1 e2 "jle" "jg"*)
+      g'_non_tail_if oc (NonTail(z)) x y' e1 e2 "blt"
   | NonTail(z), IfGE(x, y', e1, e2) ->
-      Printf.fprintf oc "\tcmpl\t%s, %s\n" (pp_id_or_imm y') x;
-      g'_non_tail_if oc (NonTail(z)) e1 e2 "jge" "jl"
+      (*Printf.fprintf oc "\tcmpl\t%s, %s\n" (pp_id_or_imm y') x;
+      g'_non_tail_if oc (NonTail(z)) e1 e2 "jge" "jl"*)
+      g'_non_tail_if oc (NonTail(z)) x y' e1 e2 "bge"
   | NonTail(z), IfFEq(x, y, e1, e2) ->
-      Printf.fprintf oc "\tcomisd\t%s, %s\n" y x;
-      g'_non_tail_if oc (NonTail(z)) e1 e2 "je" "jne"
+      (*Printf.fprintf oc "\tcomisd\t%s, %s\n" y x;
+      g'_non_tail_if oc (NonTail(z)) e1 e2 "je" "jne"*)
+      g'_non_tail_if oc (NonTail(z)) x y' e1 e2 "feq"
   | NonTail(z), IfFLE(x, y, e1, e2) ->
-      Printf.fprintf oc "\tcomisd\t%s, %s\n" y x;
-      g'_non_tail_if oc (NonTail(z)) e1 e2 "jbe" "ja"
+      (*Printf.fprintf oc "\tcomisd\t%s, %s\n" y x;
+      g'_non_tail_if oc (NonTail(z)) e1 e2 "jbe" "ja"*)
+      g'_non_tail_if oc (NonTail(z)) x y' e1 e2 "flt"
   (* 関数呼び出しの仮想命令の実装 (caml2html: emit_call) *)
   | Tail, CallCls(x, ys, zs) -> (* 末尾呼び出し (caml2html: emit_tailcall) *)
       g'_args oc [(x, reg_cl)] ys zs;
@@ -166,16 +176,23 @@ and g' oc = function (* 各命令のアセンブリ生成 (caml2html: emit_gprime) *)
         Printf.fprintf oc "\tmovl\t%s, %s\n" regs.(0) a
       else if List.mem a allfregs && a <> fregs.(0) then
         Printf.fprintf oc "\tmovsd\t%s, %s\n" fregs.(0) a
-and g'_tail_if oc e1 e2 b bn =
-  let b_else = Id.genid (b ^ "_else") in
+and g'_tail_if oc x y e1 e2 b =
+  (*let b_else = Id.genid (b ^ "_else") in
   Printf.fprintf oc "\t%s\t%s\n" bn b_else;
   let stackset_back = !stackset in
   g oc (Tail, e1);
   Printf.fprintf oc "%s:\n" b_else;
   stackset := stackset_back;
-  g oc (Tail, e2)
-and g'_non_tail_if oc dest e1 e2 b bn =
-  let b_else = Id.genid (b ^ "_else") in
+  g oc (Tail, e2)*)
+  let b_id = Id.genid b in
+  Printf.fprintf oc "\t%s\t%s, %s, %s\n" b x y b_id;
+  let stackset_back = !stackset in
+  g oc (Tail, e2);
+  Printf.fprintf oc "%s:\n" b_id;
+  stackset := stackset_back;
+  g oc (Tail, e1)
+and g'_non_tail_if oc dest x y e1 e2 b =
+  (*let b_else = Id.genid (b ^ "_else") in
   let b_cont = Id.genid (b ^ "_cont") in
   Printf.fprintf oc "\t%s\t%s\n" bn b_else;
   let stackset_back = !stackset in
@@ -185,6 +202,19 @@ and g'_non_tail_if oc dest e1 e2 b bn =
   Printf.fprintf oc "%s:\n" b_else;
   stackset := stackset_back;
   g oc (dest, e2);
+  Printf.fprintf oc "%s:\n" b_cont;
+  let stackset2 = !stackset in
+  stackset := S.inter stackset1 stackset2*)
+  let b_id = Id.genid b in
+  let b_cont = Id.genid (b ^ "_cont") in
+  Printf.fprintf oc "\t%s\t%s, %s, %s\n" b x y b_id;
+  let stackset_back = !stackset in
+  g oc (dest, e2);
+  let stackset1 = !stackset in
+  Printf.fprintf oc "\tjal\tx0, %s\n" b_cont;
+  Printf.fprintf oc "%s:\n" b_id;
+  stackset := stackset_back;
+  g oc (dest, e1);
   Printf.fprintf oc "%s:\n" b_cont;
   let stackset2 = !stackset in
   stackset := S.inter stackset1 stackset2
