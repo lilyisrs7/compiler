@@ -1,0 +1,6 @@
+#!/usr/bin/env bash
+ln -sf ISA5/{*.ml{,i},libmincaml.S} .
+cd test; ln -sf ISA5/{,too}manyargs.ml .; cd ..
+cd shootout; ln -sf ISA5/Makefile .; cd ..
+cd bytemark; ln -sf ISA5/Makefile .; cd ..
+cd min-rt; ln -sf ISA5/globals.s .; cd ..

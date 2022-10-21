@@ -1,27 +1,27 @@
 type t =
-  | Unit
-  | Int of int
-  | Float of float
-  | Neg of Id.t
-  | Add of Id.t * Id.t
-  | Sub of Id.t * Id.t
-  | FNeg of Id.t
-  | FAdd of Id.t * Id.t
-  | FSub of Id.t * Id.t
-  | FMul of Id.t * Id.t
-  | FDiv of Id.t * Id.t
-  | IfEq of Id.t * Id.t * t * t
-  | IfLE of Id.t * Id.t * t * t
-  | Let of (Id.t * Type.t) * t * t
-  | Var of Id.t
-  | LetRec of fundef * t
-  | App of Id.t * Id.t list
-  | Tuple of Id.t list
-  | LetTuple of (Id.t * Type.t) list * Id.t * t
-  | Get of Id.t * Id.t
-  | Put of Id.t * Id.t * Id.t
-  | ExtArray of Id.t
-  | ExtFunApp of Id.t * Id.t list
+  | Unit of int
+  | Int of int * int
+  | Float of float * int
+  | Neg of Id.t * int
+  | Add of Id.t * Id.t * int
+  | Sub of Id.t * Id.t * int
+  | FNeg of Id.t * int
+  | FAdd of Id.t * Id.t * int
+  | FSub of Id.t * Id.t * int
+  | FMul of Id.t * Id.t * int
+  | FDiv of Id.t * Id.t * int
+  | IfEq of Id.t * Id.t * t * t * int
+  | IfLE of Id.t * Id.t * t * t * int
+  | Let of (Id.t * Type.t) * t * t * int
+  | Var of Id.t * int
+  | LetRec of fundef * t * int
+  | App of Id.t * Id.t list * int
+  | Tuple of Id.t list * int
+  | LetTuple of (Id.t * Type.t) list * Id.t * t * int
+  | Get of Id.t * Id.t * int
+  | Put of Id.t * Id.t * Id.t * int
+  | ExtArray of Id.t * int
+  | ExtFunApp of Id.t * Id.t list * int
 and fundef = { name : Id.t * Type.t; args : (Id.t * Type.t) list; body : t }
 
 val fv : t -> S.t

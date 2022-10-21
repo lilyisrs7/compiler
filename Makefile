@@ -25,7 +25,7 @@ alpha.mli alpha.ml beta.mli beta.ml assoc.mli assoc.ml \
 inline.mli inline.ml constFold.mli constFold.ml elim.mli elim.ml \
 closure.mli closure.ml asm.mli asm.ml virtual.mli virtual.ml \
 simm.mli simm.ml regAlloc.mli regAlloc.ml emit.mli emit.ml \
-main.mli main.ml
+printType.ml main.mli main.ml
 
 # ↓テストプログラムが増えたら、これも増やす
 TESTS = print sum-tail gcd sum fib ack even-odd \
@@ -33,30 +33,33 @@ adder funcomp cls-rec cls-bug cls-bug2 cls-reg-bug \
 shuffle spill spill2 spill3 join-stack join-stack2 join-stack3 \
 join-reg join-reg2 non-tail-if non-tail-if2 \
 inprod inprod-rec inprod-loop matmul matmul-flat \
-manyargs
+manyargs #min-rt/minrt
 
-do_test: $(TESTS:%=test/%.cmp)
+do_test: $(TESTS:%=test/%.s)#original: do_test: $(TESTS:%=test/%.cmp)
 
-.PRECIOUS: test/%.s test/% test/%.res test/%.ans test/%.cmp test/%.parsed test/%.normalized
-TRASH = $(TESTS:%=test/%.s) $(TESTS:%=test/%) $(TESTS:%=test/%.res) $(TESTS:%=test/%.ans) $(TESTS:%=test/%.cmp) $(TESTS:%=test/%.parsed) $(TESTS:%=test/%.normalized)
+.PRECIOUS: test/%.s test/% test/%.res test/%.ans test/%.cmp test/%.parsed test/%.normalized test/%.alpha test/%.iterated \
+test/%.closure test/%.virtual test/%.simm test/%.regalloc
+TRASH = $(TESTS:%=test/%.s) $(TESTS:%=test/%) $(TESTS:%=test/%.res) $(TESTS:%=test/%.ans) $(TESTS:%=test/%.cmp) \
+$(TESTS:%=test/%.parsed) $(TESTS:%=test/%.normalized) $(TESTS:%=test/%.alpha) $(TESTS:%=test/%.iterated) $(TESTS:%=test/%.closure) \
+$(TESTS:%=test/%.virtual) $(TESTS:%=test/%.simm) $(TESTS:%=test/%.regalloc)
 
 test/%.s: $(RESULT) test/%.ml
 	./$(RESULT) test/$*
-test/%: test/%.s libmincaml.S stub.c
-	$(CC) $(CFLAGS) -m32 $^ -lm -o $@
-test/%.res: test/%
-	$< > $@
-test/%.ans: test/%.ml
-	ocaml $< > $@
-test/%.cmp: test/%.res test/%.ans
-	diff $^ > $@
+#test/%: test/%.s libmincaml.S stub.c
+#	$(CC) $(CFLAGS) -m32 $^ -lm -o $@
+#test/%.res: test/%
+#	$< > $@
+#test/%.ans: test/%.ml
+#	ocaml $< > $@
+#test/%.cmp: test/%.res test/%.ans
+#	diff $^ > $@
 
 min-caml.html: main.mli main.ml id.ml m.ml s.ml \
 		syntax.ml type.ml parser.mly lexer.mll typing.mli typing.ml kNormal.mli kNormal.ml \
 		alpha.mli alpha.ml beta.mli beta.ml assoc.mli assoc.ml \
 		inline.mli inline.ml constFold.mli constFold.ml elim.mli elim.ml \
 		closure.mli closure.ml asm.mli asm.ml virtual.mli virtual.ml \
-		simm.mli simm.ml regAlloc.mli regAlloc.ml emit.mli emit.ml
+		simm.mli simm.ml regAlloc.mli regAlloc.ml emit.mli emit.ml printType.ml 
 	./to_sparc
 	caml2html -o min-caml.html $^
 	sed 's/.*<\/title>/MinCaml Source Code<\/title>/g' < min-caml.html > min-caml.tmp.html
