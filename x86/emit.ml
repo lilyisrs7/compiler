@@ -72,6 +72,14 @@ and g' oc pos = function (* 各命令のアセンブリ生成 (caml2html: emit_gprime) *)
       else
         (if x <> y then Printf.fprintf oc "\tmovl\t%s, %s\t# %d\n" y x pos;
          Printf.fprintf oc "\tsubl\t%s, %s\t# %d\n" (pp_id_or_imm z') x pos)
+  | NonTail(x), Mul(y, z') ->
+      Printf.fprintf oc "\tmovl\t%s, ax\t# %d\n" (pp_id_or_imm z') pos;
+      Printf.fprintf oc "\tmull\t%s\t# %d\n" y pos;
+      Printf.fprintf oc "\tmovl\tax, %s\t# %d\n" x pos
+  | NonTail(x), Div(y, z') ->
+      Printf.fprintf oc "\tmovl\t%s, ax\t# %d\n" (pp_id_or_imm z') pos;
+      Printf.fprintf oc "\tdivl\t%s\t# %d\n" y pos;
+      Printf.fprintf oc "\tmovl\tax, %s\t# %d\n" x pos
   | NonTail(x), Ld(y, V(z), i) -> Printf.fprintf oc "\tmovl\t(%s,%s,%d), %s\t# %d\n" y z i x pos
   | NonTail(x), Ld(y, C(j), i) -> Printf.fprintf oc "\tmovl\t%d(%s), %s\t# %d\n" (j * i) y x pos
   | NonTail(_), St(x, y, V(z), i) -> Printf.fprintf oc "\tmovl\t%s, (%s,%s,%d)\t# %d\n" x y z i pos
@@ -134,7 +142,7 @@ and g' oc pos = function (* 各命令のアセンブリ生成 (caml2html: emit_gprime) *)
   | Tail, (Nop | St _ | StDF _ | Comment _ | Save _ as exp) ->
       g' oc pos (NonTail(Id.gentmp Type.Unit), exp);
       Printf.fprintf oc "\tret\n";
-  | Tail, (Set _ | SetL _ | Mov _ | Neg _ | Add _ | Sub _ | Ld _ as exp) ->
+  | Tail, (Set _ | SetL _ | Mov _ | Neg _ | Add _ | Sub _ | Mul _ | Div _ | Ld _ as exp) ->
       g' oc pos (NonTail(regs.(0)), exp);
       Printf.fprintf oc "\tret\n";
   | Tail, (FMovD _ | FNegD _ | FAddD _ | FSubD _ | FMulD _ | FDivD _ | LdDF _  as exp) ->

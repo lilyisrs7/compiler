@@ -49,6 +49,8 @@ let rec g env = function (* 式の仮想マシンコード生成 (caml2html: virtual_g) *)
   | Closure.Neg(x, pos) -> Ans(Neg(x), pos)
   | Closure.Add(x, y, pos) -> Ans(Add(x, V(y)), pos)
   | Closure.Sub(x, y, pos) -> Ans(Sub(x, V(y)), pos)
+  | Closure.Mul(x, y, pos) -> Ans(Mul(x, V(y)), pos)
+  | Closure.Div(x, y, pos) -> Ans(Div(x, V(y)), pos)
   | Closure.FNeg(x, pos) -> Ans(FNegD(x), pos)
   | Closure.FAdd(x, y, pos) -> Ans(FAddD(x, y), pos)
   | Closure.FSub(x, y, pos) -> Ans(FSubD(x, y), pos)
@@ -143,10 +145,13 @@ let h { Closure.name = (Id.L(x), t); Closure.args = yts; Closure.formal_fv = zts
       (fun z t offset load ->
         match e with
         | Closure.Unit(pos) | Closure.Int(_, pos) | Closure.Float(_, pos) | Neg(_, pos) | Add(_, _, pos) | Sub(_, _, pos)
-        | FNeg(_, pos) | FAdd(_, _, pos) | FSub(_, _, pos) | FMul(_, _, pos) | FDiv(_, _, pos)
+        | Mul(_, _, pos) | Div(_, _, pos) | FNeg(_, pos) | FAdd(_, _, pos) | FSub(_, _, pos) | FMul(_, _, pos) | FDiv(_, _, pos)
         | IfEq(_, _, _, _, pos)| IfLE(_, _, _, _, pos) | Let(_, _, _, pos) | Var(_, pos)
         | MakeCls(_, _, _, pos) | AppCls(_, _, pos) | AppDir(_, _, pos) | Tuple(_, pos) | LetTuple(_, _, _, pos)
         | Get(_, _, pos) | Put(_, _, _, pos) | ExtArray(_, pos) -> Let((z, t), Ld(x, C(offset), 1), load, pos)) in
+  (*let oc = open_out ("h_" ^ x ^ ".vt") in
+  PrintType.print_knormal_t oc 0 (KNormal.Int(offset, 0));
+  close_out oc;*)
   match t with
   | Type.Fun(_, t2) ->
       { name = Id.L(x); args = int; fargs = float; body = load; ret = t2 }

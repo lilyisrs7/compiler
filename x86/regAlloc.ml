@@ -42,7 +42,7 @@ let rec source t = function
   | Ans(exp, pos) -> source' t exp
   | Let(_, _, e, pos) -> source t e
 and source' t = function
-  | Mov(x) | Neg(x) | Add(x, C _) | Sub(x, _) | FMovD(x) | FNegD(x) | FSubD(x, _) | FDivD(x, _) -> [x]
+  | Mov(x) | Neg(x) | Add(x, C _) | Sub(x, _) | FMovD(x) | FNegD(x) | FSubD(x, _) | FDivD(x, _) -> [x] (*Mul, Div?*)
   | Add(x, V y) | FAddD(x, y) | FMulD(x, y) -> [x; y]
   | IfEq(_, _, e1, e2) | IfLE(_, _, e1, e2) | IfGE(_, _, e1, e2) | IfFEq(_, _, e1, e2) | IfFLE(_, _, e1, e2) ->
       source t e1 @ source t e2
@@ -142,6 +142,8 @@ and g' dest cont regenv pos = function (* 各命令のレジスタ割り当て (caml2html: r
   | Neg(x) -> (Ans(Neg(find x Type.Int regenv), pos), regenv)
   | Add(x, y') -> (Ans(Add(find x Type.Int regenv, find' y' regenv), pos), regenv)
   | Sub(x, y') -> (Ans(Sub(find x Type.Int regenv, find' y' regenv), pos), regenv)
+  | Mul(x, y') -> (Ans(Mul(find x Type.Int regenv, find' y' regenv), pos), regenv)
+  | Div(x, y') -> (Ans(Div(find x Type.Int regenv, find' y' regenv), pos), regenv)
   | Ld(x, y', i) -> (Ans(Ld(find x Type.Int regenv, find' y' regenv, i), pos), regenv)
   | St(x, y, z', i) -> (Ans(St(find x Type.Int regenv, find y Type.Int regenv, find' z' regenv, i), pos), regenv)
   | FMovD(x) -> (Ans(FMovD(find x Type.Float regenv), pos), regenv)
