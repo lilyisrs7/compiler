@@ -5,6 +5,8 @@ type t =
   | Neg of Id.t * int
   | Add of Id.t * Id.t * int
   | Sub of Id.t * Id.t * int
+  | Mul of Id.t * Id.t * int
+  | Div of Id.t * Id.t * int
   | FNeg of Id.t * int
   | FAdd of Id.t * Id.t * int
   | FSub of Id.t * Id.t * int

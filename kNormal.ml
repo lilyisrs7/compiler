@@ -7,6 +7,8 @@ type t = (* K正規化後の式 (caml2html: knormal_t) *)
   | Neg of Id.t * int
   | Add of Id.t * Id.t * int
   | Sub of Id.t * Id.t * int
+  | Mul of Id.t * Id.t * int
+  | Div of Id.t * Id.t * int
   | FNeg of Id.t * int
   | FAdd of Id.t * Id.t * int
   | FSub of Id.t * Id.t * int
@@ -29,7 +31,7 @@ and fundef = { name : Id.t * Type.t; args : (Id.t * Type.t) list; body : t }
 let rec fv = function (* 式に出現する（自由な）変数 (caml2html: knormal_fv) *)
   | Unit(_) | Int(_) | Float(_) | ExtArray(_) -> S.empty
   | Neg(x, pos) | FNeg(x, pos) -> S.singleton x
-  | Add(x, y, pos) | Sub(x, y, pos) | FAdd(x, y, pos) | FSub(x, y, pos) | FMul(x, y, pos) | FDiv(x, y, pos) | Get(x, y, pos) -> S.of_list [x; y]
+  | Add(x, y, pos) | Sub(x, y, pos) | Mul(x, y, pos) | Div(x, y, pos) | FAdd(x, y, pos) | FSub(x, y, pos) | FMul(x, y, pos) | FDiv(x, y, pos) | Get(x, y, pos) -> S.of_list [x; y]
   | IfEq(x, y, e1, e2, pos) | IfLE(x, y, e1, e2, pos) -> S.add x (S.add y (S.union (fv e1) (fv e2)))
   | Let((x, t), e1, e2, pos) -> S.union (fv e1) (S.remove x (fv e2))
   | Var(x, pos) -> S.singleton x
@@ -66,6 +68,14 @@ let rec g env = function (* K正規化ルーチン本体 (caml2html: knormal_g) *)
       insert_let (g env e1)
         (fun x -> insert_let (g env e2)
             (fun y -> Sub(x, y, pos), Type.Int) pos) pos
+  | Syntax.Mul(e1, e2, pos) ->
+      insert_let (g env e1)
+        (fun x -> insert_let (g env e2)
+            (fun y -> Mul(x, y, pos), Type.Int) pos) pos
+  | Syntax.Div(e1, e2, pos) ->
+      insert_let (g env e1)
+        (fun x -> insert_let (g env e2)
+            (fun y -> Div(x, y, pos), Type.Int) pos) pos
   | Syntax.FNeg(e, pos) ->
       insert_let (g env e)
         (fun x -> FNeg(x, pos), Type.Float) pos
@@ -108,7 +118,7 @@ let rec g env = function (* K正規化ルーチン本体 (caml2html: knormal_g) *)
       let e2', t2 = g (M.add x t env) e2 in
       Let((x, t), e1', e2', pos), t2
   | Syntax.Var(x, pos) when M.mem x env -> Var(x, pos), M.find x env
-  | Syntax.Var(x, pos) -> (* 外部配列の参照 (caml2html: knormal_extarray) *) (*?*)
+  | Syntax.Var(x, pos) -> (* 外部配列の参照 (caml2html: knormal_extarray) *)
       (match M.find x !Typing.extenv with
       | Type.Array(_) as t -> ExtArray(x, pos), t
       | _ -> failwith (Printf.sprintf "external variable %s does not have an array type" x))
