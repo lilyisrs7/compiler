@@ -6,6 +6,7 @@ let rec print_list_for_parsed oc list tab_num = (* 問1 *)
   match list with
   | hd :: [] -> print_syntax_t oc tab_num hd
   | hd :: tl -> (print_syntax_t oc tab_num hd; Printf.fprintf oc ",\n"; print_list_for_parsed oc tl tab_num)
+  | _ -> assert false
 
 and print_syntax_t oc tab_num e = (* 問1, 3 *)
   print_tab oc tab_num;
@@ -22,6 +23,12 @@ and print_syntax_t oc tab_num e = (* 問1, 3 *)
                                          print_syntax_t oc (tab_num + 1) e2; Printf.fprintf oc "\n";
                                          print_tab oc tab_num;Printf.fprintf oc ")"
   | Syntax.Sub(e1, e2, pos)           -> Printf.fprintf oc "%d Sub (\n" pos; print_syntax_t oc (tab_num + 1) e1; Printf.fprintf oc ",\n";
+                                         print_syntax_t oc (tab_num + 1) e2; Printf.fprintf oc "\n";
+                                         print_tab oc tab_num; Printf.fprintf oc ")"
+  | Syntax.Mul(e1, e2, pos)           -> Printf.fprintf oc "%d Mul (\n" pos; print_syntax_t oc (tab_num + 1) e1; Printf.fprintf oc ",\n";
+                                         print_syntax_t oc (tab_num + 1) e2; Printf.fprintf oc "\n";
+                                         print_tab oc tab_num; Printf.fprintf oc ")"
+  | Syntax.Div(e1, e2, pos)           -> Printf.fprintf oc "%d Div (\n" pos; print_syntax_t oc (tab_num + 1) e1; Printf.fprintf oc ",\n";
                                          print_syntax_t oc (tab_num + 1) e2; Printf.fprintf oc "\n";
                                          print_tab oc tab_num; Printf.fprintf oc ")"
   | Syntax.FNeg(e1, pos)              -> Printf.fprintf oc "%d FNeg (\n" pos; print_syntax_t oc (tab_num + 1) e1; Printf.fprintf oc ")"
@@ -84,6 +91,8 @@ let rec print_knormal_t oc tab_num e = (* 問1, 3 *)
   | KNormal.Neg(x, pos)              -> Printf.fprintf oc "%d Neg (%s)" pos x;
   | KNormal.Add(x, y, pos)           -> Printf.fprintf oc "%d Add (%s, %s)" pos x y
   | KNormal.Sub(x, y, pos)           -> Printf.fprintf oc "%d Sub (%s, %s)" pos x y
+  | KNormal.Mul(x, y, pos)           -> Printf.fprintf oc "%d Mul (%s, %s)" pos x y
+  | KNormal.Div(x, y, pos)           -> Printf.fprintf oc "%d Div (%s, %s)" pos x y
   | KNormal.FNeg(x, pos)             -> Printf.fprintf oc "%d FNeg (%s)" pos x
   | KNormal.FAdd(x, y, pos)          -> Printf.fprintf oc "%d FAdd (%s, %s)" pos x y
   | KNormal.FSub(x, y, pos)          -> Printf.fprintf oc "%d FSub (%s, %s)" pos x y
@@ -133,6 +142,8 @@ let rec print_closure_t oc tab_num e =
   | Closure.Neg(x, pos)     -> Printf.fprintf oc "%d Neg (%s)" pos x
   | Closure.Add(x, y, pos)  -> Printf.fprintf oc "%d Add (%s, %s)" pos x y
   | Closure.Sub(x, y, pos)  -> Printf.fprintf oc "%d Sub (%s, %s)" pos x y
+  | Closure.Mul(x, y, pos)  -> Printf.fprintf oc "%d Mul (%s, %s)" pos x y
+  | Closure.Div(x, y, pos)  -> Printf.fprintf oc "%d Div (%s, %s)" pos x y
   | Closure.FNeg(x, pos)    -> Printf.fprintf oc "%d FNeg (%s)" pos x
   | Closure.FAdd(x, y, pos) -> Printf.fprintf oc "%d FAdd (%s, %s)" pos x y
   | Closure.FSub(x, y, pos) -> Printf.fprintf oc "%d FSub (%s, %s)" pos x y
@@ -196,6 +207,10 @@ let rec print_asm_exp oc tab_num e =
   | Asm.Add(x, C(y)) -> Printf.fprintf oc "Add (%s, %d)" x y
   | Asm.Sub(x, V(y)) -> Printf.fprintf oc "Sub (%s, %s)" x y
   | Asm.Sub(x, C(y)) -> Printf.fprintf oc "Sub (%s, %d)" x y
+  | Asm.Mul(x, V(y)) -> Printf.fprintf oc "Mul (%s, %s)" x y
+  | Asm.Mul(x, C(y)) -> Printf.fprintf oc "Mul (%s, %d)" x y
+  | Asm.Div(x, V(y)) -> Printf.fprintf oc "Div (%s, %s)" x y
+  | Asm.Div(x, C(y)) -> Printf.fprintf oc "Div (%s, %d)" x y
   | Asm.Ld(x, V(y), z) -> Printf.fprintf oc "Ld (%s, %s, %d)" x y z
   | Asm.Ld(x, C(y), z) -> Printf.fprintf oc "Ld (%s, %d, %d)" x y z
   | Asm.St(x, y, V(z), w) -> Printf.fprintf oc "St (%s, %s, %s, %d)" x y z w

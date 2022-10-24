@@ -7,6 +7,8 @@ type t = (* MinCamlの構文を表現するデータ型 (caml2html: syntax_t) *)
   | Neg of t * int
   | Add of t * t * int
   | Sub of t * t * int
+  | Mul of t * t * int
+  | Div of t * t * int
   | FNeg of t * int
   | FAdd of t * t * int
   | FSub of t * t * int

@@ -93,7 +93,7 @@ let rec g env e = (* 型推論ルーチン (caml2html: typing_g) *)
     | Neg(e, pos) ->
         unify pos Type.Int (g env e);
         Type.Int
-    | Add(e1, e2, pos) | Sub(e1, e2, pos) -> (* 足し算（と引き算）の型推論 (caml2html: typing_add) *)
+    | Add(e1, e2, pos) | Sub(e1, e2, pos) | Mul(e1, e2, pos) | Div(e1, e2, pos) -> (* 足し算（と引き算）の型推論 (caml2html: typing_add) *)
         unify pos Type.Int (g env e1);
         unify pos Type.Int (g env e2);
         Type.Int
