@@ -29,7 +29,7 @@ type t = (* K正規化後の式 (caml2html: knormal_t) *)
 and fundef = { name : Id.t * Type.t; args : (Id.t * Type.t) list; body : t }
 
 let rec fv = function (* 式に出現する（自由な）変数 (caml2html: knormal_fv) *)
-  | Unit(_) | Int(_) | Float(_) | ExtArray(_) -> S.empty
+  | Unit(_) | Int(_) | Float(_) | ExtArray(_) -> S.empty (*?*)
   | Neg(x, pos) | FNeg(x, pos) -> S.singleton x
   | Add(x, y, pos) | Sub(x, y, pos) | Mul(x, y, pos) | Div(x, y, pos) | FAdd(x, y, pos) | FSub(x, y, pos) | FMul(x, y, pos) | FDiv(x, y, pos) | Get(x, y, pos) -> S.of_list [x; y]
   | IfEq(x, y, e1, e2, pos) | IfLE(x, y, e1, e2, pos) -> S.add x (S.add y (S.union (fv e1) (fv e2)))
@@ -120,8 +120,8 @@ let rec g env = function (* K正規化ルーチン本体 (caml2html: knormal_g) *)
   | Syntax.Var(x, pos) when M.mem x env -> Var(x, pos), M.find x env
   | Syntax.Var(x, pos) -> (* 外部配列の参照 (caml2html: knormal_extarray) *)
       (match M.find x !Typing.extenv with
-      | Type.Array(_) as t -> ExtArray(x, pos), t
-      | _ -> failwith (Printf.sprintf "external variable %s does not have an array type" x))
+      | Type.Array(_) | Type.Tuple(_) as t -> ExtArray(x, pos), t (*?*)
+      | _ -> failwith (Printf.sprintf "external variable %s does not have an array type or a tuple type" x))
   | Syntax.LetRec({ Syntax.name = (x, t); Syntax.args = yts; Syntax.body = e1 }, e2, pos) ->
       let env' = M.add x t env in
       let e2', t2 = g env' e2 in
