@@ -150,9 +150,9 @@ and g' dest cont regenv pos = function (* 各命令のレジスタ割り当て (caml2html: r
   | Mov(x) -> (Ans(Mov(find x Type.Int regenv), pos), regenv)
   | Neg(x) -> (Ans(Neg(find x Type.Int regenv), pos), regenv)
   | Add(x, y') -> (Ans(Add(find x Type.Int regenv, find' y' regenv), pos), regenv)
-  | Sub(x, y') -> (Ans(Sub(find x Type.Int regenv, find' y' regenv), pos), regenv)
+  | Sub(x, y) -> (Ans(Sub(find x Type.Int regenv, find y Type.Int regenv), pos), regenv)
   | Mul(x, y') -> (Ans(Mul(find x Type.Int regenv, find' y' regenv), pos), regenv)
-  | Div(x, y') -> (Ans(Div(find x Type.Int regenv, find' y' regenv), pos), regenv)
+  | Div(x, y) -> (Ans(Div(find x Type.Int regenv, find y Type.Int regenv), pos), regenv)
   | Ld(x, y') -> (Ans(Ld(find x Type.Int regenv, find' y' regenv), pos), regenv)
   | St(x, y, z') -> (Ans(St(find x Type.Int regenv, find y Type.Int regenv, find' z' regenv), pos), regenv)
   | FMovD(x) -> (Ans(FMovD(find x Type.Float regenv), pos), regenv)
@@ -163,9 +163,9 @@ and g' dest cont regenv pos = function (* 各命令のレジスタ割り当て (caml2html: r
   | FDivD(x, y) -> (Ans(FDivD(find x Type.Float regenv, find y Type.Float regenv), pos), regenv)
   | LdDF(x, y') -> (Ans(LdDF(find x Type.Int regenv, find' y' regenv), pos), regenv)
   | StDF(x, y, z') -> (Ans(StDF(find x Type.Float regenv, find y Type.Int regenv, find' z' regenv), pos), regenv)
-  | IfEq(x, y', e1, e2) as exp -> g'_if dest cont regenv exp (fun e1' e2' -> IfEq(find x Type.Int regenv, find' y' regenv, e1', e2')) e1 e2 pos
-  | IfLE(x, y', e1, e2) as exp -> g'_if dest cont regenv exp (fun e1' e2' -> IfLE(find x Type.Int regenv, find' y' regenv, e1', e2')) e1 e2 pos
-  | IfGE(x, y', e1, e2) as exp -> g'_if dest cont regenv exp (fun e1' e2' -> IfGE(find x Type.Int regenv, find' y' regenv, e1', e2')) e1 e2 pos
+  | IfEq(x, y, e1, e2) as exp -> g'_if dest cont regenv exp (fun e1' e2' -> IfEq(find x Type.Int regenv, find y Type.Int regenv, e1', e2')) e1 e2 pos
+  | IfLE(x, y, e1, e2) as exp -> g'_if dest cont regenv exp (fun e1' e2' -> IfLE(find x Type.Int regenv, find y Type.Int regenv, e1', e2')) e1 e2 pos
+  | IfGE(x, y, e1, e2) as exp -> g'_if dest cont regenv exp (fun e1' e2' -> IfGE(find x Type.Int regenv, find y Type.Int regenv, e1', e2')) e1 e2 pos
   | IfFEq(x, y, e1, e2) as exp -> g'_if dest cont regenv exp (fun e1' e2' -> IfFEq(find x Type.Float regenv, find y Type.Float regenv, e1', e2')) e1 e2 pos
   | IfFLE(x, y, e1, e2) as exp -> g'_if dest cont regenv exp (fun e1' e2' -> IfFLE(find x Type.Float regenv, find y Type.Float regenv, e1', e2')) e1 e2 pos
   | CallCls(x, ys, zs) as exp ->

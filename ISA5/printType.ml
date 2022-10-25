@@ -205,12 +205,10 @@ let rec print_asm_exp oc tab_num e =
   | Asm.Neg(x) -> Printf.fprintf oc "Neg (%s)" x
   | Asm.Add(x, V(y)) -> Printf.fprintf oc "Add (%s, %s)" x y
   | Asm.Add(x, C(y)) -> Printf.fprintf oc "Add (%s, %d)" x y
-  | Asm.Sub(x, V(y)) -> Printf.fprintf oc "Sub (%s, %s)" x y
-  | Asm.Sub(x, C(y)) -> Printf.fprintf oc "Sub (%s, %d)" x y
+  | Asm.Sub(x, y) -> Printf.fprintf oc "Sub (%s, %s)" x y
   | Asm.Mul(x, V(y)) -> Printf.fprintf oc "Mul (%s, %s)" x y
   | Asm.Mul(x, C(y)) -> Printf.fprintf oc "Mul (%s, %d)" x y
-  | Asm.Div(x, V(y)) -> Printf.fprintf oc "Div (%s, %s)" x y
-  | Asm.Div(x, C(y)) -> Printf.fprintf oc "Div (%s, %d)" x y
+  | Asm.Div(x, y) -> Printf.fprintf oc "Div (%s, %s)" x y
   | Asm.Ld(x, V(y)) -> Printf.fprintf oc "Ld (%s, %s)" x y
   | Asm.Ld(x, C(y)) -> Printf.fprintf oc "Ld (%s, %d)" x y
   | Asm.St(x, y, V(z)) -> Printf.fprintf oc "St (%s, %s, %s)" x y z
@@ -226,30 +224,18 @@ let rec print_asm_exp oc tab_num e =
   | Asm.StDF(x, y, V(z)) -> Printf.fprintf oc "StDF (%s, %s, %s)" x y z
   | Asm.StDF(x, y, C(z)) -> Printf.fprintf oc "StDF (%s, %s, %d)" x y z
   | Asm.Comment(x) -> Printf.fprintf oc "Comment (%s)" x
-  | Asm.IfEq(x, V(y), e1, e2) -> Printf.fprintf oc "IfEq (\n"; print_tab oc (tab_num + 1); Printf.fprintf oc "%s,\n" x;
-                                 print_tab oc (tab_num + 1); Printf.fprintf oc "%s,\n" y; print_asm_t oc (tab_num + 1) e1;
-                                 Printf.fprintf oc ",\n"; print_asm_t oc (tab_num + 1) e2; Printf.fprintf oc "\n"; print_tab oc tab_num;
-                                 Printf.fprintf oc ")"
-  | Asm.IfEq(x, C(y), e1, e2) -> Printf.fprintf oc "IfEq (\n"; print_tab oc (tab_num + 1); Printf.fprintf oc "%s,\n" x;
-                                 print_tab oc (tab_num + 1); Printf.fprintf oc "%d,\n" y; print_asm_t oc (tab_num + 1) e1;
-                                 Printf.fprintf oc ",\n"; print_asm_t oc (tab_num + 1) e2; Printf.fprintf oc "\n"; print_tab oc tab_num;
-                                 Printf.fprintf oc ")"
-  | Asm.IfLE(x, V(y), e1, e2) -> Printf.fprintf oc "IfLE (\n"; print_tab oc (tab_num + 1); Printf.fprintf oc "%s,\n" x;
-                                 print_tab oc (tab_num + 1); Printf.fprintf oc "%s,\n" y; print_asm_t oc (tab_num + 1) e1;
-                                 Printf.fprintf oc ",\n"; print_asm_t oc (tab_num + 1) e2; Printf.fprintf oc "\n"; print_tab oc tab_num;
-                                 Printf.fprintf oc ")"
-  | Asm.IfLE(x, C(y), e1, e2) -> Printf.fprintf oc "IfLE (\n"; print_tab oc (tab_num + 1); Printf.fprintf oc "%s,\n" x;
-                                 print_tab oc (tab_num + 1); Printf.fprintf oc "%d,\n" y; print_asm_t oc (tab_num + 1) e1;
-                                 Printf.fprintf oc ",\n"; print_asm_t oc (tab_num + 1) e2; Printf.fprintf oc "\n"; print_tab oc tab_num;
-                                 Printf.fprintf oc ")"
-  | Asm.IfGE(x, V(y), e1, e2) -> Printf.fprintf oc "IfGE (\n"; print_tab oc (tab_num + 1); Printf.fprintf oc "%s,\n" x;
-                                 print_tab oc (tab_num + 1); Printf.fprintf oc "%s,\n" y; print_asm_t oc (tab_num + 1) e1;
-                                 Printf.fprintf oc ",\n"; print_asm_t oc (tab_num + 1) e2; Printf.fprintf oc "\n"; print_tab oc tab_num;
-                                 Printf.fprintf oc ")"
-  | Asm.IfGE(x, C(y), e1, e2) -> Printf.fprintf oc "IfGE (\n"; print_tab oc (tab_num + 1); Printf.fprintf oc "%s,\n" x;
-                                 print_tab oc (tab_num + 1); Printf.fprintf oc "%d,\n" y; print_asm_t oc (tab_num + 1) e1;
-                                 Printf.fprintf oc ",\n"; print_asm_t oc (tab_num + 1) e2; Printf.fprintf oc "\n"; print_tab oc tab_num;
-                                 Printf.fprintf oc ")"
+  | Asm.IfEq(x, y, e1, e2) -> Printf.fprintf oc "IfEq (\n"; print_tab oc (tab_num + 1); Printf.fprintf oc "%s,\n" x;
+                              print_tab oc (tab_num + 1); Printf.fprintf oc "%s,\n" y; print_asm_t oc (tab_num + 1) e1;
+                              Printf.fprintf oc ",\n"; print_asm_t oc (tab_num + 1) e2; Printf.fprintf oc "\n"; print_tab oc tab_num;
+                              Printf.fprintf oc ")"
+  | Asm.IfLE(x, y, e1, e2) -> Printf.fprintf oc "IfLE (\n"; print_tab oc (tab_num + 1); Printf.fprintf oc "%s,\n" x;
+                              print_tab oc (tab_num + 1); Printf.fprintf oc "%s,\n" y; print_asm_t oc (tab_num + 1) e1;
+                              Printf.fprintf oc ",\n"; print_asm_t oc (tab_num + 1) e2; Printf.fprintf oc "\n"; print_tab oc tab_num;
+                              Printf.fprintf oc ")"
+  | Asm.IfGE(x, y, e1, e2) -> Printf.fprintf oc "IfGE (\n"; print_tab oc (tab_num + 1); Printf.fprintf oc "%s,\n" x;
+                              print_tab oc (tab_num + 1); Printf.fprintf oc "%s,\n" y; print_asm_t oc (tab_num + 1) e1;
+                              Printf.fprintf oc ",\n"; print_asm_t oc (tab_num + 1) e2; Printf.fprintf oc "\n"; print_tab oc tab_num;
+                              Printf.fprintf oc ")"
   | Asm.IfFEq(x, y, e1, e2) -> Printf.fprintf oc "IfFEq (\n"; print_tab oc (tab_num + 1); Printf.fprintf oc "%s,\n" x;
                                print_tab oc (tab_num + 1); Printf.fprintf oc "%s,\n" y; print_asm_t oc (tab_num + 1) e1;
                                Printf.fprintf oc ",\n"; print_asm_t oc (tab_num + 1) e2; Printf.fprintf oc "\n"; print_tab oc tab_num;

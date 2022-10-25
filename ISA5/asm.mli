@@ -9,24 +9,24 @@ and exp =
   | Mov of Id.t
   | Neg of Id.t
   | Add of Id.t * id_or_imm
-  | Sub of Id.t * id_or_imm
-  | Mul of Id.t * id_or_imm
-  | Div of Id.t * id_or_imm
-  | Ld of Id.t * id_or_imm
-  | St of Id.t * Id.t * id_or_imm
+  | Sub of Id.t * Id.t
+  | Mul of Id.t * id_or_imm (*最終的にはレジスタに*)
+  | Div of Id.t * Id.t
+  | Ld of Id.t * id_or_imm (*最終的には即値に*)
+  | St of Id.t * Id.t * id_or_imm (*最終的には即値に*)
   | FMovD of Id.t
   | FNegD of Id.t
   | FAddD of Id.t * Id.t
   | FSubD of Id.t * Id.t
   | FMulD of Id.t * Id.t
   | FDivD of Id.t * Id.t
-  | LdDF of Id.t * id_or_imm
-  | StDF of Id.t * Id.t * id_or_imm
+  | LdDF of Id.t * id_or_imm (*最終的には即値に*)
+  | StDF of Id.t * Id.t * id_or_imm (*最終的には即値に*)
   | Comment of string
   (* virtual instructions *)
-  | IfEq of Id.t * id_or_imm * t * t
-  | IfLE of Id.t * id_or_imm * t * t
-  | IfGE of Id.t * id_or_imm * t * t
+  | IfEq of Id.t * Id.t * t * t
+  | IfLE of Id.t * Id.t * t * t
+  | IfGE of Id.t * Id.t * t * t
   | IfFEq of Id.t * Id.t * t * t
   | IfFLE of Id.t * Id.t * t * t
   (* closure address, integer arguments, and float arguments *)

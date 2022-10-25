@@ -48,9 +48,9 @@ let rec g env = function (* 式の仮想マシンコード生成 (caml2html: virtual_g) *)
       Let((x, Type.Int), SetL(l), Ans(LdDF(x, C(0)), pos), pos)
   | Closure.Neg(x, pos) -> Ans(Neg(x), pos)
   | Closure.Add(x, y, pos) -> Ans(Add(x, V(y)), pos)
-  | Closure.Sub(x, y, pos) -> Ans(Sub(x, V(y)), pos)
+  | Closure.Sub(x, y, pos) -> Ans(Sub(x, y), pos)
   | Closure.Mul(x, y, pos) -> Ans(Mul(x, V(y)), pos)
-  | Closure.Div(x, y, pos) -> Ans(Div(x, V(y)), pos)
+  | Closure.Div(x, y, pos) -> Ans(Div(x, y), pos)
   | Closure.FNeg(x, pos) -> Ans(FNegD(x), pos)
   | Closure.FAdd(x, y, pos) -> Ans(FAddD(x, y), pos)
   | Closure.FSub(x, y, pos) -> Ans(FSubD(x, y), pos)
@@ -58,12 +58,12 @@ let rec g env = function (* 式の仮想マシンコード生成 (caml2html: virtual_g) *)
   | Closure.FDiv(x, y, pos) -> Ans(FDivD(x, y), pos)
   | Closure.IfEq(x, y, e1, e2, pos) ->
       (match M.find x env with
-      | Type.Bool | Type.Int -> Ans(IfEq(x, V(y), g env e1, g env e2), pos)
+      | Type.Bool | Type.Int -> Ans(IfEq(x, y, g env e1, g env e2), pos)
       | Type.Float -> Ans(IfFEq(x, y, g env e1, g env e2), pos)
       | _ -> failwith "equality supported only for bool, int, and float")
   | Closure.IfLE(x, y, e1, e2, pos) ->
       (match M.find x env with
-      | Type.Bool | Type.Int -> Ans(IfLE(x, V(y), g env e1, g env e2), pos)
+      | Type.Bool | Type.Int -> Ans(IfLE(x, y, g env e1, g env e2), pos)
       | Type.Float -> Ans(IfFLE(x, y, g env e1, g env e2), pos)
       | _ -> failwith "inequality supported only for bool, int, and float")
   | Closure.Let((x, t1), e1, e2, pos) ->
@@ -121,11 +121,6 @@ let rec g env = function (* 式の仮想マシンコード生成 (caml2html: virtual_g) *)
             Let((x, t), Ld(y, C(offset)), load, pos)) in
       load
   | Closure.Get(x, y, pos) -> (* 配列の読み出し (caml2html: virtual_get) *)
-      (*(match M.find x env with
-      | Type.Array(Type.Unit) -> Ans(Nop)
-      | Type.Array(Type.Float) -> Ans(LdDF(x, V(y), 8)) (*64BIT?*)
-      | Type.Array(_) -> Ans(Ld(x, V(y), 4))
-      | _ -> assert false)*)
       let offset = Id.genid "o" in
       (match M.find x env with
       | Type.Array(Type.Unit) -> Ans(Nop, pos)
@@ -137,11 +132,6 @@ let rec g env = function (* 式の仮想マシンコード生成 (caml2html: virtual_g) *)
               Ans(Ld(x, V(offset)), pos), pos)
       | _ -> assert false)
   | Closure.Put(x, y, z, pos) ->
-      (*(match M.find x env with
-      | Type.Array(Type.Unit) -> Ans(Nop)
-      | Type.Array(Type.Float) -> Ans(StDF(z, x, V(y), 8))
-      | Type.Array(_) -> Ans(St(z, x, V(y), 4))
-      | _ -> assert false)*)
       let offset = Id.genid "o" in
       (match M.find x env with
       | Type.Array(Type.Unit) -> Ans(Nop, pos)
