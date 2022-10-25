@@ -1,261 +1,198 @@
-#if defined(__CYGWIN__) || defined(__MACH__)
-#define U(x) _##x
-#else
-#define U(x) x
-#endif
-#if defined(__MACH__)
-#define ALIGNSTACK0 andl $0xfffffff0, %esp
-#define ALIGNSTACK1 andl $0xfffffff0, %esp; pushl %eax; pushl %eax; pushl %eax
-#define ALIGNSTACK2 andl $0xfffffff0, %esp; pushl %eax; pushl %eax
-#define ALIGNSTACK3 andl $0xfffffff0, %esp; pushl %eax
-#else
-#define ALIGNSTACK0
-#define ALIGNSTACK1
-#define ALIGNSTACK2
-#define ALIGNSTACK3
-#endif
-.text
-.globl min_caml_print_newline
+.section ".text"
+.global min_caml_print_newline
 min_caml_print_newline:
-	pushl	%ebp
-	movl	%esp, %ebp
-	ALIGNSTACK1
-	pushl	$10
-	call	U(putchar)
-	movl	%ebp, %esp
-	popl	%ebp
-	ret
-.globl min_caml_print_int
+	set	10, %o0
+	st	%o7, [%i0]
+	call	putchar
+	nop
+	ld	[%i0], %o7
+	retl
+	nop
+.global min_caml_print_int
 min_caml_print_int:
-	pushl	%ebp
-	movl	%esp, %ebp
-	ALIGNSTACK2
-	pushl	%eax
-	pushl	$format_int
-	call	U(printf)
-	movl	%ebp, %esp
-	popl	%ebp
-	ret
-.globl min_caml_print_byte
+	set	format_int, %o0
+	mov	%i2, %o1
+	st	%o7, [%i0]
+	call	printf
+	nop
+	ld	[%i0], %o7
+	retl
+	nop
+.global min_caml_print_byte
 min_caml_print_byte:
-	pushl	%ebp
-	movl	%esp, %ebp
-	ALIGNSTACK1
-	pushl	%eax
-	call	U(putchar)
-	movl	%ebp, %esp
-	popl	%ebp
-	ret
-.globl min_caml_prerr_int
+	mov	%i2, %o0
+	st	%o7, [%i0]
+	call	putchar
+	nop
+	ld	[%i0], %o7
+	retl
+	nop
+.global min_caml_prerr_int
 min_caml_prerr_int:
-	pushl	%ebp
-	movl	%esp, %ebp
-	ALIGNSTACK3
-	pushl	%eax
-	pushl	$format_int
-	pushl	U(min_caml_stderr)
-	call	U(fprintf)
-	movl	%ebp, %esp
-	popl	%ebp
-	ret
-.globl min_caml_prerr_byte
+	set	min_caml_stderr, %o0
+	set	format_int, %o1
+	mov	%i2, %o2
+	st	%o7, [%i0]
+	call	fprintf
+	nop
+	ld	[%i0], %o7
+	retl
+	nop
+.global min_caml_prerr_byte
 min_caml_prerr_byte:
-	pushl	%ebp
-	movl	%esp, %ebp
-	ALIGNSTACK2
-	pushl	U(min_caml_stderr)
-	pushl	%eax
-	call	U(fputc)
-	movl	%ebp, %esp
-	popl	%ebp
-	ret
-.globl min_caml_prerr_float
+	mov	%i2, %o0
+	set	min_caml_stderr, %o1
+	st	%o7, [%i0]
+	call	fputc
+	nop
+	ld	[%i0], %o7
+	retl
+	nop
+.global min_caml_prerr_float
 min_caml_prerr_float:
-	pushl	%ebp
-	movl	%esp, %ebp
-	ALIGNSTACK0
-	subl	$8, %esp
-	movsd	%xmm0, (%esp)
-	pushl	$format_float
-	pushl	U(min_caml_stderr)
-	call	U(fprintf)
-	movl	%ebp, %esp
-	popl	%ebp
-	ret
-.globl min_caml_read_int
+	set	min_caml_stderr, %o0
+	set	format_float, %o1
+	std	%f0, [%i0]
+	ldd	[%i0], %o2
+	st	%o7, [%i0]
+	call	fprintf
+	nop
+	ld	[%i0], %o7
+	retl
+	nop
+.global min_caml_read_int
 min_caml_read_int:
-	pushl	%ebp
-	movl	%esp, %ebp
-	ALIGNSTACK3
-	subl	$4, %esp
-	leal	-4(%ebp), %eax
-	pushl	%eax
-	pushl	$format_int
-	call	U(scanf)
-	movl	-4(%ebp), %eax
-	movl	%ebp, %esp
-	popl	%ebp
-	ret
-.globl min_caml_read_float
+	set	format_int, %o0
+	st	%o7, [%i0]
+	call	scanf, 0
+	add	%fp, -20, %o1	! delay slot
+	ld	[%i0], %o7
+	ld	[%fp-20], %i2
+	retl
+	nop
+.global min_caml_read_float
 min_caml_read_float:
-	pushl	%ebp
-	movl	%esp, %ebp
-	ALIGNSTACK0
-	subl	$8, %esp
-	leal	-8(%ebp), %eax
-	pushl	%eax
-	pushl	$format_float
-	call	U(scanf)
-	movsd	-8(%ebp), %xmm0
-	movl	%ebp, %esp
-	popl	%ebp
-	ret
-.globl min_caml_create_array
+	set	format_float, %o0
+	st	%o7, [%i0]
+	call	scanf, 0
+	add	%fp, -24, %o1	! delay slot
+	ld	[%i0], %o7
+	ldd	[%fp-24], %f0
+	retl
+	nop
+.global min_caml_create_array
 min_caml_create_array:
-	pushl	%ebp
-	movl	%esp, %ebp
-	pushl	%ecx
-	pushl	%edx
-	movl	%eax, %ecx
-	movl	min_caml_hp, %eax
-	movl	%ecx, %edx
-	shll	$2, %edx
-	addl	%edx, min_caml_hp
+	mov	%i2, %i4
+	mov	%i1, %i2
 create_array_loop:
-	cmpl	$0, %ecx
-	jne	create_array_cont
+	tst	%i4
+	bnz	create_array_cont
+	nop
+	andcc	%i1, 4, %g0
+	bz	create_array_exit
+	nop
+	add	%i1, 4, %i1
 create_array_exit:
-	popl	%edx
-	popl	%ecx
-	movl	%ebp, %esp
-	popl	%ebp
-	ret
+	retl
+	nop
 create_array_cont:
-	decl	%ecx
-	movl	%ebx, (%eax,%ecx,4)
-	jmp	create_array_loop
-.globl min_caml_create_float_array
+	st	%i3, [%i1]
+	dec	%i4
+	add	%i1, 4, %i1
+	b	create_array_loop
+	nop
+.global min_caml_create_float_array
 min_caml_create_float_array:
-	pushl	%ebp
-	movl	%esp, %ebp
-	pushl	%ecx
-	pushl	%edx
-	movl	%eax, %ecx
-	movl	min_caml_hp, %eax
-	movl	%ecx, %edx
-	shll	$3, %edx
-	addl	%edx, min_caml_hp
+	mov	%i2, %i3
+	mov	%i1, %i2
 create_float_array_loop:
-	cmpl	$0, %ecx
-	jne	create_float_array_cont
-create_float_array_exit:
-	popl	%edx
-	popl	%ecx
-	movl	%ebp, %esp
-	popl	%ebp
-	ret
+	tst	%i3
+	bnz	create_float_array_cont
+	nop
+	retl
+	nop
 create_float_array_cont:
-	decl	%ecx
-	movsd	%xmm0, (%eax,%ecx,8)
-	jmp	create_float_array_loop
-.globl min_caml_abs_float
+	std	%f0, [%i1]
+	dec	%i3
+	add	%i1, 8, %i1
+	b	create_float_array_loop
+	nop
+.global min_caml_abs_float
 min_caml_abs_float:
-	pushl	%ebp
-	movl	%esp, %ebp
-	ALIGNSTACK2
-	subl	$8, %esp
-	movsd	%xmm0, (%esp)
-	call	U(fabs)
-	fstpl	(%esp)
-	movsd	(%esp), %xmm0
-	movl	%ebp, %esp
-	popl	%ebp
-	ret
-.globl min_caml_sqrt
+	fabss	%f0, %f0
+	retl
+	nop
+.global min_caml_sqrt
 min_caml_sqrt:
-	sqrtsd	%xmm0, %xmm0
-	ret
-.globl min_caml_floor
+	fsqrtd	%f0, %f0
+	retl
+	nop
+.global min_caml_floor
 min_caml_floor:
-	pushl	%ebp
-	movl	%esp, %ebp
-	ALIGNSTACK2
-	subl	$8, %esp
-	movsd	%xmm0, (%esp)
-	call	U(floor)
-	fstpl	(%esp)
-	movsd	(%esp), %xmm0
-	movl	%ebp, %esp
-	popl	%ebp
-	ret
-.globl min_caml_int_of_float
+	std	%f0, [%i0]
+	ldd	[%i0], %o0
+	st	%o7, [%i0]
+	call	floor
+	nop
+	ld	[%i0], %o7
+	retl
+	nop
+.global min_caml_int_of_float
 min_caml_int_of_float:
-.globl min_caml_truncate
+.global min_caml_truncate
 min_caml_truncate:
-	cvttsd2si	%xmm0, %eax
-	ret
-.globl min_caml_float_of_int
+	fdtoi	%f0, %f0
+	st	%f0, [%i0]
+	ld	[%i0], %i2
+	retl
+	nop
+.global min_caml_float_of_int
 min_caml_float_of_int:
-	cvtsi2sd	%eax, %xmm0
-	ret
-.globl min_caml_cos
+	st	%i2, [%i0]
+	ld	[%i0], %f0
+	fitod	%f0, %f0
+	retl
+	nop
+.global min_caml_cos
 min_caml_cos:
-	pushl	%ebp
-	movl	%esp, %ebp
-	ALIGNSTACK2
-	subl	$8, %esp
-	movsd	%xmm0, (%esp)
-	call	U(cos)
-	fstpl	(%esp)
-	movsd	(%esp), %xmm0
-	movl	%ebp, %esp
-	popl	%ebp
-	ret
-.globl min_caml_sin
+	std	%f0, [%i0]
+	ldd	[%i0], %o0
+	st	%o7, [%i0]
+	call	cos
+	nop
+	ld	[%i0], %o7
+	retl
+	nop
+.global min_caml_sin
 min_caml_sin:
-	pushl	%ebp
-	movl	%esp, %ebp
-	ALIGNSTACK2
-	subl	$8, %esp
-	movsd	%xmm0, (%esp)
-	call	U(sin)
-	fstpl	(%esp)
-	movsd	(%esp), %xmm0
-	movl	%ebp, %esp
-	popl	%ebp
-	ret
-.globl min_caml_atan
+	std	%f0, [%i0]
+	ldd	[%i0], %o0
+	st	%o7, [%i0]
+	call	sin
+	nop
+	ld	[%i0], %o7
+	retl
+	nop
+.global min_caml_atan
 min_caml_atan:
-	pushl	%ebp
-	movl	%esp, %ebp
-	ALIGNSTACK2
-	subl	$8, %esp
-	movsd	%xmm0, (%esp)
-	call	U(atan)
-	fstpl	(%esp)
-	movsd	(%esp), %xmm0
-	movl	%ebp, %esp
-	popl	%ebp
-	ret
-.data
+	std	%f0, [%i0]
+	ldd	[%i0], %o0
+	st	%o7, [%i0]
+	call	atan
+	nop
+	ld	[%i0], %o7
+	retl
+	nop
+.section ".rodata"
 format_int:
 	.asciz	"%d"
 format_float:
 	.asciz	"%lf"
-.balign 8
+.align 8
 float_0:
 	.long	0x0
 	.long	0x0
 float_1:
-	.long	0x0
 	.long	0x3ff00000
-.balign 16
-.globl min_caml_fnegd
-min_caml_fnegd:
-	.long	0
-	.long	0x80000000
-	.long	0
-	.long	0
-.globl min_caml_hp
-min_caml_hp:	
 	.long	0x0
+	

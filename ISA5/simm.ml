@@ -1,22 +1,22 @@
 open Asm
 
 let rec g env = function (* 命令列の即値最適化 (caml2html: simm13_g) *)
-  | Ans(exp) -> Ans(g' env exp)
-  | Let((x, t), Set(i), e) ->
+  | Ans(exp, pos) -> Ans(g' env exp, pos)
+  | Let((x, t), Set(i), e, pos) ->
       (* Format.eprintf "found simm %s = %d@." x i; *)
       let e' = g (M.add x i env) e in
-      if List.mem x (fv e') then Let((x, t), Set(i), e') else
+      if List.mem x (fv e') then Let((x, t), Set(i), e', pos) else
       ((* Format.eprintf "erased redundant Set to %s@." x; *)
        e')
-  | Let(xt, exp, e) -> Let(xt, g' env exp, g env e)
+  | Let(xt, exp, e, pos) -> Let(xt, g' env exp, g env e, pos)
 and g' env = function (* 各命令の即値最適化 (caml2html: simm13_gprime) *)
   | Add(x, V(y)) when M.mem y env -> Add(x, C(M.find y env))
   | Add(x, V(y)) when M.mem x env -> Add(y, C(M.find x env))
   | Sub(x, V(y)) when M.mem y env -> Sub(x, C(M.find y env))
-  | Ld(x, V(y), i) when M.mem y env -> Ld(x, C(M.find y env), i)
-  | St(x, y, V(z), i) when M.mem z env -> St(x, y, C(M.find z env), i)
-  | LdDF(x, V(y), i) when M.mem y env -> LdDF(x, C(M.find y env), i)
-  | StDF(x, y, V(z), i) when M.mem z env -> StDF(x, y, C(M.find z env), i)
+  | Ld(x, V(y)) when M.mem y env -> Ld(x, C(M.find y env))
+  | St(x, y, V(z)) when M.mem z env -> St(x, y, C(M.find z env))
+  | LdDF(x, V(y)) when M.mem y env -> LdDF(x, C(M.find y env))
+  | StDF(x, y, V(z)) when M.mem z env -> StDF(x, y, C(M.find z env))
   | IfEq(x, V(y), e1, e2) when M.mem y env -> IfEq(x, C(M.find y env), g env e1, g env e2)
   | IfLE(x, V(y), e1, e2) when M.mem y env -> IfLE(x, C(M.find y env), g env e1, g env e2)
   | IfGE(x, V(y), e1, e2) when M.mem y env -> IfGE(x, C(M.find y env), g env e1, g env e2)
