@@ -272,7 +272,7 @@ let rec print_asm_exp oc tab_num e =
                                Printf.fprintf oc ")"
   | Asm.CallCls(x, ys, zs) -> Printf.fprintf oc "CallCls (\n"; print_tab oc (tab_num + 1); Printf.fprintf oc "%s,\n" x;
                               print_tab oc (tab_num + 1); Printf.fprintf oc "["; List.iter (Printf.fprintf oc "%s, ") ys;
-                              Printf.fprintf oc "]\n"; Printf.fprintf oc "["; List.iter (Printf.fprintf oc "%s, ") zs;
+                              Printf.fprintf oc "]\n"; print_tab oc (tab_num + 1); Printf.fprintf oc "["; List.iter (Printf.fprintf oc "%s, ") zs;
                               Printf.fprintf oc "]\n"; print_tab oc tab_num; Printf.fprintf oc ")"
   | Asm.CallDir(Id.L(x), ys, zs) -> Printf.fprintf oc "CallDir (\n"; print_tab oc (tab_num + 1); Printf.fprintf oc "Id.L (%s),\n" x;
                                     print_tab oc (tab_num + 1); Printf.fprintf oc "["; List.iter (Printf.fprintf oc "%s, ") ys;
