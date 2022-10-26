@@ -1,14 +1,34 @@
-let rec print_tab oc n = (* 問1 *)
+let rec print_list_for_type oc list =
+  match list with
+  | hd :: [] -> print_type_t oc hd
+  | hd :: tl -> (print_type_t oc hd; Printf.fprintf oc ", "; print_list_for_type oc tl)
+  | _ -> assert false
+
+and print_type_t oc ty =
+  match ty with
+  | Type.Unit  -> Printf.fprintf oc "Unit"
+  | Type.Bool  -> Printf.fprintf oc "Bool"
+  | Type.Int   -> Printf.fprintf oc "Int"
+  | Type.Float -> Printf.fprintf oc "Float"
+  | Type.Fun(ts, t) -> Printf.fprintf oc "Fun (["; print_list_for_type oc ts; Printf.fprintf oc "], "; print_type_t oc t; Printf.fprintf oc ")"
+  | Type.Tuple(ts)  -> Printf.fprintf oc "Tuple (["; print_list_for_type oc ts; Printf.fprintf oc "])"
+  | Type.Array(t)   -> Printf.fprintf oc "Array ("; print_type_t oc t; Printf.fprintf oc ")"
+  | Type.Var(t_option)     ->
+    (match !t_option with
+    | Some(t) -> Printf.fprintf oc "Var ("; print_type_t oc t; Printf.fprintf oc ")"
+    | None -> Printf.fprintf oc "Var (None)")
+
+let rec print_tab oc n =
   if n == 0 then ()
   else (Printf.fprintf oc "\t"; print_tab oc (n - 1))
 
-let rec print_list_for_parsed oc list tab_num = (* 問1 *)
+let rec print_list_for_parsed oc list tab_num =
   match list with
   | hd :: [] -> print_syntax_t oc tab_num hd
   | hd :: tl -> (print_syntax_t oc tab_num hd; Printf.fprintf oc ",\n"; print_list_for_parsed oc tl tab_num)
   | _ -> assert false
 
-and print_syntax_t oc tab_num e = (* 問1, 3 *)
+and print_syntax_t oc tab_num e =
   print_tab oc tab_num;
   match e with
   | Syntax.Unit(pos)                  -> Printf.fprintf oc "%d Unit" pos
@@ -53,11 +73,13 @@ and print_syntax_t oc tab_num e = (* 問1, 3 *)
   | Syntax.If(e1, e2, e3, pos)        -> Printf.fprintf oc "%d If (\n" pos; print_syntax_t oc (tab_num + 1) e1; Printf.fprintf oc ",\n";
                                          print_syntax_t oc (tab_num + 1) e2; Printf.fprintf oc ",\n"; print_syntax_t oc (tab_num + 1) e3;
                                          Printf.fprintf oc "\n"; print_tab oc tab_num; Printf.fprintf oc ")"
-  | Syntax.Let((x, _), e1, e2, pos)   -> Printf.fprintf oc "%d Let (\n" pos; print_tab oc (tab_num + 1); Printf.fprintf oc "%s,\n" x;
+  | Syntax.Let((x, t), e1, e2, pos)   -> Printf.fprintf oc "%d Let (\n" pos; print_tab oc (tab_num + 1); Printf.fprintf oc "(%s, " x;
+                                         print_type_t oc t; Printf.fprintf oc "),\n";
                                          print_syntax_t oc (tab_num + 1) e1; Printf.fprintf oc ",\n"; print_syntax_t oc (tab_num + 1) e2;
                                          Printf.fprintf oc "\n"; print_tab oc tab_num; Printf.fprintf oc ")"
   | Syntax.Var(x, pos)                -> Printf.fprintf oc "%d Var (%s)" pos x
-  | Syntax.LetRec({ name = (x, _); args = yts; body = e1 }, e2, pos) -> Printf.fprintf oc "%d LetRec (%s,\n" pos x;
+  | Syntax.LetRec({ name = (x, t); args = yts; body = e1 }, e2, pos) -> Printf.fprintf oc "%d LetRec ((%s, " pos x;
+                                                                        print_type_t oc t; Printf.fprintf oc "),\n";
                                                                         print_tab oc (tab_num + 1); Printf.fprintf oc "[";
                                                                         List.iter (Printf.fprintf oc "%s, ") (List.map fst yts);
                                                                         Printf.fprintf oc "],\n"; print_syntax_t oc (tab_num + 1) e1;
@@ -82,7 +104,7 @@ and print_syntax_t oc tab_num e = (* 問1, 3 *)
                                          print_syntax_t oc (tab_num + 1) e2; Printf.fprintf oc ",\n"; print_syntax_t oc (tab_num + 1) e3;
                                          Printf.fprintf oc "\n"; print_tab oc tab_num; Printf.fprintf oc ")"
 
-let rec print_knormal_t oc tab_num e = (* 問1, 3 *)
+let rec print_knormal_t oc tab_num e =
   print_tab oc tab_num;
   match e with
   | KNormal.Unit(pos)                -> Printf.fprintf oc "%d Unit" pos
@@ -106,11 +128,13 @@ let rec print_knormal_t oc tab_num e = (* 問1, 3 *)
                                         print_tab oc (tab_num + 1); Printf.fprintf oc "%s,\n" y; print_knormal_t oc (tab_num + 1) e1;
                                         Printf.fprintf oc ",\n"; print_knormal_t oc (tab_num + 1) e2; Printf.fprintf oc "\n";
                                         print_tab oc tab_num; Printf.fprintf oc ")"
-  | KNormal.Let((x, _), e1, e2, pos) -> Printf.fprintf oc "%d Let (\n" pos; print_tab oc (tab_num + 1); Printf.fprintf oc "%s,\n" x;
+  | KNormal.Let((x, t), e1, e2, pos) -> Printf.fprintf oc "%d Let (\n" pos; print_tab oc (tab_num + 1); Printf.fprintf oc "(%s, " x;
+                                        print_type_t oc t; Printf.fprintf oc "),\n";
                                         print_knormal_t oc (tab_num + 1) e1; Printf.fprintf oc ",\n"; print_knormal_t oc (tab_num + 1) e2;
                                         Printf.fprintf oc "\n"; print_tab oc tab_num; Printf.fprintf oc ")"
   | KNormal.Var(x, pos)              -> Printf.fprintf oc "%d Var (%s)" pos x
-  | KNormal.LetRec({ name = (x, _); args = yts; body = e1 }, e2, pos) -> Printf.fprintf oc "%d LetRec (%s,\n" pos x;
+  | KNormal.LetRec({ name = (x, t); args = yts; body = e1 }, e2, pos) -> Printf.fprintf oc "%d LetRec ((%s, " pos x;
+                                                                         print_type_t oc t; Printf.fprintf oc "),\n";
                                                                          print_tab oc (tab_num + 1); Printf.fprintf oc "[";
                                                                          List.iter (Printf.fprintf oc "%s, ") (List.map fst yts);
                                                                          Printf.fprintf oc "],\n"; print_knormal_t oc (tab_num + 1) e1;
@@ -157,13 +181,15 @@ let rec print_closure_t oc tab_num e =
                                        print_tab oc (tab_num + 1); Printf.fprintf oc "%s,\n" y; print_closure_t oc (tab_num + 1) e1;
                                        Printf.fprintf oc ",\n"; print_closure_t oc (tab_num + 1) e2; Printf.fprintf oc "\n";
                                        print_tab oc tab_num; Printf.fprintf oc ")"
-  | Closure.Let((x, _), e1, e2, pos) -> Printf.fprintf oc "%d Let (\n" pos; print_tab oc (tab_num + 1); Printf.fprintf oc "%s,\n" x;
+  | Closure.Let((x, t), e1, e2, pos) -> Printf.fprintf oc "%d Let (\n" pos; print_tab oc (tab_num + 1); Printf.fprintf oc "(%s, " x;
+                                        print_type_t oc t; Printf.fprintf oc "),\n";
                                         print_closure_t oc (tab_num + 1) e1; Printf.fprintf oc ",\n";
                                         print_closure_t oc (tab_num + 1) e2; Printf.fprintf oc "\n"; print_tab oc tab_num;
                                         Printf.fprintf oc ")"
   | Closure.Var(x, pos)              -> Printf.fprintf oc "%d Var (%s)" pos x
-  | Closure.MakeCls((x, _), { Closure.entry = Id.L(l); Closure.actual_fv = ys }, e2, pos) ->
-      Printf.fprintf oc "%d MakeCls (\n" pos; print_tab oc (tab_num + 1); Printf.fprintf oc "%s,\n" x; print_tab oc (tab_num + 1);
+  | Closure.MakeCls((x, t), { Closure.entry = Id.L(l); Closure.actual_fv = ys }, e2, pos) ->
+      Printf.fprintf oc "%d MakeCls (\n" pos; print_tab oc (tab_num + 1); Printf.fprintf oc "(%s, " x;
+      print_type_t oc t; Printf.fprintf oc "),\n"; print_tab oc (tab_num + 1);
       Printf.fprintf oc "%s,\n" l; print_tab oc (tab_num + 1); Printf.fprintf oc "["; List.iter (Printf.fprintf oc "%s, ") ys;
       Printf.fprintf oc "],\n"; print_closure_t oc (tab_num + 1) e2; Printf.fprintf oc ",\n"; print_tab oc tab_num; Printf.fprintf oc ")"
   | Closure.AppCls(x, ys, pos)       -> Printf.fprintf oc "%d AppCls (\n" pos; print_tab oc (tab_num + 1); Printf.fprintf oc "%s,\n" x;
@@ -184,11 +210,11 @@ let rec print_closure_t oc tab_num e =
   | Closure.Put(x, y, z, pos) -> Printf.fprintf oc "%d Put (%s, %s, %s)" pos x y z
   | Closure.ExtArray(Id.L(x), pos) -> Printf.fprintf oc "%d ExtArray (Id.L (%s))" pos x
 
-let print_closure_fundef oc tab_num ({ Closure.name = (Id.L(x), _); Closure.args = yts; Closure.formal_fv = zts;
+let print_closure_fundef oc tab_num ({ Closure.name = (Id.L(x), t); Closure.args = yts; Closure.formal_fv = zts;
                                        Closure.body = e }) =
   print_tab oc tab_num;
   Printf.fprintf oc "fundef (\n";
-  print_tab oc (tab_num + 1); Printf.fprintf oc "name: %s\n" x;
+  print_tab oc (tab_num + 1); Printf.fprintf oc "name: (%s, " x; print_type_t oc t; Printf.fprintf oc ")\n";
   print_tab oc (tab_num + 1); Printf.fprintf oc "args: "; List.iter (Printf.fprintf oc "%s, ") (List.map fst yts); Printf.fprintf oc "\n";
   print_tab oc (tab_num + 1); Printf.fprintf oc "formal_fv: "; List.iter (Printf.fprintf oc "%s, ") (List.map fst zts);
   Printf.fprintf oc "\n";

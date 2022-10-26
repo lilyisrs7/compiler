@@ -154,11 +154,13 @@ let h { Closure.name = (Id.L(x), t); Closure.args = yts; Closure.formal_fv = zts
       (fun z offset load -> fletd(z, LdDF(x, C(offset)), load))
       (fun z t offset load ->
         match e with
-        | Closure.Unit(pos) | Closure.Int(_, pos) | Closure.Float(_, pos) | Neg(_, pos) | Add(_, _, pos) | Sub(_, _, pos)
-        | Mul(_, _, pos) | Div(_, _, pos) | FNeg(_, pos) | FAdd(_, _, pos) | FSub(_, _, pos) | FMul(_, _, pos) | FDiv(_, _, pos)
-        | IfEq(_, _, _, _, pos)| IfLE(_, _, _, _, pos) | Let(_, _, _, pos) | Var(_, pos)
-        | MakeCls(_, _, _, pos) | AppCls(_, _, pos) | AppDir(_, _, pos) | Tuple(_, pos) | LetTuple(_, _, _, pos)
-        | Get(_, _, pos) | Put(_, _, _, pos) | ExtArray(_, pos) -> Let((z, t), Ld(x, C(offset)), load, pos)) in
+        | Closure.Unit(pos) | Closure.Int(_, pos) | Closure.Float(_, pos)
+        | Closure.Neg(_, pos) | Closure.Add(_, _, pos) | Closure.Sub(_, _, pos) | Closure.Mul(_, _, pos) | Closure.Div(_, _, pos)
+        | Closure.FNeg(_, pos) | Closure.FAdd(_, _, pos) | Closure.FSub(_, _, pos) | Closure.FMul(_, _, pos) | Closure.FDiv(_, _, pos)
+        | Closure.IfEq(_, _, _, _, pos)| Closure.IfLE(_, _, _, _, pos) | Closure.Let(_, _, _, pos) | Closure.Var(_, pos)
+        | Closure.MakeCls(_, _, _, pos) | Closure.AppCls(_, _, pos) | Closure.AppDir(_, _, pos)
+        | Closure.Tuple(_, pos) | Closure.LetTuple(_, _, _, pos) | Closure.Get(_, _, pos) | Closure.Put(_, _, _, pos)
+        | Closure.ExtArray(_, pos) -> Let((z, t), Ld(x, C(offset)), load, pos)) in
   match t with
   | Type.Fun(_, t2) ->
       { name = Id.L(x); args = int; fargs = float; body = load; ret = t2 }
