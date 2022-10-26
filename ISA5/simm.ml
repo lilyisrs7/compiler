@@ -12,13 +12,13 @@ let rec g env = function (* 命令列の即値最適化 (caml2html: simm13_g) *)
 and g' env = function (* 各命令の即値最適化 (caml2html: simm13_gprime) *)
   | Add(x, V(y)) when M.mem y env -> Add(x, C(M.find y env))
   | Add(x, V(y)) when M.mem x env -> Add(y, C(M.find x env))
-  | Ld(x, V(y)) when M.mem y env -> Ld(x, C(M.find y env))
+  | Ld(x, V(y)) when M.mem y env -> Ld(x, C(M.find y env * 4)) (*ここで4かける？*)
   | Ld(x, V(y)) -> assert false
-  | St(x, y, V(z)) when M.mem z env -> St(x, y, C(M.find z env))
+  | St(x, y, V(z)) when M.mem z env -> St(x, y, C(M.find z env * 4))
   | St(x, y, V(z)) -> assert false
-  | LdDF(x, V(y)) when M.mem y env -> LdDF(x, C(M.find y env))
+  | LdDF(x, V(y)) when M.mem y env -> LdDF(x, C(M.find y env * 8))
   | LdDF(x, V(y)) -> assert false
-  | StDF(x, y, V(z)) when M.mem z env -> StDF(x, y, C(M.find z env))
+  | StDF(x, y, V(z)) when M.mem z env -> StDF(x, y, C(M.find z env * 8))
   | StDF(x, y, V(z)) -> assert false
   | IfEq(x, y, e1, e2) -> IfEq(x, y, g env e1, g env e2)
   | IfLE(x, y, e1, e2) -> IfLE(x, y, g env e1, g env e2)
