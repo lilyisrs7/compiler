@@ -50,7 +50,7 @@ let seq(e1, e2) =
   | Let(_, _, _, pos) -> Let((Id.gentmp Type.Unit, Type.Unit), e1, e2, pos)
 
 let regs = (* Array.init 16 (fun i -> Printf.sprintf "%%r%d" i) *)
-  [| "x3"; "x4"; "x5"; "x6"; "x7"; "x8"; "x9"; "x10"; "x11"; "x12"; "x13"; "x14"; "x15"; "x16"; "x17";
+  [| "x4"; "x5"; "x6"; "x7"; "x8"; "x9"; "x10"; "x11"; "x12"; "x13"; "x14"; "x15"; "x16"; "x17";
      "x18"; "x19"; "x20"; "x21"; "x22"; "x23"; "x24"; "x25"; "x26"; "x27"; "x28"; "x29"; "x30"; "x31" |]
 let fregs = Array.init 32 (fun i -> Printf.sprintf "f%d" i)
 let allregs = Array.to_list regs
@@ -59,10 +59,10 @@ let reg_cl = regs.(Array.length regs - 2) (* closure address (caml2html: sparcas
 let reg_sw = regs.(Array.length regs - 1) (* temporary for swap *)
 let reg_fsw = fregs.(Array.length fregs - 1) (* temporary for swap *)
 let reg_sp = "x2" (* stack pointer *)
-let reg_hp = "" (* heap pointer (caml2html: sparcasm_reghp) *) (*?*)
+let reg_hp = "x3" (* heap pointer (caml2html: sparcasm_reghp) *) (*?*)
 let reg_ra = "x1" (* return address *)
 let reg_zero = "x0"
-let is_reg x = (x.[0] = 'x' || x.[0] = 'f')
+let is_reg x = (((x.[0] = 'x') || (x.[0] = 'f')) && (x.[1] <> '.'))
 
 let co_freg_table =
   let ht = Hashtbl.create 16 in
