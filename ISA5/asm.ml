@@ -62,7 +62,7 @@ let reg_sp = "x2" (* stack pointer *)
 let reg_hp = "x3" (* heap pointer (caml2html: sparcasm_reghp) *) (*?*)
 let reg_ra = "x1" (* return address *)
 let reg_zero = "x0"
-let is_reg x = (((x.[0] = 'x') || (x.[0] = 'f')) && (x.[1] <> '.'))
+let is_reg x = (((x.[0] = 'x') || (x.[0] = 'f')) && (Bool.not (String.contains x '.')))
 
 let co_freg_table =
   let ht = Hashtbl.create 16 in
