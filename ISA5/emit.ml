@@ -157,7 +157,7 @@ and g' oc pos = function (* 各命令のアセンブリ生成 (caml2html: emit_gprime) *)
       Printf.fprintf oc "\tjalr\t%s, %s, 0\t# %d\n" reg_zero reg_sw pos;
   | Tail, CallDir(Id.L(x), ys, zs) -> (* 末尾呼び出し *)
       g'_args oc [] ys zs;
-      Printf.fprintf oc "\tjalr\t%s, %s, 0\t# %d\n" reg_zero x pos;
+      Printf.fprintf oc "\tjal\t%s, %s\t# %d\n" reg_zero x pos;
   | NonTail(a), CallCls(x, ys, zs) ->
       g'_args oc [(x, reg_cl)] ys zs;
       let ss = stacksize () in
@@ -281,6 +281,7 @@ let f oc (Prog(data, fundefs, e)) =
   Format.eprintf "generating assembly...@.";
   (*Printf.fprintf oc ".section\t\".rodata\"\n";
   Printf.fprintf oc ".align\t8\n";*)
+  (*Printf.fprintf oc "\tjalr x0, min_caml_start, 0\n";*)
   List.iter
     (fun (Id.L(x), d) ->
       Printf.fprintf oc "%s:\t! %f\n" x d;
@@ -289,13 +290,13 @@ let f oc (Prog(data, fundefs, e)) =
     data;
   (*Printf.fprintf oc ".section\t\".text\"\n";*)
   List.iter (fun fundef -> h oc fundef) fundefs;
-  Printf.fprintf oc ".globl\tmin_caml_start\n";
+  (*Printf.fprintf oc ".globl\tmin_caml_start\n";*)
   Printf.fprintf oc "min_caml_start:\n";
   Printf.fprintf oc "\taddi\t%s, %s, -112\n" reg_sp reg_sp;(*Printf.fprintf oc "\tsave\tsp, -112, sp\n";*) (* from gcc; why 112? *)
   stackset := S.empty;
   stackmap := [];
   g oc (NonTail(regs.(0)), e);
   Printf.fprintf oc "\taddi\t%s, %s, 112\n" reg_sp reg_sp;
-  Printf.fprintf oc "\tjalr\tx0, x1, 0\n"
+  Printf.fprintf oc "\tjalr\t%s, %s, 0\n" reg_zero reg_ra
   (*Printf.fprintf oc "\tret\n";
     Printf.fprintf oc "\trestore\n"*)
