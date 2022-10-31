@@ -177,15 +177,17 @@ and g' oc pos = function (* 各命令のアセンブリ生成 (caml2html: emit_gprime) *)
         (Printf.fprintf oc "\tfmovs\t%s, %s\n" fregs.(0) a;
          Printf.fprintf oc "\tfmovs\t%s, %s\n" (co_freg fregs.(0)) (co_freg a))*)
       Printf.fprintf oc "\tsw\t\t%s, %d(%s)\n" reg_ra (ss - 4) reg_sp;
+      Printf.fprintf oc "\taddi\t%s, %s, %d\t\n" reg_sp reg_sp ss;
       Printf.fprintf oc "\tlw\t\t%s, 0(%s)\n" reg_sw reg_cl;
       Printf.fprintf oc "\tjalr\tx0, %s, 0\n" reg_sw;
       (*Printf.fprintf oc "\taddi\t%s, %s, %d\t\n" reg_sp reg_sp ss;
       Printf.fprintf oc "\tsub\t\t%s, x0, %s\t# %d\n" reg_sp reg_sp pos;
       Printf.fprintf oc "\taddi\t%s, %s, %d\t# %d\n" reg_sp reg_sp ss pos;
       Printf.fprintf oc "\tsub\t\t%s, x0, %s\t# %d\n" reg_sp reg_sp pos;*)
+      Printf.fprintf oc "\taddi\t%s, %s, %d\t\n" reg_sp reg_sp (-ss);
       Printf.fprintf oc "\tlw\t\t%s, %d(%s)\n" reg_ra (ss - 4) reg_sp;
-      if a <> reg_rv then
-        Printf.fprintf oc "\taddi\t%s, %s, 0\t# %d\n" reg_ra a pos;
+      (*if a <> reg_rv then
+        Printf.fprintf oc "\taddi\t%s, %s, 0\t# %d\n" reg_rv a pos;*)
       if List.mem a allregs && a <> regs.(0) then
         Printf.fprintf oc "\taddi\t%s, %s, 0\t# %d\n" a regs.(0) pos
       else if List.mem a allfregs && a <> fregs.(0) then
@@ -205,14 +207,15 @@ and g' oc pos = function (* 各命令のアセンブリ生成 (caml2html: emit_gprime) *)
         (Printf.fprintf oc "\tfmovs\t%s, %s\n" fregs.(0) a;
          Printf.fprintf oc "\tfmovs\t%s, %s\n" (co_freg fregs.(0)) (co_freg a))*)
       Printf.fprintf oc "\tsw\t\t%s, %d(%s)\n" reg_ra (ss - 4) reg_sp;
+      Printf.fprintf oc "\taddi\t%s, %s, %d\t\n" reg_sp reg_sp ss;
       Printf.fprintf oc "\tjal\t\t%s, %s\n" reg_ra x;
-      (*Printf.fprintf oc "\taddi\t%s, %s, %d\t\n" reg_sp reg_sp ss;
-      Printf.fprintf oc "\tsub\t\t%s, x0, %s\t# %d\n" reg_sp reg_sp pos;
+      (*Printf.fprintf oc "\tsub\t\t%s, x0, %s\t# %d\n" reg_sp reg_sp pos;
       Printf.fprintf oc "\taddi\t%s, %s, %d\t# %d\n" reg_sp reg_sp ss pos;
       Printf.fprintf oc "\tsub\t\t%s, x0, %s\t# %d\n" reg_sp reg_sp pos;*)
+      Printf.fprintf oc "\taddi\t%s, %s, %d\t\n" reg_sp reg_sp (-ss);
       Printf.fprintf oc "\tlw\t\t%s, %d(%s)\n" reg_ra (ss - 4) reg_sp;
-      if a <> reg_rv then
-        Printf.fprintf oc "\taddi\t%s, %s, 0\t# %d\n" reg_rv a pos;
+      (*if a <> reg_rv then
+        Printf.fprintf oc "\taddi\t%s, %s, 0\t# %d\n" reg_rv a pos;*)
       if List.mem a allregs && a <> regs.(0) then
         Printf.fprintf oc "\taddi\t%s, %s, 0\t# %d\n" a regs.(0) pos
       else if List.mem a allfregs && a <> fregs.(0) then
@@ -304,6 +307,7 @@ let f oc (Prog(data, fundefs, e)) =
   stackset := S.empty;
   stackmap := [];
   g oc (NonTail(regs.(0)), e);
+  Printf.fprintf oc "\taddi\t%s, %s, 0\n" reg_rv regs.(0);
   Printf.fprintf oc "\taddi\t%s, %s, 112\n" reg_sp reg_sp;
   (*Printf.fprintf oc "\tjalr\t%s, %s, 0\n" reg_zero reg_ra*)
   (*Printf.fprintf oc "\tret\n";
