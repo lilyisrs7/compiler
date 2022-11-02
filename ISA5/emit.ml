@@ -103,15 +103,15 @@ and g' oc pos = function (* 各命令のアセンブリ生成 (caml2html: emit_gprime) *)
       g' oc pos (NonTail(Id.gentmp Type.Unit), exp);
       Printf.fprintf oc "\tjalr\t%s, %s, 0\n" reg_zero reg_ra;
   | Tail, (Set _ | SetL _ | Mov _ | Neg _ | Add _ | Sub _ | Mul _ | Div _ | Ld _ as exp) ->
-      g' oc pos (NonTail(regs.(0)), exp);
+      g' oc pos (NonTail(reg_rv), exp);
       Printf.fprintf oc "\tjalr\t%s, %s, 0\n" reg_zero reg_ra;
   | Tail, (FMovD _ | FNegD _ | FAddD _ | FSubD _ | FMulD _ | FDivD _ | LdDF _  as exp) ->
-      g' oc pos (NonTail(fregs.(0)), exp);
+      g' oc pos (NonTail(reg_frv), exp);
       Printf.fprintf oc "\tjalr\t%s, %s, 0\n" reg_zero reg_ra;
   | Tail, (Restore(x) as exp) ->
       (match locate x with
-      | [i] -> g' oc pos (NonTail(regs.(0)), exp)
-      | [i; j] when i + 1 = j -> g' oc pos (NonTail(fregs.(0)), exp)
+      | [i] -> g' oc pos (NonTail(reg_rv), exp)
+      | [i; j] when i + 1 = j -> g' oc pos (NonTail(reg_frv), exp)
       | _ -> assert false);
       Printf.fprintf oc "\tjalr\t%s, %s, 0\n" reg_zero reg_ra;
   | Tail, IfEq(x, y, e1, e2) ->
@@ -180,18 +180,12 @@ and g' oc pos = function (* 各命令のアセンブリ生成 (caml2html: emit_gprime) *)
       Printf.fprintf oc "\taddi\t%s, %s, %d\t\n" reg_sp reg_sp ss;
       Printf.fprintf oc "\tlw\t\t%s, 0(%s)\n" reg_sw reg_cl;
       Printf.fprintf oc "\tjalr\tx0, %s, 0\n" reg_sw;
-      (*Printf.fprintf oc "\taddi\t%s, %s, %d\t\n" reg_sp reg_sp ss;
-      Printf.fprintf oc "\tsub\t\t%s, x0, %s\t# %d\n" reg_sp reg_sp pos;
-      Printf.fprintf oc "\taddi\t%s, %s, %d\t# %d\n" reg_sp reg_sp ss pos;
-      Printf.fprintf oc "\tsub\t\t%s, x0, %s\t# %d\n" reg_sp reg_sp pos;*)
       Printf.fprintf oc "\taddi\t%s, %s, %d\t\n" reg_sp reg_sp (-ss);
       Printf.fprintf oc "\tlw\t\t%s, %d(%s)\n" reg_ra (ss - 4) reg_sp;
-      (*if a <> reg_rv then
-        Printf.fprintf oc "\taddi\t%s, %s, 0\t# %d\n" reg_rv a pos;*)
-      if List.mem a allregs && a <> regs.(0) then
-        Printf.fprintf oc "\taddi\t%s, %s, 0\t# %d\n" a regs.(0) pos
-      else if List.mem a allfregs && a <> fregs.(0) then
-        (Printf.fprintf oc "\taddi\t%s, %s, 0\t# %d\n" a fregs.(0) pos; (* fなのでaddiは無理 *)
+      if List.mem a allregs && a <> reg_rv then
+        Printf.fprintf oc "\taddi\t%s, %s, 0\t# %d\n" a reg_rv pos
+      else if List.mem a allfregs && a <> reg_frv then
+        (Printf.fprintf oc "\taddi\t%s, %s, 0\t# %d\n" a reg_frv pos; (* fなのでaddiは無理 *)
         (*Printf.fprintf oc "\tfmovs\t%s, %s\n" (co_freg fregs.(0)) (co_freg a)*))
   | NonTail(a), CallDir(Id.L(x), ys, zs) ->
       g'_args oc [] ys zs;
@@ -209,17 +203,12 @@ and g' oc pos = function (* 各命令のアセンブリ生成 (caml2html: emit_gprime) *)
       Printf.fprintf oc "\tsw\t\t%s, %d(%s)\n" reg_ra (ss - 4) reg_sp;
       Printf.fprintf oc "\taddi\t%s, %s, %d\t\n" reg_sp reg_sp ss;
       Printf.fprintf oc "\tjal\t\t%s, %s\n" reg_ra x;
-      (*Printf.fprintf oc "\tsub\t\t%s, x0, %s\t# %d\n" reg_sp reg_sp pos;
-      Printf.fprintf oc "\taddi\t%s, %s, %d\t# %d\n" reg_sp reg_sp ss pos;
-      Printf.fprintf oc "\tsub\t\t%s, x0, %s\t# %d\n" reg_sp reg_sp pos;*)
       Printf.fprintf oc "\taddi\t%s, %s, %d\t\n" reg_sp reg_sp (-ss);
       Printf.fprintf oc "\tlw\t\t%s, %d(%s)\n" reg_ra (ss - 4) reg_sp;
-      (*if a <> reg_rv then
-        Printf.fprintf oc "\taddi\t%s, %s, 0\t# %d\n" reg_rv a pos;*)
-      if List.mem a allregs && a <> regs.(0) then
-        Printf.fprintf oc "\taddi\t%s, %s, 0\t# %d\n" a regs.(0) pos
-      else if List.mem a allfregs && a <> fregs.(0) then
-        (Printf.fprintf oc "\taddi\t%s, %s, 0\t# %d\n" a fregs.(0) pos; (* fなのでaddiは無理 *)
+      if List.mem a allregs && a <> reg_rv then
+        Printf.fprintf oc "\taddi\t%s, %s, 0\t# %d\n" a reg_rv pos
+      else if List.mem a allfregs && a <> reg_frv then
+        (Printf.fprintf oc "\taddi\t%s, %s, 0\t# %d\n" a reg_frv pos; (* fなのでaddiは無理 *)
         (*Printf.fprintf oc "\tfmovs\t%s, %s\n" (co_freg fregs.(0)) (co_freg a)*))
 and g'_tail_if oc x y e1 e2 b pos =
   (*let b_else = Id.genid (b ^ "_else") in
@@ -292,7 +281,7 @@ let f oc (Prog(data, fundefs, e)) =
   Format.eprintf "generating assembly...@.";
   (*Printf.fprintf oc ".section\t\".rodata\"\n";
   Printf.fprintf oc ".align\t8\n";*)
-  (*Printf.fprintf oc "\tjal\t\t%s, min_caml_start\n" reg_zero;*)
+  Printf.fprintf oc "\tjal\t\t%s, min_caml_start\n" reg_zero;
   List.iter
     (fun (Id.L(x), d) ->
       Printf.fprintf oc "%s:\t! %f\n" x d;
@@ -306,8 +295,7 @@ let f oc (Prog(data, fundefs, e)) =
   Printf.fprintf oc "\taddi\t%s, %s, -112\n" reg_sp reg_sp;(*Printf.fprintf oc "\tsave\tsp, -112, sp\n";*) (* from gcc; why 112? *)
   stackset := S.empty;
   stackmap := [];
-  g oc (NonTail(regs.(0)), e);
-  Printf.fprintf oc "\taddi\t%s, %s, 0\n" reg_rv regs.(0);
+  g oc (NonTail(reg_rv), e);
   Printf.fprintf oc "\taddi\t%s, %s, 112\n" reg_sp reg_sp;
   (*Printf.fprintf oc "\tjalr\t%s, %s, 0\n" reg_zero reg_ra*)
   (*Printf.fprintf oc "\tret\n";
