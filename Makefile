@@ -28,23 +28,31 @@ simm.mli simm.ml regAlloc.mli regAlloc.ml emit.mli emit.ml \
 printType.ml main.mli main.ml
 
 # ↓テストプログラムが増えたら、これも増やす
-TESTS = fib2 print sum-tail gcd sum fib ack even-odd \
+TESTS = print sum-tail gcd sum fib ack even-odd \
 adder funcomp cls-rec cls-bug cls-bug2 cls-reg-bug \
 shuffle spill spill2 spill3 join-stack join-stack2 join-stack3 \
 join-reg join-reg2 non-tail-if non-tail-if2 \
 inprod inprod-rec inprod-loop matmul matmul-flat \
-manyargs
+manyargs fiszero fib2 ack2 adder2
 
 do_test: $(TESTS:%=test/%.s) # do_test: $(TESTS:%=test/%.cmp)
 
 .PRECIOUS: test/%.s test/% test/%.res test/%.ans test/%.cmp test/%.parsed test/%.normalized test/%.alpha test/%.iterated \
-test/%.closure test/%.virtual test/%.simm test/%.regalloc
+test/%.closure test/%.virtual test/%.simm test/%.regalloc test/%main.ml test/%main.s test/%main test/%main.res test/%main.ans test/%main.cmp \
+test/%main.parsed test/%main.normalized test/%main.alpha test/%main.iterated test/%main.closure test/%main.virtual test/%main.simm \
+test/%main.regalloc
 TRASH = $(TESTS:%=test/%.s) $(TESTS:%=test/%) $(TESTS:%=test/%.res) $(TESTS:%=test/%.ans) $(TESTS:%=test/%.cmp) \
 $(TESTS:%=test/%.parsed) $(TESTS:%=test/%.normalized) $(TESTS:%=test/%.alpha) $(TESTS:%=test/%.iterated) $(TESTS:%=test/%.closure) \
-$(TESTS:%=test/%.virtual) $(TESTS:%=test/%.simm) $(TESTS:%=test/%.regalloc)
+$(TESTS:%=test/%.virtual) $(TESTS:%=test/%.simm) $(TESTS:%=test/%.regalloc) $(TESTS:%=test/%main.ml) $(TESTS:%=test/%main.s) \
+$(TESTS:%=test/%main) $(TESTS:%=test/%main.res) $(TESTS:%=test/%main.ans) $(TESTS:%=test/%main.cmp) $(TESTS:%=test/%main.parsed) \
+$(TESTS:%=test/%main.normalized) $(TESTS:%=test/%main.alpha) $(TESTS:%=test/%main.iterated) $(TESTS:%=test/%main.closure) \
+$(TESTS:%=test/%main.virtual) $(TESTS:%=test/%main.simm) $(TESTS:%=test/%main.regalloc)
 
-test/%.s: $(RESULT) test/%.ml
-	./$(RESULT) test/$*
+test/%main.ml: library.ml test/%.ml
+	cat library.ml >> $@
+	cat test/$*.ml >> $@
+test/%.s: $(RESULT) test/%main.ml
+	./$(RESULT) test/$*main
 test/%: test/%.s libmincaml.S stub.c
 	$(CC) $(CFLAGS) -m32 $^ -lm -o $@
 test/%.res: test/%
