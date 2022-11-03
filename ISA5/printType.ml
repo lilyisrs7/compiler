@@ -1,8 +1,8 @@
 let rec print_list_for_type oc list =
   match list with
+  | [] -> ()
   | hd :: [] -> print_type_t oc hd
   | hd :: tl -> (print_type_t oc hd; Printf.fprintf oc ", "; print_list_for_type oc tl)
-  | _ -> assert false
 
 and print_type_t oc ty =
   match ty with
@@ -202,8 +202,9 @@ let rec print_closure_t oc tab_num e =
   | Closure.Tuple(xs, pos)           -> Printf.fprintf oc "%d Tuple (\n" pos; print_tab oc (tab_num + 1);
                                         List.iter (Printf.fprintf oc "%s, ") xs; Printf.fprintf oc "\n"; print_tab oc tab_num;
                                         Printf.fprintf oc ")"
-  | Closure.LetTuple(xts, y, e1, pos) -> Printf.fprintf oc "%d LetTuple (\n" pos; print_tab oc (tab_num + 1); Printf.fprintf oc "(";
-                                        List.iter (Printf.fprintf oc "%s, ") (List.map fst xts); Printf.fprintf oc "),\n";
+  | Closure.LetTuple(xts, y, e1, pos) -> Printf.fprintf oc "%d LetTuple (\n" pos; print_tab oc (tab_num + 1); Printf.fprintf oc "([";
+                                        List.iter (Printf.fprintf oc "%s, ") (List.map fst xts); Printf.fprintf oc "], [";
+                                        print_list_for_type oc (List.map snd xts); Printf.fprintf oc "]),\n";
                                         print_tab oc (tab_num + 1); Printf.fprintf oc "%s,\n" y; print_closure_t oc (tab_num + 1) e1;
                                         Printf.fprintf oc "\n"; print_tab oc tab_num; Printf.fprintf oc ")"
   | Closure.Get(x, y, pos)    -> Printf.fprintf oc "%d Get (%s, %s)" pos x y
@@ -215,9 +216,10 @@ let print_closure_fundef oc tab_num ({ Closure.name = (Id.L(x), t); Closure.args
   print_tab oc tab_num;
   Printf.fprintf oc "fundef (\n";
   print_tab oc (tab_num + 1); Printf.fprintf oc "name: (%s, " x; print_type_t oc t; Printf.fprintf oc ")\n";
-  print_tab oc (tab_num + 1); Printf.fprintf oc "args: "; List.iter (Printf.fprintf oc "%s, ") (List.map fst yts); Printf.fprintf oc "\n";
-  print_tab oc (tab_num + 1); Printf.fprintf oc "formal_fv: "; List.iter (Printf.fprintf oc "%s, ") (List.map fst zts);
-  Printf.fprintf oc "\n";
+  print_tab oc (tab_num + 1); Printf.fprintf oc "args: ["; List.iter (Printf.fprintf oc "%s, ") (List.map fst yts);
+  Printf.fprintf oc "], ["; print_list_for_type oc (List.map snd yts); Printf.fprintf oc "]\n";
+  print_tab oc (tab_num + 1); Printf.fprintf oc "formal_fv: ["; List.iter (Printf.fprintf oc "%s, ") (List.map fst zts);
+  Printf.fprintf oc "], ["; print_list_for_type oc (List.map snd zts); Printf.fprintf oc "]\n";
   print_tab oc (tab_num + 1); Printf.fprintf oc "body:\n";
   print_closure_t oc (tab_num + 1) e; Printf.fprintf oc "\n"; print_tab oc tab_num; Printf.fprintf oc ")\n"
 
