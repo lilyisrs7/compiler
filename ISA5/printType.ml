@@ -80,9 +80,11 @@ and print_syntax_t oc tab_num e =
   | Syntax.Var(x, pos)                -> Printf.fprintf oc "%d Var (%s)" pos x
   | Syntax.LetRec({ name = (x, t); args = yts; body = e1 }, e2, pos) -> Printf.fprintf oc "%d LetRec ((%s, " pos x;
                                                                         print_type_t oc t; Printf.fprintf oc "),\n";
-                                                                        print_tab oc (tab_num + 1); Printf.fprintf oc "[";
+                                                                        print_tab oc (tab_num + 1); Printf.fprintf oc "[[";
                                                                         List.iter (Printf.fprintf oc "%s, ") (List.map fst yts);
-                                                                        Printf.fprintf oc "],\n"; print_syntax_t oc (tab_num + 1) e1;
+                                                                        Printf.fprintf oc "], [";
+                                                                        print_list_for_type oc (List.map snd yts);
+                                                                        Printf.fprintf oc "]],\n"; print_syntax_t oc (tab_num + 1) e1;
                                                                         Printf.fprintf oc ",\n"; print_syntax_t oc (tab_num + 1) e2;
                                                                         Printf.fprintf oc "\n"; print_tab oc tab_num;
                                                                         Printf.fprintf oc ")"
@@ -92,8 +94,9 @@ and print_syntax_t oc tab_num e =
                                          print_tab oc tab_num; Printf.fprintf oc ")"
   | Syntax.Tuple(es, pos)             -> Printf.fprintf oc "%d Tuple (\n" pos; print_list_for_parsed oc es (tab_num + 1);
                                          Printf.fprintf oc "\n"; print_tab oc tab_num; Printf.fprintf oc ")"
-  | Syntax.LetTuple(xts, e1, e2, pos) -> Printf.fprintf oc "%d LetTuple (\n" pos; print_tab oc (tab_num + 1); Printf.fprintf oc "(";
-                                         List.iter (Printf.fprintf oc "%s, ") (List.map fst xts); Printf.fprintf oc "),\n";
+  | Syntax.LetTuple(xts, e1, e2, pos) -> Printf.fprintf oc "%d LetTuple (\n" pos; print_tab oc (tab_num + 1); Printf.fprintf oc "([";
+                                         List.iter (Printf.fprintf oc "%s, ") (List.map fst xts); Printf.fprintf oc "], [";
+                                         print_list_for_type oc (List.map snd xts); Printf.fprintf oc "]),\n";
                                          print_syntax_t oc (tab_num + 1) e1; Printf.fprintf oc ",\n"; print_syntax_t oc (tab_num + 1) e2;
                                          Printf.fprintf oc "\n"; print_tab oc tab_num; Printf.fprintf oc ")"
   | Syntax.Array(e1, e2, pos)         -> Printf.fprintf oc "%d Array (\n" pos; print_syntax_t oc (tab_num + 1) e1; Printf.fprintf oc ",\n";
@@ -135,9 +138,11 @@ let rec print_knormal_t oc tab_num e =
   | KNormal.Var(x, pos)              -> Printf.fprintf oc "%d Var (%s)" pos x
   | KNormal.LetRec({ name = (x, t); args = yts; body = e1 }, e2, pos) -> Printf.fprintf oc "%d LetRec ((%s, " pos x;
                                                                          print_type_t oc t; Printf.fprintf oc "),\n";
-                                                                         print_tab oc (tab_num + 1); Printf.fprintf oc "[";
+                                                                         print_tab oc (tab_num + 1); Printf.fprintf oc "[[";
                                                                          List.iter (Printf.fprintf oc "%s, ") (List.map fst yts);
-                                                                         Printf.fprintf oc "],\n"; print_knormal_t oc (tab_num + 1) e1;
+                                                                         Printf.fprintf oc "], [";
+                                                                         print_list_for_type oc (List.map snd yts);
+                                                                         Printf.fprintf oc "]],\n"; print_knormal_t oc (tab_num + 1) e1;
                                                                          Printf.fprintf oc ",\n"; print_knormal_t oc (tab_num + 1) e2;
                                                                          Printf.fprintf oc "\n"; print_tab oc tab_num;
                                                                          Printf.fprintf oc ")"
@@ -146,8 +151,9 @@ let rec print_knormal_t oc tab_num e =
                                          Printf.fprintf oc "]\n"; print_tab oc tab_num; Printf.fprintf oc ")"
   | KNormal.Tuple(xs, pos)            -> Printf.fprintf oc "%d Tuple (\n" pos; print_tab oc (tab_num + 1); List.iter (Printf.fprintf oc "%s, ") xs;
                                          Printf.fprintf oc "\n"; print_tab oc tab_num; Printf.fprintf oc ")"
-  | KNormal.LetTuple(xts, y, e1, pos) -> Printf.fprintf oc "%d LetTuple (\n" pos; print_tab oc (tab_num + 1); Printf.fprintf oc "(";
-                                         List.iter (Printf.fprintf oc "%s, ") (List.map fst xts); Printf.fprintf oc "),\n";
+  | KNormal.LetTuple(xts, y, e1, pos) -> Printf.fprintf oc "%d LetTuple (\n" pos; print_tab oc (tab_num + 1); Printf.fprintf oc "([";
+                                         List.iter (Printf.fprintf oc "%s, ") (List.map fst xts); Printf.fprintf oc "], [";
+                                         print_list_for_type oc (List.map snd xts); Printf.fprintf oc "]),\n";
                                          print_tab oc (tab_num + 1); Printf.fprintf oc "%s,\n" y; print_knormal_t oc (tab_num + 1) e1;
                                          Printf.fprintf oc "\n"; print_tab oc tab_num; Printf.fprintf oc ")"
   | KNormal.Get(x, y, pos)            -> Printf.fprintf oc "%d Get (%s, %s)" pos x y
