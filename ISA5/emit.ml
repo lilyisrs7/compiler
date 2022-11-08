@@ -280,8 +280,8 @@ let h oc { name = Id.L(x); args = _; fargs = _; body = e; ret = _ } =
 
 let f oc (Prog(data, fundefs, e)) =
   Format.eprintf "generating assembly...@.";
-  Printf.fprintf oc ".section\t\".data\"\n";
-  Printf.fprintf oc ".align\t8\n";
+  (*Printf.fprintf oc ".section\t\".data\"\n";
+  Printf.fprintf oc ".align\t4\n";*)
   Printf.fprintf oc "\tjal\t\t%s, min_caml_start\n" reg_zero;
   List.iter
     (fun (Id.L(x), d) ->
@@ -290,7 +290,7 @@ let f oc (Prog(data, fundefs, e)) =
       (*Printf.fprintf oc "\t.long\t0x%lx\n" (gethi d);
       Printf.fprintf oc "\t.long\t0x%lx\n" (getlo d))*)
     data;
-  Printf.fprintf oc ".section\t\".text\"\n";
+  (*Printf.fprintf oc ".section\t\".text\"\n";*)
   List.iter (fun fundef -> h oc fundef) fundefs;
   (*Printf.fprintf oc ".globl\tmin_caml_start\n";*)
   Printf.fprintf oc "min_caml_start:\n";
