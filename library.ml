@@ -5,8 +5,8 @@ let rec fneg x = -.x in
 let rec fabs x = if x > 0.0 then x else -.x in
 let rec fless x y = (x < y) in
 let rec fhalf x = x *. 0.5 in
+let rec fsqr x = x *. x in
 (*
-let fsqr x =
 let sqrt x =
 let int_of_float x =?
 let float_of_int x =?
@@ -44,4 +44,3 @@ let rec cos x =
     let x2 = x *. x in
     let x4 = x2 *. x2 in
     1.0 -. 0.5 *. x2 +. 0.04166666666666666666666 *. x4 -. 0.00138888888888888888888 *. x2 *. x4 in
-
