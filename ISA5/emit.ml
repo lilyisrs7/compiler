@@ -57,8 +57,9 @@ and g' oc pos = function (* 各命令のアセンブリ生成 (caml2html: emit_gprime) *)
       let i_lo = Int.shift_right (Int.shift_left i 20) 20 in
       Printf.fprintf oc "\tlui\t\t%s, %d\t# %d\n" x i_hi pos;
       Printf.fprintf oc "\tori\t\t%s, %s, %d\t# %d\n" x reg_zero i_lo pos
-  | NonTail(x), SetL(Id.L(y)) -> Printf.fprintf oc "\taddi\t%s, %s, 0\t# %d\n" x y pos
-                                 (* トップレベル関数やグローバル配列のラベルから変数に値を移す *)
+  | NonTail(x), SetL(Id.L(y)) -> (* トップレベル関数やグローバル配列のラベルから変数に値を移す *)
+      (Printf.fprintf oc "\tlui\t\t%s, %%hi(%s)\t# %d\n" x y pos;
+       Printf.fprintf oc "\tori\t\t%s, %%lo(%s)\t# %d\n" x y pos;)
   | NonTail(x), Mov(y) ->
       if x <> y then Printf.fprintf oc "\taddi\t%s, %s, 0\t# %d\n" x y pos (* 変数から変数に値を移す *)
   | NonTail(x), Neg(y) -> Printf.fprintf oc "\tsub\t\t%s, %s, %s\t# %d\n" x reg_zero y pos (* 符号反転  *)
@@ -279,16 +280,17 @@ let h oc { name = Id.L(x); args = _; fargs = _; body = e; ret = _ } =
 
 let f oc (Prog(data, fundefs, e)) =
   Format.eprintf "generating assembly...@.";
-  (*Printf.fprintf oc ".section\t\".rodata\"\n";
-  Printf.fprintf oc ".align\t8\n";*)
+  Printf.fprintf oc ".section\t\".data\"\n";
+  Printf.fprintf oc ".align\t8\n";
   Printf.fprintf oc "\tjal\t\t%s, min_caml_start\n" reg_zero;
   List.iter
     (fun (Id.L(x), d) ->
-      Printf.fprintf oc "%s:\t! %f\n" x d;
-      Printf.fprintf oc "\t.long\t0x%lx\n" (gethi d);
-      Printf.fprintf oc "\t.long\t0x%lx\n" (getlo d))
+      Printf.fprintf oc "%s:\t# %f\n" x d;
+      Printf.fprintf oc "\t.word\t%f\n" d)
+      (*Printf.fprintf oc "\t.long\t0x%lx\n" (gethi d);
+      Printf.fprintf oc "\t.long\t0x%lx\n" (getlo d))*)
     data;
-  (*Printf.fprintf oc ".section\t\".text\"\n";*)
+  Printf.fprintf oc ".section\t\".text\"\n";
   List.iter (fun fundef -> h oc fundef) fundefs;
   (*Printf.fprintf oc ".globl\tmin_caml_start\n";*)
   Printf.fprintf oc "min_caml_start:\n";
