@@ -53,10 +53,10 @@ and g' oc pos = function (* 各命令のアセンブリ生成 (caml2html: emit_gprime) *)
   (* 末尾でなかったら計算結果をdestにセット (caml2html: emit_nontail) *)
   | NonTail(_), Nop -> ()
   | NonTail(x), Set(i) -> (* 即値を変数に入れる *)
-      let i_hi = Int.shift_right i 12 in
-      let i_lo = Int.shift_right (Int.shift_left i 20) 20 in
-      Printf.fprintf oc "\tlui\t\t%s, %d\t# %d\n" x i_hi pos;
-      Printf.fprintf oc "\tori\t\t%s, %s, %d\t# %d\n" x reg_zero i_lo pos
+      (*let i_hi = Int.shift_right i 12 in
+      let i_lo = Int.shift_right (Int.shift_left i 20) 20 in*)
+      Printf.fprintf oc "\tlui\t\t%s, %d\t# %d\n" x i pos;
+      Printf.fprintf oc "\tori\t\t%s, %s, %d\t# %d\n" x reg_zero i pos
   | NonTail(x), SetL(Id.L(y)) -> (* トップレベル関数やグローバル配列のラベルから変数に値を移す *)
       (Printf.fprintf oc "\tlui\t\t%s, %%hi(%s)\t# %d\n" x y pos;
        Printf.fprintf oc "\tori\t\t%s, %%lo(%s)\t# %d\n" x y pos;)
