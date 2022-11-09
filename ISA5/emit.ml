@@ -186,8 +186,8 @@ and g' oc pos = function (* 各命令のアセンブリ生成 (caml2html: emit_gprime) *)
       if List.mem a allregs && a <> reg_rv then
         Printf.fprintf oc "\taddi\t%s, %s, 0\t# %d\n" a reg_rv pos
       else if List.mem a allfregs && a <> reg_frv then
-        Printf.fprintf oc "\tfsub\t%s, %s, %s\t# %d\n" a a a pos;
-        Printf.fprintf oc "\tfadd\t%s, %s, %s\t# %d\n" a a reg_frv pos;
+        (Printf.fprintf oc "\tfsub\t%s, %s, %s\t# %d\n" a a a pos;
+        Printf.fprintf oc "\tfadd\t%s, %s, %s\t# %d\n" a a reg_frv pos;)
         (*Printf.fprintf oc "\tfmovs\t%s, %s\n" (co_freg fregs.(0)) (co_freg a)*)
   | NonTail(a), CallDir(Id.L(x), ys, zs) ->
       g'_args oc [] ys zs;
@@ -210,8 +210,8 @@ and g' oc pos = function (* 各命令のアセンブリ生成 (caml2html: emit_gprime) *)
       if List.mem a allregs && a <> reg_rv then
         Printf.fprintf oc "\taddi\t%s, %s, 0\t# %d\n" a reg_rv pos
       else if List.mem a allfregs && a <> reg_frv then
-        Printf.fprintf oc "\tfsub\t%s, %s, %s\t# %d\n" a a a pos;
-        Printf.fprintf oc "\tfadd\t%s, %s, %s\t# %d\n" a a reg_frv pos;
+        (Printf.fprintf oc "\tfsub\t%s, %s, %s\t# %d\n" a a a pos;
+        Printf.fprintf oc "\tfadd\t%s, %s, %s\t# %d\n" a a reg_frv pos)
         (*Printf.fprintf oc "\tfmovs\t%s, %s\n" (co_freg fregs.(0)) (co_freg a)*)
 and g'_tail_if oc x y e1 e2 b pos =
   (*let b_else = Id.genid (b ^ "_else") in
