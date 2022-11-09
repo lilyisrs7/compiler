@@ -186,8 +186,9 @@ and g' oc pos = function (* 各命令のアセンブリ生成 (caml2html: emit_gprime) *)
       if List.mem a allregs && a <> reg_rv then
         Printf.fprintf oc "\taddi\t%s, %s, 0\t# %d\n" a reg_rv pos
       else if List.mem a allfregs && a <> reg_frv then
-        (Printf.fprintf oc "\taddi\t%s, %s, 0\t# %d\n" a reg_frv pos; (* fなのでaddiは無理 *)
-        (*Printf.fprintf oc "\tfmovs\t%s, %s\n" (co_freg fregs.(0)) (co_freg a)*))
+        Printf.fprintf oc "\tfsub\t%s, %s, %s\t# %d\n" a a a pos;
+        Printf.fprintf oc "\tfadd\t%s, %s, %s\t# %d\n" a a reg_frv pos;
+        (*Printf.fprintf oc "\tfmovs\t%s, %s\n" (co_freg fregs.(0)) (co_freg a)*)
   | NonTail(a), CallDir(Id.L(x), ys, zs) ->
       g'_args oc [] ys zs;
       let ss = stacksize () in
@@ -209,8 +210,9 @@ and g' oc pos = function (* 各命令のアセンブリ生成 (caml2html: emit_gprime) *)
       if List.mem a allregs && a <> reg_rv then
         Printf.fprintf oc "\taddi\t%s, %s, 0\t# %d\n" a reg_rv pos
       else if List.mem a allfregs && a <> reg_frv then
-        (Printf.fprintf oc "\taddi\t%s, %s, 0\t# %d\n" a reg_frv pos; (* fなのでaddiは無理 *)
-        (*Printf.fprintf oc "\tfmovs\t%s, %s\n" (co_freg fregs.(0)) (co_freg a)*))
+        Printf.fprintf oc "\tfsub\t%s, %s, %s\t# %d\n" a a a pos;
+        Printf.fprintf oc "\tfadd\t%s, %s, %s\t# %d\n" a a reg_frv pos;
+        (*Printf.fprintf oc "\tfmovs\t%s, %s\n" (co_freg fregs.(0)) (co_freg a)*)
 and g'_tail_if oc x y e1 e2 b pos =
   (*let b_else = Id.genid (b ^ "_else") in
   Printf.fprintf oc "\t%s\t%s\n" bn b_else;
@@ -268,8 +270,9 @@ and g'_args oc x_reg_cl ys zs =
       (0, [])
       zs in
   List.iter
-    (fun (z, fr) -> Printf.fprintf oc "\taddi\t%s, %s, 0\n" fr z;
-    (*Printf.fprintf oc "\tfmovs\t%s, %s\n" (co_freg z) (co_freg fr)*)) (* fなのでaddiは無理 *)
+    (fun (z, fr) -> Printf.fprintf oc "\tfsub\t%s, %s, %s\n" fr fr fr;
+                    Printf.fprintf oc "\tfadd\t%s, %s, %s\n" fr fr z)
+    (*Printf.fprintf oc "\tfmovs\t%s, %s\n" (co_freg z) (co_freg fr)*)
     (shuffle reg_fsw zfrs)
 
 let h oc { name = Id.L(x); args = _; fargs = _; body = e; ret = _ } =
