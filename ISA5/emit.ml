@@ -285,7 +285,7 @@ let f oc (Prog(data, fundefs, e)) =
   Format.eprintf "generating assembly...@.";
   (*Printf.fprintf oc ".section\t\".data\"\n";
   Printf.fprintf oc ".align\t4\n";*)
-  Printf.fprintf oc "\tjal\t\t%s, min_caml_start\n" reg_zero;
+  (*Printf.fprintf oc "\tjal\t\t%s, min_caml_start\n" reg_zero;*)
   List.iter
     (fun (Id.L(x), d) ->
       Printf.fprintf oc "%s:\t# %f\n" x d;
@@ -298,6 +298,8 @@ let f oc (Prog(data, fundefs, e)) =
   (*Printf.fprintf oc ".globl\tmin_caml_start\n";*)
   Printf.fprintf oc "min_caml_start:\n";
   Printf.fprintf oc "\taddi\t%s, %s, -112\n" reg_sp reg_sp;(*Printf.fprintf oc "\tsave\tsp, -112, sp\n";*) (* from gcc; why 112? *)
+  Printf.fprintf oc "\taddi\t%s, %s, 0\n" reg_read_num_hard reg_zero;
+  Printf.fprintf oc "\taddi\t%s, %s, 0\n" reg_read_num_soft reg_zero;
   stackset := S.empty;
   stackmap := [];
   g oc (NonTail(reg_rv), e);
