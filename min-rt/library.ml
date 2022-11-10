@@ -46,7 +46,7 @@ let rec cos x =
 
 let rec atan x =
   if x < 0.0 then -. atan (-. x)
-  else if x > 1.0 then atan (1.0 /. x)
+  else if x > 1.0 then pihalf - atan (1.0 /. x)
   else
     let x2 = x *. x in
     let x3 = x *. x2 in
