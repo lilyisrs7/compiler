@@ -61,7 +61,7 @@ let reg_cl = regs.(Array.length regs - 2) (* closure address (caml2html: sparcas
 let reg_sw = regs.(Array.length regs - 1) (* temporary for swap *)
 let reg_fsw = fregs.(Array.length fregs - 1) (* temporary for swap *)
 let reg_sp = "x2" (* stack pointer *)
-let reg_hp = "x3" (* heap pointer (caml2html: sparcasm_reghp) *) (*?*)
+let reg_hp = "x3" (* heap pointer (caml2html: sparcasm_reghp) *)
 let reg_ra = "x1" (* return address *)
 let reg_zero = "x0"
 let reg_rv = "x10"
@@ -82,7 +82,6 @@ let is_reg x = (((x.[0] = 'x') || (x.[0] = 'f')) && (Bool.not (String.contains x
   ht
 let co_freg freg = Hashtbl.find co_freg_table freg (* "companion" freg *)*)
 
-(* super-tenuki *)
 let rec remove_and_uniq xs = function
   | [] -> []
   | x :: ys when S.mem x xs -> remove_and_uniq xs ys
