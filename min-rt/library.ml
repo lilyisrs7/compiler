@@ -6,11 +6,9 @@ let rec fabs x = if x > 0.0 then x else -.x in
 let rec fless x y = (x < y) in
 let rec fhalf x = x *. 0.5 in
 let rec fsqr x = x *. x in
-(*
-let int_of_float x =
-let float_of_int x =
-let floor x =
-*)
+let rec floor x = float_of_int (int_of_float x) in
+let rec int_of_float x = if x >= 1.0 then int_of_float (x - 1.0) + 1 else 0 in
+let rec float_of_int x = if x >= 1 then float_of_int (x - 1) + 1.0 else 0.0 in
 let pi = 3.14159265358979323846264 in
 let pi2 = pi *. 2.0 in
 let pihalf = pi *. 0.5 in
