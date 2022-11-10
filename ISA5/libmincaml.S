@@ -1,5 +1,3 @@
-min_caml_print_newline:
-	
 min_caml_print_char:
     sw      x4, -1(x0)
 min_caml_print_int:
@@ -48,7 +46,5 @@ create_float_array_cont:
 	addi	x4, x4, -1
 	addi	x3, x3, 4
 	jal		x0, create_float_array_loop
-min_caml_truncate:
-	
 min_caml_sqrt:
 	fsqrt	f0, f0
