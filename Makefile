@@ -10,13 +10,18 @@ CFLAGS = -g -O2 -Wall
 OCAMLLDFLAGS=-warn-error -31
 
 default: debug-code top $(RESULT) do_test
-$(RESULT): debug-code top
+$(RESULT): debug-code top minrt.ml
 ## [自分（住井）用の注]
 ## ・OCamlMakefileや古いGNU Makeのバグ(?)で上のような定義が必要(??)
 ## ・OCamlMakefileではdebug-codeとnative-codeのそれぞれで
 ##   .mliがコンパイルされてしまうので、両方ともdefault:の右辺に入れると
 ##   再make時に（.mliが変更されているので）.mlも再コンパイルされる
 clean:: nobackup
+
+minrt.ml: min-rt/minrt.ml library.ml min-rt/globals.ml
+	cat library.ml >> minrt.ml
+	cat min-rt/globals.ml >> minrt.ml
+	cat min-rt/minrt.ml >> minrt.ml
 
 # ↓もし実装を改造したら、それに合わせて変える
 SOURCES = float.c type.ml id.ml m.ml s.ml \
