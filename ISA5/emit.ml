@@ -304,7 +304,7 @@ let f oc (Prog(data, fundefs, e)) =
   stackmap := [];
   g oc (NonTail(reg_rv), e);
   Printf.fprintf oc "\taddi\t%s, %s, 112\n" reg_sp reg_sp;
-  Printf.fprintf oc "\tEXIT\n"
+  Printf.fprintf oc "\tEXIT\t\n\n"
   (*Printf.fprintf oc "\tjalr\t%s, %s, 0\n" reg_zero reg_ra*)
   (*Printf.fprintf oc "\tret\n";
     Printf.fprintf oc "\trestore\n"*)
