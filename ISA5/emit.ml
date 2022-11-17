@@ -102,19 +102,19 @@ and g' oc pos = function (* 各命令のアセンブリ生成 (caml2html: emit_gprime) *)
   (* 末尾だったら計算結果を第一レジスタにセットしてret (caml2html: emit_tailret) *)
   | Tail, (Nop | St _ | StDF _ | Comment _ | Save _ as exp) ->
       g' oc pos (NonTail(Id.gentmp Type.Unit), exp);
-      Printf.fprintf oc "\tjalr\t%s, %s, 0\n" reg_zero reg_ra;
+      Printf.fprintf oc "\tjalr\t%s, %s, 0\t# %d\n" reg_zero reg_ra pos;
   | Tail, (Set _ | SetL _ | Mov _ | Neg _ | Add _ | Sub _ | Mul _ | Div _ | Ld _ as exp) ->
       g' oc pos (NonTail(reg_rv), exp);
-      Printf.fprintf oc "\tjalr\t%s, %s, 0\n" reg_zero reg_ra;
+      Printf.fprintf oc "\tjalr\t%s, %s, 0\t# %d\n" reg_zero reg_ra pos;
   | Tail, (FMovD _ | FNegD _ | FAddD _ | FSubD _ | FMulD _ | FDivD _ | LdDF _  as exp) ->
       g' oc pos (NonTail(reg_frv), exp);
-      Printf.fprintf oc "\tjalr\t%s, %s, 0\n" reg_zero reg_ra;
+      Printf.fprintf oc "\tjalr\t%s, %s, 0\t# %d\n" reg_zero reg_ra pos;
   | Tail, (Restore(x) as exp) ->
       (match locate x with
       | [i] -> g' oc pos (NonTail(reg_rv), exp)
       | [i; j] when i + 1 = j -> g' oc pos (NonTail(reg_frv), exp)
       | _ -> assert false);
-      Printf.fprintf oc "\tjalr\t%s, %s, 0\n" reg_zero reg_ra;
+      Printf.fprintf oc "\tjalr\t%s, %s, 0\t# %d\n" reg_zero reg_ra pos;
   | Tail, IfEq(x, y, e1, e2) ->
       (*Printf.fprintf oc "\tcmpl\t%s, %s, \n" (pp_id_or_imm y') x;
         g'_tail_if oc e1 e2 "je" "jne"*)
@@ -177,12 +177,12 @@ and g' oc pos = function (* 各命令のアセンブリ生成 (caml2html: emit_gprime) *)
       else if List.mem a allfregs && a <> fregs.(0) then
         (Printf.fprintf oc "\tfmovs\t%s, %s\n" fregs.(0) a;
          Printf.fprintf oc "\tfmovs\t%s, %s\n" (co_freg fregs.(0)) (co_freg a))*)
-      Printf.fprintf oc "\tsw\t\t%s, %d(%s)\n" reg_ra (ss - 4) reg_sp;
-      Printf.fprintf oc "\taddi\t%s, %s, %d\n" reg_sp reg_sp ss;
-      Printf.fprintf oc "\tlw\t\t%s, 0(%s)\n" reg_sw reg_cl;
-      Printf.fprintf oc "\tjalr\tx0, %s, 0\n" reg_sw;
-      Printf.fprintf oc "\taddi\t%s, %s, %d\n" reg_sp reg_sp (-ss);
-      Printf.fprintf oc "\tlw\t\t%s, %d(%s)\n" reg_ra (ss - 4) reg_sp;
+      Printf.fprintf oc "\tsw\t\t%s, %d(%s)\t# %d\n" reg_ra (ss - 4) reg_sp pos;
+      Printf.fprintf oc "\taddi\t%s, %s, %d\t# %d\n" reg_sp reg_sp ss pos;
+      Printf.fprintf oc "\tlw\t\t%s, 0(%s)\t# %d\n" reg_sw reg_cl pos;
+      Printf.fprintf oc "\tjalr\t%s, %s, 0\t# %d\n" reg_ra reg_sw pos;
+      Printf.fprintf oc "\taddi\t%s, %s, %d\t# %d\n" reg_sp reg_sp (-ss) pos;
+      Printf.fprintf oc "\tlw\t\t%s, %d(%s)\t# %d\n" reg_ra (ss - 4) reg_sp pos;
       if List.mem a allregs && a <> reg_rv then
         Printf.fprintf oc "\taddi\t%s, %s, 0\t# %d\n" a reg_rv pos
       else if List.mem a allfregs && a <> reg_frv then
@@ -202,11 +202,11 @@ and g' oc pos = function (* 各命令のアセンブリ生成 (caml2html: emit_gprime) *)
       else if List.mem a allfregs && a <> fregs.(0) then
         (Printf.fprintf oc "\tfmovs\t%s, %s\n" fregs.(0) a;
          Printf.fprintf oc "\tfmovs\t%s, %s\n" (co_freg fregs.(0)) (co_freg a))*)
-      Printf.fprintf oc "\tsw\t\t%s, %d(%s)\n" reg_ra (ss - 4) reg_sp;
-      Printf.fprintf oc "\taddi\t%s, %s, %d\n" reg_sp reg_sp ss;
-      Printf.fprintf oc "\tjal\t\t%s, %s\n" reg_ra x;
-      Printf.fprintf oc "\taddi\t%s, %s, %d\n" reg_sp reg_sp (-ss);
-      Printf.fprintf oc "\tlw\t\t%s, %d(%s)\n" reg_ra (ss - 4) reg_sp;
+      Printf.fprintf oc "\tsw\t\t%s, %d(%s)\t# %d\n" reg_ra (ss - 4) reg_sp pos;
+      Printf.fprintf oc "\taddi\t%s, %s, %d\t# %d\n" reg_sp reg_sp ss pos;
+      Printf.fprintf oc "\tjal\t\t%s, %s\t# %d\n" reg_ra x pos;
+      Printf.fprintf oc "\taddi\t%s, %s, %d\t# %d\n" reg_sp reg_sp (-ss) pos;
+      Printf.fprintf oc "\tlw\t\t%s, %d(%s)\t# %d\n" reg_ra (ss - 4) reg_sp pos;
       if List.mem a allregs && a <> reg_rv then
         Printf.fprintf oc "\taddi\t%s, %s, 0\t# %d\n" a reg_rv pos
       else if List.mem a allfregs && a <> reg_frv then
@@ -304,7 +304,7 @@ let f oc (Prog(data, fundefs, e)) =
   stackmap := [];
   g oc (NonTail(reg_rv), e);
   Printf.fprintf oc "\taddi\t%s, %s, 112\n" reg_sp reg_sp;
-  Printf.fprintf oc "\tEXIT\t\n\n"
+  Printf.fprintf oc "\tEXIT\t\n"
   (*Printf.fprintf oc "\tjalr\t%s, %s, 0\n" reg_zero reg_ra*)
   (*Printf.fprintf oc "\tret\n";
     Printf.fprintf oc "\trestore\n"*)
