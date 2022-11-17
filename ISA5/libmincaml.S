@@ -25,6 +25,7 @@ exec_read_float:
 	addi	x30, x30, 1
 	jalr	x0, x1, 0
 min_caml_create_array:
+	addi	x10, x3, 0
 	jal		x0, create_array_loop
 create_array_loop:
 	beq		x4, x0, create_array_exit
@@ -37,6 +38,7 @@ create_array_cont:
 	addi	x3, x3, 4
 	jal		x0, create_array_loop
 min_caml_create_float_array:
+	addi	x10, x3, 0
 	jal		x0, create_float_array_loop
 create_float_array_loop:
 	beq		x4, x0, create_float_array_exit
