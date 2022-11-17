@@ -1,7 +1,9 @@
 min_caml_print_char:
 	sw		x4, -1(x0)
+	jalr	x0, x1, 0
 min_caml_print_int:
 	sw		x4, -1(x0)
+	jalr	x0, x1, 0
 min_caml_read_int:
 	ble		x30, x29, exec_read_int
 	jal		x1, min_caml_read_int
@@ -30,7 +32,7 @@ create_array_loop:
 create_array_exit:
 	jalr	x0, x1, 0
 create_array_cont:
-	sw		x5. 0(x3)
+	sw		x5, 0(x3)
 	addi	x4, x4, -1
 	addi	x3, x3, 4
 	jal		x0, create_array_loop
@@ -42,11 +44,9 @@ create_float_array_loop:
 create_float_array_exit:
 	jalr	x0, x1, 0
 create_float_array_cont:
-	sw		x5. 0(x3)
+	sw		x5, 0(x3)
 	addi	x4, x4, -1
 	addi	x3, x3, 4
 	jal		x0, create_float_array_loop
 min_caml_sqrt:
 	fsqrt	f10, f0
-	EXIT	
-
