@@ -1,5 +1,5 @@
 min_caml_print_char:
-	sw		x4, -1(x0)
+	sw		x4, -2(x0)
 	jalr	x0, x1, 0
 min_caml_print_int:
 	sw		x4, -1(x0)
