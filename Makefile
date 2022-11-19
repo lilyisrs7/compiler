@@ -19,6 +19,7 @@ $(RESULT): debug-code top minrt.ml
 clean:: nobackup
 
 minrt.ml: min-rt/minrt.ml library.ml min-rt/globals.ml
+	cp /dev/null minrt.ml
 	cat library.ml >> minrt.ml
 	cat min-rt/globals.ml >> minrt.ml
 	cat min-rt/minrt.ml >> minrt.ml
@@ -45,15 +46,16 @@ do_test: $(TESTS:%=test/%.s) # do_test: $(TESTS:%=test/%.cmp)
 .PRECIOUS: test/%.s test/% test/%.res test/%.ans test/%.cmp test/%.parsed test/%.normalized test/%.alpha test/%.iterated \
 test/%.closure test/%.virtual test/%.simm test/%.regalloc test/%main.ml test/%main.s test/%main test/%main.res test/%main.ans test/%main.cmp \
 test/%main.parsed test/%main.normalized test/%main.alpha test/%main.iterated test/%main.closure test/%main.virtual test/%main.simm \
-test/%main.regalloc
+test/%main.regalloc minrt.*
 TRASH = $(TESTS:%=test/%.s) $(TESTS:%=test/%) $(TESTS:%=test/%.res) $(TESTS:%=test/%.ans) $(TESTS:%=test/%.cmp) \
 $(TESTS:%=test/%.parsed) $(TESTS:%=test/%.normalized) $(TESTS:%=test/%.alpha) $(TESTS:%=test/%.iterated) $(TESTS:%=test/%.closure) \
 $(TESTS:%=test/%.virtual) $(TESTS:%=test/%.simm) $(TESTS:%=test/%.regalloc) $(TESTS:%=test/%main.ml) $(TESTS:%=test/%main.s) \
 $(TESTS:%=test/%main) $(TESTS:%=test/%main.res) $(TESTS:%=test/%main.ans) $(TESTS:%=test/%main.cmp) $(TESTS:%=test/%main.parsed) \
 $(TESTS:%=test/%main.normalized) $(TESTS:%=test/%main.alpha) $(TESTS:%=test/%main.iterated) $(TESTS:%=test/%main.closure) \
-$(TESTS:%=test/%main.virtual) $(TESTS:%=test/%main.simm) $(TESTS:%=test/%main.regalloc)
+$(TESTS:%=test/%main.virtual) $(TESTS:%=test/%main.simm) $(TESTS:%=test/%main.regalloc) minrt.*
 
 test/%main.ml: library.ml test/%.ml
+	cp /dev/null $@
 	cat library.ml >> $@
 	cat test/$*.ml >> $@
 test/%.s: $(RESULT) test/%main.ml
