@@ -75,8 +75,8 @@ and g' oc pos = function (* 各命令のアセンブリ生成 (caml2html: emit_gprime) *)
                       Printf.fprintf oc "\tfadd\t%s, %s, %s\t# %d\n" x x y pos; (* 変数から変数に値を移す *)
                       (*Printf.fprintf oc "\tfmovs\t%s, %s\n" (co_freg y) (co_freg x)*))
   | NonTail(x), FNegD(y) ->
-      Printf.fprintf oc "\tsub\t%s, %s, %s\t# %d\n" x x x pos;
-      Printf.fprintf oc "\tsub\t%s, %s, %s\t# %d\n" x x y pos (* 符号反転 *)
+      Printf.fprintf oc "\tfsub\t%s, %s, %s\t# %d\n" x x x pos;
+      Printf.fprintf oc "\tfsub\t%s, %s, %s\t# %d\n" x x y pos (* 符号反転 *)
       (*if x <> y then Printf.fprintf oc "\tfmovs\t%s, %s\n" (co_freg y) (co_freg x)*)
   | NonTail(x), FAddD(y, z) -> Printf.fprintf oc "\tfadd\t%s, %s, %s\t# %d\n" x y z pos
   | NonTail(x), FSubD(y, z) -> Printf.fprintf oc "\tfsub\t%s, %s, %s\t# %d\n" x y z pos
@@ -85,7 +85,7 @@ and g' oc pos = function (* 各命令のアセンブリ生成 (caml2html: emit_gprime) *)
   | NonTail(x), LdDF(y, z') -> Printf.fprintf oc "\tflw\t\t%s, %s(%s)\t# %d\n" x (pp_id_or_imm z') y pos
   | NonTail(_), StDF(x, y, z') -> Printf.fprintf oc "\tfsw\t\t%s, %s(%s)\t# %d\n" x (pp_id_or_imm z') y pos
   | NonTail(_), Comment(s) -> Printf.fprintf oc "\t# %s\t# %d\n" s pos
-  (* 退避の仮想命令の実装 (caml2html: emit_save) *) (* ？ *)
+  (* 退避の仮想命令の実装 (caml2html: emit_save) *)
   | NonTail(_), Save(x, y) when List.mem x allregs && not (S.mem y !stackset) ->
       save y;
       Printf.fprintf oc "\tsw\t\t%s, %d(%s)\t# %d\n" x (offset y) reg_sp pos
