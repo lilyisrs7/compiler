@@ -88,17 +88,17 @@ and g' oc pos = function (* 各命令のアセンブリ生成 (caml2html: emit_gprime) *)
   (* 退避の仮想命令の実装 (caml2html: emit_save) *)
   | NonTail(_), Save(x, y) when List.mem x allregs && not (S.mem y !stackset) ->
       save y;
-      Printf.fprintf oc "\tsw\t\t%s, %d(%s)\t# %d\n" x (offset y) reg_sp pos
+      Printf.fprintf oc "\tsw\t\t%s, %d(%s)\t# %d\n" x (- (offset y)) reg_sp pos (**)
   | NonTail(_), Save(x, y) when List.mem x allfregs && not (S.mem y !stackset) ->
       savef y;
-      Printf.fprintf oc "\tfsw\t\t%s, %d(%s)\t# %d\n" x (offset y) reg_sp pos
+      Printf.fprintf oc "\tfsw\t\t%s, %d(%s)\t# %d\n" x (- (offset y)) reg_sp pos (**)
   | NonTail(_), Save(x, y) -> assert (S.mem y !stackset); ()
   (* 復帰の仮想命令の実装 (caml2html: emit_restore) *)
   | NonTail(x), Restore(y) when List.mem x allregs ->
-      Printf.fprintf oc "\tlw\t\t%s, %d(%s)\t# %d\n" x (offset y) reg_sp pos
+      Printf.fprintf oc "\tlw\t\t%s, %d(%s)\t# %d\n" x (- (offset y)) reg_sp pos (**)
   | NonTail(x), Restore(y) ->
       assert (List.mem x allfregs);
-      Printf.fprintf oc "\tflw\t\t%s, %d(%s)\t# %d\n" x (offset y) reg_sp pos
+      Printf.fprintf oc "\tflw\t\t%s, %d(%s)\t# %d\n" x (- (offset y)) reg_sp pos (**)
   (* 末尾だったら計算結果を第一レジスタにセットしてret (caml2html: emit_tailret) *)
   | Tail, (Nop | St _ | StDF _ | Comment _ | Save _ as exp) ->
       g' oc pos (NonTail(Id.gentmp Type.Unit), exp);
@@ -177,12 +177,12 @@ and g' oc pos = function (* 各命令のアセンブリ生成 (caml2html: emit_gprime) *)
       else if List.mem a allfregs && a <> fregs.(0) then
         (Printf.fprintf oc "\tfmovs\t%s, %s\n" fregs.(0) a;
          Printf.fprintf oc "\tfmovs\t%s, %s\n" (co_freg fregs.(0)) (co_freg a))*)
-      Printf.fprintf oc "\tsw\t\t%s, %d(%s)\t# %d\n" reg_ra (ss - 4) reg_sp pos;
+      Printf.fprintf oc "\tsw\t\t%s, %d(%s)\t# %d\n" reg_ra (4 - ss) reg_sp pos;
       Printf.fprintf oc "\taddi\t%s, %s, %d\t# %d\n" reg_sp reg_sp (-ss) pos;
       Printf.fprintf oc "\tlw\t\t%s, 0(%s)\t# %d\n" reg_sw reg_cl pos;
       Printf.fprintf oc "\tjalr\t%s, %s, 0\t# %d\n" reg_ra reg_sw pos;
       Printf.fprintf oc "\taddi\t%s, %s, %d\t# %d\n" reg_sp reg_sp ss pos;
-      Printf.fprintf oc "\tlw\t\t%s, %d(%s)\t# %d\n" reg_ra (ss - 4) reg_sp pos;
+      Printf.fprintf oc "\tlw\t\t%s, %d(%s)\t# %d\n" reg_ra (4 - ss) reg_sp pos;
       if List.mem a allregs && a <> reg_rv then
         Printf.fprintf oc "\taddi\t%s, %s, 0\t# %d\n" a reg_rv pos
       else if List.mem a allfregs && a <> reg_frv then
@@ -202,11 +202,11 @@ and g' oc pos = function (* 各命令のアセンブリ生成 (caml2html: emit_gprime) *)
       else if List.mem a allfregs && a <> fregs.(0) then
         (Printf.fprintf oc "\tfmovs\t%s, %s\n" fregs.(0) a;
          Printf.fprintf oc "\tfmovs\t%s, %s\n" (co_freg fregs.(0)) (co_freg a))*)
-      Printf.fprintf oc "\tsw\t\t%s, %d(%s)\t# %d\n" reg_ra (ss - 4) reg_sp pos;
+      Printf.fprintf oc "\tsw\t\t%s, %d(%s)\t# %d\n" reg_ra (4 - ss) reg_sp pos; (**)
       Printf.fprintf oc "\taddi\t%s, %s, %d\t# %d\n" reg_sp reg_sp (-ss) pos;
       Printf.fprintf oc "\tjal\t\t%s, %s\t# %d\n" reg_ra x pos;
       Printf.fprintf oc "\taddi\t%s, %s, %d\t# %d\n" reg_sp reg_sp ss pos;
-      Printf.fprintf oc "\tlw\t\t%s, %d(%s)\t# %d\n" reg_ra (ss - 4) reg_sp pos;
+      Printf.fprintf oc "\tlw\t\t%s, %d(%s)\t# %d\n" reg_ra (4 - ss) reg_sp pos; (**)
       if List.mem a allregs && a <> reg_rv then
         Printf.fprintf oc "\taddi\t%s, %s, 0\t# %d\n" a reg_rv pos
       else if List.mem a allfregs && a <> reg_frv then
