@@ -222,8 +222,8 @@ and g'_tail_if oc x y e1 e2 b pos =
   stackset := stackset_back;
   g oc (Tail, e2)*)
   let b_id = Id.genid b in
-  if b = "fle" then
-    (Printf.fprintf oc "\tfle\t\t%s, %s, %s\t# %d\n" reg_sw x (pp_id_or_imm y) pos;
+  if b = "fle" || b = "feq" then
+    (Printf.fprintf oc "\t%s\t\t%s, %s, %s\t# %d\n" b reg_sw x (pp_id_or_imm y) pos;
     Printf.fprintf oc "\taddi\t%s, %s, -1\t# %d\n" reg_sw reg_sw pos;
     Printf.fprintf oc "\tbeq\t\t%s, %s, %s\t# %d\n" reg_sw reg_zero b_id pos)
   else
@@ -249,8 +249,8 @@ and g'_non_tail_if oc dest x y e1 e2 b pos =
   stackset := S.inter stackset1 stackset2*)
   let b_id = Id.genid b in
   let b_cont = Id.genid (b ^ "_cont") in
-  if b = "fle" then
-    (Printf.fprintf oc "\tfle\t\t%s, %s, %s\t# %d\n" reg_sw x (pp_id_or_imm y) pos;
+  if b = "fle" || b = "feq" then
+    (Printf.fprintf oc "\t%s\t\t%s, %s, %s\t# %d\n" b reg_sw x (pp_id_or_imm y) pos;
     Printf.fprintf oc "\taddi\t%s, %s, -1\t# %d\n" reg_sw reg_sw pos;
     Printf.fprintf oc "\tbeq\t\t%s, %s, %s\t# %d\n" reg_sw reg_zero b_id pos)
   else
