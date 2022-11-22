@@ -178,10 +178,10 @@ and g' oc pos = function (* 各命令のアセンブリ生成 (caml2html: emit_gprime) *)
         (Printf.fprintf oc "\tfmovs\t%s, %s\n" fregs.(0) a;
          Printf.fprintf oc "\tfmovs\t%s, %s\n" (co_freg fregs.(0)) (co_freg a))*)
       Printf.fprintf oc "\tsw\t\t%s, %d(%s)\t# %d\n" reg_ra (ss - 4) reg_sp pos;
-      Printf.fprintf oc "\taddi\t%s, %s, %d\t# %d\n" reg_sp reg_sp ss pos;
+      Printf.fprintf oc "\taddi\t%s, %s, %d\t# %d\n" reg_sp reg_sp (-ss) pos;
       Printf.fprintf oc "\tlw\t\t%s, 0(%s)\t# %d\n" reg_sw reg_cl pos;
       Printf.fprintf oc "\tjalr\t%s, %s, 0\t# %d\n" reg_ra reg_sw pos;
-      Printf.fprintf oc "\taddi\t%s, %s, %d\t# %d\n" reg_sp reg_sp (-ss) pos;
+      Printf.fprintf oc "\taddi\t%s, %s, %d\t# %d\n" reg_sp reg_sp ss pos;
       Printf.fprintf oc "\tlw\t\t%s, %d(%s)\t# %d\n" reg_ra (ss - 4) reg_sp pos;
       if List.mem a allregs && a <> reg_rv then
         Printf.fprintf oc "\taddi\t%s, %s, 0\t# %d\n" a reg_rv pos
@@ -203,9 +203,9 @@ and g' oc pos = function (* 各命令のアセンブリ生成 (caml2html: emit_gprime) *)
         (Printf.fprintf oc "\tfmovs\t%s, %s\n" fregs.(0) a;
          Printf.fprintf oc "\tfmovs\t%s, %s\n" (co_freg fregs.(0)) (co_freg a))*)
       Printf.fprintf oc "\tsw\t\t%s, %d(%s)\t# %d\n" reg_ra (ss - 4) reg_sp pos;
-      Printf.fprintf oc "\taddi\t%s, %s, %d\t# %d\n" reg_sp reg_sp ss pos;
-      Printf.fprintf oc "\tjal\t\t%s, %s\t# %d\n" reg_ra x pos;
       Printf.fprintf oc "\taddi\t%s, %s, %d\t# %d\n" reg_sp reg_sp (-ss) pos;
+      Printf.fprintf oc "\tjal\t\t%s, %s\t# %d\n" reg_ra x pos;
+      Printf.fprintf oc "\taddi\t%s, %s, %d\t# %d\n" reg_sp reg_sp ss pos;
       Printf.fprintf oc "\tlw\t\t%s, %d(%s)\t# %d\n" reg_ra (ss - 4) reg_sp pos;
       if List.mem a allregs && a <> reg_rv then
         Printf.fprintf oc "\taddi\t%s, %s, 0\t# %d\n" a reg_rv pos
@@ -307,11 +307,9 @@ let f oc (Prog(data, fundefs, e)) =
   List.iter (fun fundef -> h oc fundef) fundefs;
   (*Printf.fprintf oc ".globl\tmin_caml_start\n";*)
   Printf.fprintf oc "min_caml_start:\n";
-  Printf.fprintf oc "\taddi\t%s, %s, -112\n" reg_sp reg_sp;(*Printf.fprintf oc "\tsave\tsp, -112, sp\n";*) (* from gcc; why 112? *)
   Printf.fprintf oc "\taddi\t%s, %s, 0\n" reg_read_num_hard reg_zero;
   Printf.fprintf oc "\taddi\t%s, %s, 0\n" reg_read_num_soft reg_zero;
   stackset := S.empty;
   stackmap := [];
   g oc (NonTail(reg_rv), e);
-  Printf.fprintf oc "\taddi\t%s, %s, 112\n" reg_sp reg_sp;
   Printf.fprintf oc "\tEXIT\t\n"
