@@ -307,6 +307,7 @@ let f oc (Prog(data, fundefs, e)) =
   List.iter (fun fundef -> h oc fundef) fundefs;
   (*Printf.fprintf oc ".globl\tmin_caml_start\n";*)
   Printf.fprintf oc "min_caml_start:\n";
+  Printf.fprintf oc "\taddi\t%s, %s, -112\n" reg_sp reg_sp;
   Printf.fprintf oc "\taddi\t%s, %s, 0\n" reg_read_num_hard reg_zero;
   Printf.fprintf oc "\taddi\t%s, %s, 0\n" reg_read_num_soft reg_zero;
   stackset := S.empty;
