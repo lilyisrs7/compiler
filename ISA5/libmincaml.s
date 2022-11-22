@@ -5,24 +5,28 @@ min_caml_print_int:
 	sw		x4, -1(x0)
 	jalr	x0, x1, 0
 min_caml_read_int:
-	ble		x30, x29, exec_read_int
-	jal		x1, min_caml_read_int
+	ble		x29, x30, min_caml_read_int
+	jal		x0, exec_read_int
 exec_read_int:
 	lui		x27, %hi(data)
-	ori		x27, %lo(data)
-	add		x27, x27, x30
+	ori		x27, x0, %lo(data)
+	addi	x31, x0, 4
+	mul		x31, x30, x31
+	add		x27, x27, x31
 	lw		x10, 0(x27)
-	addi	x30, x30, 4
+	addi	x30, x30, 1
 	jalr	x0, x1, 0
 min_caml_read_float:
-	ble		x30, x29, exec_read_float
-	jal		x1, min_caml_read_float
+	ble		x29, x30, min_caml_read_float
+	jal		x0, exec_read_float
 exec_read_float:
 	lui		x27, %hi(data)
-	ori		x27, %lo(data)
-	add		x27, x27, x30
+	ori		x27, x0, %lo(data)
+	addi	x31, x0, 4
+	mul		x31, x30, x31
+	add		x27, x27, x31
 	flw		f10, 0(x27)
-	addi	x30, x30, 4
+	addi	x30, x30, 1
 	jalr	x0, x1, 0
 min_caml_create_array:
 	addi	x10, x3, 0
@@ -52,4 +56,4 @@ create_float_array_cont:
 	jal		x0, create_float_array_loop
 min_caml_sqrt:
 	fsqrt	f10, f0
-    jalr	x0, x1, 0
+	jalr	x0, x1, 0
