@@ -58,7 +58,7 @@ and g' oc pos = function (* 各命令のアセンブリ生成 (caml2html: emit_gprime) *)
       Printf.fprintf oc "\tlui\t\t%s, %d\t# %d\n" x i pos;
       Printf.fprintf oc "\tori\t\t%s, %s, %d\t# %d\n" x reg_zero i pos
   | NonTail(x), SetL(Id.L(y)) -> (* トップレベル関数やグローバル配列のラベルから変数に値を移す *)
-      (Printf.fprintf oc "\tlui\t\t%s, %s, %%hi(%s)\t# %d\n" x reg_zero y pos;
+      (Printf.fprintf oc "\tlui\t\t%s, %%hi(%s)\t# %d\n" x y pos;
        Printf.fprintf oc "\tori\t\t%s, %s, %%lo(%s)\t# %d\n" x reg_zero y pos;)
   | NonTail(x), Mov(y) ->
       if x <> y then Printf.fprintf oc "\taddi\t%s, %s, 0\t# %d\n" x y pos (* 変数から変数に値を移す *)
