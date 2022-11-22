@@ -10,11 +10,9 @@ min_caml_read_int:
 exec_read_int:
 	lui		x27, %hi(data)
 	ori		x27, x0, %lo(data)
-	addi	x31, x0, 4
-	mul		x31, x30, x31
-	add		x27, x27, x31
+	add		x27, x27, x30
 	lw		x10, 0(x27)
-	addi	x30, x30, 1
+	addi	x30, x30, 4
 	jalr	x0, x1, 0
 min_caml_read_float:
 	ble		x29, x30, min_caml_read_float
@@ -22,11 +20,9 @@ min_caml_read_float:
 exec_read_float:
 	lui		x27, %hi(data)
 	ori		x27, x0, %lo(data)
-	addi	x31, x0, 4
-	mul		x31, x30, x31
-	add		x27, x27, x31
+	add		x27, x27, x30
 	flw		f10, 0(x27)
-	addi	x30, x30, 1
+	addi	x30, x30, 4
 	jalr	x0, x1, 0
 min_caml_create_array:
 	addi	x10, x3, 0
