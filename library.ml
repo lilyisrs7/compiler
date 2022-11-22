@@ -1,4 +1,3 @@
-let rec print_newline _ = print_char 10 in
 let rec fiszero x = (x = 0.0) in
 let rec fispos x = (x > 0.0) in
 let rec fisneg x = (x < 0.0) in
@@ -41,18 +40,22 @@ let rec cos_main x =
   let x4 = x2 *. x2 in
   1.0 -. 0.5 *. x2 +. 0.04166666666666666666666 *. x4 -. 0.00138888888888888888888 *. x2 *. x4 in
 
-let rec sin x =
-  if x < 0.0 then sin (x +. pi2)
-  else if x > pi2 then sin (x -. pi2)
-  else if x > pi then -. 1.0 *. (sin (x -. pi))
-  else if x > pihalf then sin (pi -. x)
+let rec sin2 x =
+  if x > pi2 then sin2 (x -. pi2)
+  else if x > pi then -. 1.0 *. (sin2 (x -. pi))
+  else if x > pihalf then sin2 (pi -. x)
   else if x > piquat then cos_main (pihalf -. x)
   else sin_main x in
 
-let rec cos x =
-  if x < 0.0 then sin (x +. pihalf)
-  else if x > piquat then sin (pihalf -. x)
+let rec sin x =
+  sin2 (fabs x) in
+
+let rec cos2 x =
+  if x > piquat then sin (pihalf -. x)
   else cos_main x in
+
+let rec cos x =
+  cos2 (fabs x) in
 
 let rec atan x =
   if x < 0.0 then -. atan (-. x)
@@ -61,3 +64,6 @@ let rec atan x =
     let x2 = x *. x in
     let x3 = x *. x2 in
     x -. 0.33333333333333333333333 *. x3 +. 0.2 *. x2 *. x3 -. 0.14285714285714285714285 *. x2 *. x2 *. x3 in
+
+let rec print_newline _ = print_char 10 in
+let rec truncate x = int_of_float x in
