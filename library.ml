@@ -9,11 +9,11 @@ let rec fsqr x = x *. x in
 let rec int_of_float x =
   if x >= 0.0 then
     if x >= 1.0 then int_of_float (x -. 1.0) + 1 else 0
-  else - (int_of_float (-.x)) in
+  else - int_of_float (-.x) in
 let rec float_of_int x =
   if x >= 0 then
     if x >= 1 then float_of_int (x - 1) +. 1.0 else 0.0
-  else -. (float_of_int (-x)) in
+  else -. float_of_int (-x) in
 let rec floor x = float_of_int (int_of_float x) in
 let pi = 3.14159265358979323846264 in
 let pi2 = pi *. 2.0 in
@@ -40,25 +40,21 @@ let rec cos_main x =
   let x4 = x2 *. x2 in
   1.0 -. 0.5 *. x2 +. 0.04166666666666666666666 *. x4 -. 0.00138888888888888888888 *. x2 *. x4 in
 
-let rec sin2 x =
-  if x > pi2 then sin2 (x -. pi2)
-  else if x > pi then -. 1.0 *. (sin2 (x -. pi))
-  else if x > pihalf then sin2 (pi -. x)
-  else if x > piquat then cos_main (pihalf -. x)
+let rec sin x =
+  if x < 0.0 then -. sin (-.x)
+  else if x >= pi2 then sin (x -. pi2)
+  else if x >= pi then -. sin (x -. pi)
+  else if x > pihalf then sin (pi -. x)
+  else if x >= piquat then cos_main (pihalf -. x)
   else sin_main x in
 
-let rec sin x =
-  sin2 (fabs x) in
-
-let rec cos2 x =
-  if x > piquat then sin (pihalf -. x)
+let rec cos x =
+  if x < 0.0 then cos (-.x)
+  else if x > piquat then sin (pihalf -. x)
   else cos_main x in
 
-let rec cos x =
-  cos2 (fabs x) in
-
 let rec atan x =
-  if x < 0.0 then -. atan (-. x)
+  if x < 0.0 then -. atan (-.x)
   else if x > 1.0 then pihalf -. atan (1.0 /. x)
   else
     let x2 = x *. x in
