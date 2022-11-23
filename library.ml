@@ -14,7 +14,9 @@ let rec float_of_int x =
   if x >= 0 then
     if x >= 1 then float_of_int (x - 1) +. 1.0 else 0.0
   else -. float_of_int (-x) in
-let rec floor x = float_of_int (int_of_float x) in
+let rec floor x =
+  if x >= 0.0 then float_of_int (int_of_float x)
+  else float_of_int (int_of_float x - 1) in
 let pi = 3.14159265358979323846264 in
 let pi2 = pi *. 2.0 in
 let pihalf = pi *. 0.5 in
