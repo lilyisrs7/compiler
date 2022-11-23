@@ -53,8 +53,6 @@ and g' oc pos = function (* 各命令のアセンブリ生成 (caml2html: emit_gprime) *)
   (* 末尾でなかったら計算結果をdestにセット (caml2html: emit_nontail) *)
   | NonTail(_), Nop -> ()
   | NonTail(x), Set(i) -> (* 即値を変数に入れる *)
-      (*let i_hi = Int.shift_right i 12 in
-      let i_lo = Int.shift_right (Int.shift_left i 20) 20 in*)
       Printf.fprintf oc "\tlui\t\t%s, %d\t# %d\n" x i pos;
       Printf.fprintf oc "\tori\t\t%s, %s, %d\t# %d\n" x reg_zero i pos
   | NonTail(x), SetL(Id.L(y)) -> (* トップレベル関数やグローバル配列のラベルから変数に値を移す *)
@@ -116,44 +114,24 @@ and g' oc pos = function (* 各命令のアセンブリ生成 (caml2html: emit_gprime) *)
       | _ -> assert false);
       Printf.fprintf oc "\tjalr\t%s, %s, 0\t# %d\n" reg_zero reg_ra pos;
   | Tail, IfEq(x, y, e1, e2) ->
-      (*Printf.fprintf oc "\tcmpl\t%s, %s, \n" (pp_id_or_imm y') x;
-        g'_tail_if oc e1 e2 "je" "jne"*)
       g'_tail_if oc x (V(y)) e1 e2 "beq" pos
   | Tail, IfLE(x, y, e1, e2) ->
-      (*Printf.fprintf oc "\tcmpl\t%s, %s\n" (pp_id_or_imm y') x;
-      g'_tail_if oc e1 e2 "jle" "jg"*)
       g'_tail_if oc x (V(y)) e1 e2 "ble" pos
   | Tail, IfGE(x, y, e1, e2) ->
-      (*Printf.fprintf oc "\tcmpl\t%s, %s\n" (pp_id_or_imm y') x;
-      g'_tail_if oc e1 e2 "jge" "jl"*)
       g'_tail_if oc x (V(y)) e1 e2 "bge" pos
   | Tail, IfFEq(x, y, e1, e2) ->
-      (*Printf.fprintf oc "\tcomisd\t%s, %s\n" y x;
-      g'_tail_if oc e1 e2 "je" "jne"*)
       g'_tail_if oc x (V(y)) e1 e2 "feq" pos
   | Tail, IfFLE(x, y, e1, e2) ->
-      (*Printf.fprintf oc "\tcomisd\t%s, %s\n" y x;
-      g'_tail_if oc e1 e2 "jbe" "ja"*)
       g'_tail_if oc x (V(y)) e1 e2 "fle" pos
   | NonTail(z), IfEq(x, y, e1, e2) ->
-      (*Printf.fprintf oc "\tcmpl\t%s, %s\n" (pp_id_or_imm y') x;
-      g'_non_tail_if oc (NonTail(z)) e1 e2 "je" "jne"*)
       g'_non_tail_if oc (NonTail(z)) x (V(y)) e1 e2 "beq" pos
   | NonTail(z), IfLE(x, y, e1, e2) ->
-      (*Printf.fprintf oc "\tcmpl\t%s, %s\n" (pp_id_or_imm y') x;
-      g'_non_tail_if oc (NonTail(z)) e1 e2 "jle" "jg"*)
       g'_non_tail_if oc (NonTail(z)) x (V(y)) e1 e2 "ble" pos
   | NonTail(z), IfGE(x, y, e1, e2) ->
-      (*Printf.fprintf oc "\tcmpl\t%s, %s\n" (pp_id_or_imm y') x;
-      g'_non_tail_if oc (NonTail(z)) e1 e2 "jge" "jl"*)
       g'_non_tail_if oc (NonTail(z)) x (V(y)) e1 e2 "bge" pos
   | NonTail(z), IfFEq(x, y, e1, e2) ->
-      (*Printf.fprintf oc "\tcomisd\t%s, %s\n" y x;
-      g'_non_tail_if oc (NonTail(z)) e1 e2 "je" "jne"*)
       g'_non_tail_if oc (NonTail(z)) x (V(y)) e1 e2 "feq" pos
   | NonTail(z), IfFLE(x, y, e1, e2) ->
-      (*Printf.fprintf oc "\tcomisd\t%s, %s\n" y x;
-      g'_non_tail_if oc (NonTail(z)) e1 e2 "jbe" "ja"*)
       g'_non_tail_if oc (NonTail(z)) x (V(y)) e1 e2 "fle" pos
   (* 関数呼び出しの仮想命令の実装 (caml2html: emit_call) *)
   | Tail, CallCls(x, ys, zs) -> (* 末尾呼び出し (caml2html: emit_tailcall) *)
