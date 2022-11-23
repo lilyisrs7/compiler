@@ -145,21 +145,21 @@ let rec g env = function (* 式の仮想マシンコード生成 (caml2html: virtual_g) *)
   | Closure.Put(x, y, z, pos) ->
       let offset = Id.genid "o" in
       let x' = Id.genid "x" in
-      let z = Id.genid "z" in
+      let w = Id.genid "w" in
       (match M.find x env with
       | Type.Array(Type.Unit) -> Ans(Nop, pos)
       | Type.Array(Type.Float) -> (*Ans(StDF(z, x, V(y)), pos)*) (* simm.g'で8かける *)
           (*Let((offset, Type.Int), Mul(y, C(8)),
               Ans(StDF(z, x, V(offset)), pos), pos)*)
-          Let((z, Type.Int), Set(4),
-              Let((offset, Type.Int), Mul(y, V(z)),
+          Let((w, Type.Int), Set(4),
+              Let((offset, Type.Int), Mul(y, V(w)),
                   Let((x', Type.Int), Add(x, V(offset)),
                       Ans(StDF(z, x', C(0)), pos), pos), pos), pos)
       | Type.Array(_) -> (*Ans(St(z, x, V(y)), pos)*) (* simm.g'で4かける *)
           (*Let((offset, Type.Int), Mul(y, C(4)),
               Ans(St(z, x, V(offset)), pos), pos)*)
-          Let((z, Type.Int), Set(4),
-              Let((offset, Type.Int), Mul(y, V(z)),
+          Let((w, Type.Int), Set(4),
+              Let((offset, Type.Int), Mul(y, V(w)),
                   Let((x', Type.Int), Add(x, V(offset)),
                       Ans(St(z, x', C(0)), pos), pos), pos), pos)
       | _ -> assert false)
