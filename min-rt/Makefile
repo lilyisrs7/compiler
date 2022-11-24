@@ -9,7 +9,7 @@ OCAMLOPT=ocamlopt
 all: native
 
 clean:
-	rm -f *.cm? *.o minrt.s minrt *.ppm *.parsed *.normalized *.alpha *.iterated *.closure *.virtual *.simm *.regalloc
+	rm -f *.cm? *.o minrt *.parsed *.normalized *.alpha *.iterated *.closure *.virtual *.simm *.regalloc
 
 native: minrt
 bytecode: minrt_b
