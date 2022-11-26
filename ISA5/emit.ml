@@ -22,7 +22,8 @@ let locate x =
     | y :: zs -> List.map succ (loc zs) in
   loc !stackmap
 let offset x = 4 * List.hd (locate x)
-let stacksize () = align ((List.length !stackmap + 1) * 4)
+let stacksize () = (List.length !stackmap + 1) * 4
+(* let stacksize () = align((List.length !stackmap + 1) * 4) *)
 
 let pp_id_or_imm = function
   | V(x) -> x
@@ -274,6 +275,12 @@ let f oc (Prog(data, fundefs, e)) =
   (*Printf.fprintf oc ".section\t\".data\"\n";
   Printf.fprintf oc ".align\t4\n";*)
   (*Printf.fprintf oc "\tjal\t\t%s, min_caml_start\n" reg_zero;*)
+  Printf.fprintf oc "l.0:\t# 8388608.000000\n";
+  Printf.fprintf oc "\t.word\t8388608.000000\n";
+  Printf.fprintf oc "l.1:\t# 0.000000\n";
+  Printf.fprintf oc "\t.word\t0.000000\n";
+  Printf.fprintf oc "l.2:\t# 1.000000\n";
+  Printf.fprintf oc "\t.word\t1.000000\n";
   List.iter
     (fun (Id.L(x), d) ->
       Printf.fprintf oc "%s:\t# %f\n" x d;
