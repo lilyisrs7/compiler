@@ -74,8 +74,10 @@ and g' oc pos = function (* 各命令のアセンブリ生成 (caml2html: emit_gprime) *)
                       Printf.fprintf oc "\tfadd\t%s, %s, %s\t# %d\n" x x y pos; (* 変数から変数に値を移す *)
                       (*Printf.fprintf oc "\tfmovs\t%s, %s\n" (co_freg y) (co_freg x)*))
   | NonTail(x), FNegD(y) ->
-      Printf.fprintf oc "\tfsub\t%s, %s, %s\t# %d\n" x x x pos;
-      Printf.fprintf oc "\tfsub\t%s, %s, %s\t# %d\n" x x y pos (* 符号反転 *)
+      if x <> y then (Printf.fprintf oc "\tfsub\t%s, %s, %s\t# %d\n" x x x pos;
+                      Printf.fprintf oc "\tfsub\t%s, %s, %s\t# %d\n" x x y pos) (* 符号反転 *)
+      else (Printf.fprintf oc "\tfsub\t%s, %s, %s\t# %d\n" reg_sw reg_sw reg_sw pos;
+            Printf.fprintf oc "\tfsub\t%s, %s, %s\t# %d\n" x reg_sw y pos)
       (*if x <> y then Printf.fprintf oc "\tfmovs\t%s, %s\n" (co_freg y) (co_freg x)*)
   | NonTail(x), FAddD(y, z) -> Printf.fprintf oc "\tfadd\t%s, %s, %s\t# %d\n" x y z pos
   | NonTail(x), FSubD(y, z) -> Printf.fprintf oc "\tfsub\t%s, %s, %s\t# %d\n" x y z pos
