@@ -53,14 +53,17 @@ let rec g oc = function (* 命令列のアセンブリ生成 (caml2html: emit_g) *) (* ここ
 and g' oc pos = function (* 各命令のアセンブリ生成 (caml2html: emit_gprime) *)
   (* 末尾でなかったら計算結果をdestにセット (caml2html: emit_nontail) *)
   | NonTail(_), Nop -> ()
-  | NonTail(x), Set(i) -> (* 即値を変数に入れる *)
-      Printf.fprintf oc "\tlui\t\t%s, %d\t# %d\n" x i pos;
-      Printf.fprintf oc "\tori\t\t%s, %s, %d\t# %d\n" x reg_zero i pos
-  | NonTail(x), SetL(Id.L(y)) -> (* トップレベル関数やグローバル配列のラベルから変数に値を移す *)
-      (Printf.fprintf oc "\tlui\t\t%s, %%hi(%s)\t# %d\n" x y pos;
-       Printf.fprintf oc "\tori\t\t%s, %s, %%lo(%s)\t# %d\n" x reg_zero y pos;)
+  | NonTail(x), Set(i) -> (* 即値をレジスタに入れる *)
+      if i == 0 then
+        Printf.fprintf oc "\taddi\t\t%s, %s, 0\t# %d\n" x reg_zero pos
+      else
+        (Printf.fprintf oc "\tlui\t\t%s, %d\t# %d\n" x i pos;
+         Printf.fprintf oc "\tori\t\t%s, %s, %d\t# %d\n" x reg_zero i pos)
+  | NonTail(x), SetL(Id.L(y)) -> (* ラベルからレジスタに値を移す *)
+      Printf.fprintf oc "\tlui\t\t%s, %%hi(%s)\t# %d\n" x y pos;
+      Printf.fprintf oc "\tori\t\t%s, %s, %%lo(%s)\t# %d\n" x reg_zero y pos
   | NonTail(x), Mov(y) ->
-      if x <> y then Printf.fprintf oc "\taddi\t%s, %s, 0\t# %d\n" x y pos (* 変数から変数に値を移す *)
+      if x <> y then Printf.fprintf oc "\taddi\t%s, %s, 0\t# %d\n" x y pos
   | NonTail(x), Neg(y) -> Printf.fprintf oc "\tsub\t\t%s, %s, %s\t# %d\n" x reg_zero y pos (* 符号反転  *)
   | NonTail(x), Add(y, V(z)) -> Printf.fprintf oc "\tadd\t\t%s, %s, %s\t# %d\n" x y z pos
   | NonTail(x), Add(y, C(z)) -> Printf.fprintf oc "\taddi\t%s, %s, %d\t# %d\n" x y z pos
@@ -71,14 +74,12 @@ and g' oc pos = function (* 各命令のアセンブリ生成 (caml2html: emit_gprime) *)
   | NonTail(_), St(x, y, z') -> Printf.fprintf oc "\tsw\t\t%s, %s(%s)\t# %d\n" x (pp_id_or_imm z') y pos
   | NonTail(x), FMovD(y) ->
       if x <> y then (Printf.fprintf oc "\tfsub\t%s, %s, %s\t# %d\n" x x x pos;
-                      Printf.fprintf oc "\tfadd\t%s, %s, %s\t# %d\n" x x y pos; (* 変数から変数に値を移す *)
-                      (*Printf.fprintf oc "\tfmovs\t%s, %s\n" (co_freg y) (co_freg x)*))
-  | NonTail(x), FNegD(y) ->
+                      Printf.fprintf oc "\tfadd\t%s, %s, %s\t# %d\n" x x y pos)
+  | NonTail(x), FNegD(y) -> (* 符号反転 *)
       if x <> y then (Printf.fprintf oc "\tfsub\t%s, %s, %s\t# %d\n" x x x pos;
-                      Printf.fprintf oc "\tfsub\t%s, %s, %s\t# %d\n" x x y pos) (* 符号反転 *)
+                      Printf.fprintf oc "\tfsub\t%s, %s, %s\t# %d\n" x x y pos)
       else (Printf.fprintf oc "\tfsub\t%s, %s, %s\t# %d\n" reg_sw reg_sw reg_sw pos;
             Printf.fprintf oc "\tfsub\t%s, %s, %s\t# %d\n" x reg_sw y pos)
-      (*if x <> y then Printf.fprintf oc "\tfmovs\t%s, %s\n" (co_freg y) (co_freg x)*)
   | NonTail(x), FAddD(y, z) -> Printf.fprintf oc "\tfadd\t%s, %s, %s\t# %d\n" x y z pos
   | NonTail(x), FSubD(y, z) -> Printf.fprintf oc "\tfsub\t%s, %s, %s\t# %d\n" x y z pos
   | NonTail(x), FMulD(y, z) -> Printf.fprintf oc "\tfmul\t%s, %s, %s\t# %d\n" x y z pos
@@ -143,7 +144,7 @@ and g' oc pos = function (* 各命令のアセンブリ生成 (caml2html: emit_gprime) *)
       Printf.fprintf oc "\tjalr\t%s, %s, 0\t# %d\n" reg_zero reg_sw pos;
   | Tail, CallDir(Id.L(x), ys, zs) -> (* 末尾呼び出し *)
       g'_args oc [] ys zs;
-      Printf.fprintf oc "\tjal\t\t%s, %s\t# %d\n" reg_zero x pos; (*reg_zero?*)
+      Printf.fprintf oc "\tjal\t\t%s, %s\t# %d\n" reg_zero x pos;
   | NonTail(a), CallCls(x, ys, zs) ->
       g'_args oc [(x, reg_cl)] ys zs;
       let ss = stacksize () in
@@ -169,7 +170,6 @@ and g' oc pos = function (* 各命令のアセンブリ生成 (caml2html: emit_gprime) *)
       else if List.mem a allfregs && a <> fregs.(0) then
         (Printf.fprintf oc "\tfsub\t%s, %s, %s\t# %d\n" a a a pos;
         Printf.fprintf oc "\tfadd\t%s, %s, %s\t# %d\n" a a fregs.(0) pos;)
-        (*Printf.fprintf oc "\tfmovs\t%s, %s\n" (co_freg fregs.(0)) (co_freg a)*)
   | NonTail(a), CallDir(Id.L(x), ys, zs) ->
       g'_args oc [] ys zs;
       let ss = stacksize () in
@@ -193,7 +193,6 @@ and g' oc pos = function (* 各命令のアセンブリ生成 (caml2html: emit_gprime) *)
       else if List.mem a allfregs && a <> fregs.(0) then
         (Printf.fprintf oc "\tfsub\t%s, %s, %s\t# %d\n" a a a pos;
         Printf.fprintf oc "\tfadd\t%s, %s, %s\t# %d\n" a a fregs.(0) pos)
-        (*Printf.fprintf oc "\tfmovs\t%s, %s\n" (co_freg fregs.(0)) (co_freg a)*)
 and g'_tail_if oc x y e1 e2 b pos =
   (*let b_else = Id.genid (b ^ "_else") in
   Printf.fprintf oc "\t%s\t%s\n" bn b_else;
@@ -202,18 +201,23 @@ and g'_tail_if oc x y e1 e2 b pos =
   Printf.fprintf oc "%s:\n" b_else;
   stackset := stackset_back;
   g oc (Tail, e2)*)
-  let b_id = Id.genid b in
   if b = "fle" || b = "feq" then
-    (Printf.fprintf oc "\t%s\t\t%s, %s, %s\t# %d\n" b reg_sw x (pp_id_or_imm y) pos;
-    Printf.fprintf oc "\taddi\t%s, %s, -1\t# %d\n" reg_sw reg_sw pos;
-    Printf.fprintf oc "\tbeq\t\t%s, %s, %s\t# %d\n" reg_sw reg_zero b_id pos)
+    (let b_else = Id.genid (b ^ "_else") in
+     Printf.fprintf oc "\t%s\t\t%s, %s, %s\t# %d\n" b reg_sw x (pp_id_or_imm y) pos;
+     Printf.fprintf oc "\tbeq\t\t%s, %s, %s\t# %d\n" reg_sw reg_zero b_else pos;
+     let stackset_back = !stackset in
+     g oc (Tail, e1);
+     Printf.fprintf oc "%s:\n" b_else;
+     stackset := stackset_back;
+     g oc (Tail, e2))
   else
-    Printf.fprintf oc "\t%s\t\t%s, %s, %s\t# %d\n" b x (pp_id_or_imm y) b_id pos;
-  let stackset_back = !stackset in
-  g oc (Tail, e2);
-  Printf.fprintf oc "%s:\n" b_id;
-  stackset := stackset_back;
-  g oc (Tail, e1)
+    (let b_id = Id.genid b in
+     Printf.fprintf oc "\t%s\t\t%s, %s, %s\t# %d\n" b x (pp_id_or_imm y) b_id pos;
+     let stackset_back = !stackset in
+     g oc (Tail, e2);
+     Printf.fprintf oc "%s:\n" b_id;
+     stackset := stackset_back;
+     g oc (Tail, e1))
 and g'_non_tail_if oc dest x y e1 e2 b pos =
   (*let b_else = Id.genid (b ^ "_else") in
   let b_cont = Id.genid (b ^ "_cont") in
@@ -228,24 +232,34 @@ and g'_non_tail_if oc dest x y e1 e2 b pos =
   Printf.fprintf oc "%s:\n" b_cont;
   let stackset2 = !stackset in
   stackset := S.inter stackset1 stackset2*)
-  let b_id = Id.genid b in
   let b_cont = Id.genid (b ^ "_cont") in
   if b = "fle" || b = "feq" then
-    (Printf.fprintf oc "\t%s\t\t%s, %s, %s\t# %d\n" b reg_sw x (pp_id_or_imm y) pos;
-    Printf.fprintf oc "\taddi\t%s, %s, -1\t# %d\n" reg_sw reg_sw pos;
-    Printf.fprintf oc "\tbeq\t\t%s, %s, %s\t# %d\n" reg_sw reg_zero b_id pos)
+    (let b_else = Id.genid (b ^ "_else") in
+     Printf.fprintf oc "\t%s\t\t%s, %s, %s\t# %d\n" b reg_sw x (pp_id_or_imm y) pos;
+     Printf.fprintf oc "\tbeq\t\t%s, %s, %s\t# %d\n" reg_sw reg_zero b_else pos;
+     let stackset_back = !stackset in
+     g oc (dest, e1);
+     let stackset1 = !stackset in
+     Printf.fprintf oc "\tjal\t\t%s, %s\t# %d\n" reg_zero b_cont pos;
+     Printf.fprintf oc "%s:\n" b_else;
+     stackset := stackset_back;
+     g oc (dest, e2);
+     Printf.fprintf oc "%s:\n" b_cont;
+     let stackset2 = !stackset in
+     stackset := S.inter stackset1 stackset2)
   else
-    Printf.fprintf oc "\t%s\t\t%s, %s, %s\t# %d\n" b x (pp_id_or_imm y) b_id pos;
-  let stackset_back = !stackset in
-  g oc (dest, e2);
-  let stackset1 = !stackset in
-  Printf.fprintf oc "\tjal\t\t%s, %s\t# %d\n" reg_zero b_cont pos;
-  Printf.fprintf oc "%s:\n" b_id;
-  stackset := stackset_back;
-  g oc (dest, e1);
-  Printf.fprintf oc "%s:\n" b_cont;
-  let stackset2 = !stackset in
-  stackset := S.inter stackset1 stackset2
+    (let b_id = Id.genid b in
+     Printf.fprintf oc "\t%s\t\t%s, %s, %s\t# %d\n" b x (pp_id_or_imm y) b_id pos;
+     let stackset_back = !stackset in
+     g oc (dest, e2);
+     let stackset1 = !stackset in
+     Printf.fprintf oc "\tjal\t\t%s, %s\t# %d\n" reg_zero b_cont pos;
+     Printf.fprintf oc "%s:\n" b_id;
+     stackset := stackset_back;
+     g oc (dest, e1);
+     Printf.fprintf oc "%s:\n" b_cont;
+     let stackset2 = !stackset in
+     stackset := S.inter stackset1 stackset2)
 and g'_args oc x_reg_cl ys zs =
   let (i, yrs) =
     List.fold_left
@@ -263,7 +277,6 @@ and g'_args oc x_reg_cl ys zs =
   List.iter
     (fun (z, fr) -> Printf.fprintf oc "\tfsub\t%s, %s, %s\n" fr fr fr;
                     Printf.fprintf oc "\tfadd\t%s, %s, %s\n" fr fr z)
-    (*Printf.fprintf oc "\tfmovs\t%s, %s\n" (co_freg z) (co_freg fr)*)
     (shuffle reg_fsw zfrs)
 
 let h oc { name = Id.L(x); args = _; fargs = _; body = e; ret = _ } =
@@ -276,7 +289,6 @@ let f oc (Prog(data, fundefs, e)) =
   Format.eprintf "generating assembly...@.";
   (*Printf.fprintf oc ".section\t\".data\"\n";
   Printf.fprintf oc ".align\t4\n";*)
-  (*Printf.fprintf oc "\tjal\t\t%s, min_caml_start\n" reg_zero;*)
   Printf.fprintf oc "l.0:\t# 8388608.000000\n";
   Printf.fprintf oc "\t.word\t8388608.000000\n";
   Printf.fprintf oc "l.1:\t# 0.000000\n";
@@ -287,8 +299,6 @@ let f oc (Prog(data, fundefs, e)) =
     (fun (Id.L(x), d) ->
       Printf.fprintf oc "%s:\t# %f\n" x d;
       Printf.fprintf oc "\t.word\t%f\n" d)
-      (*Printf.fprintf oc "\t.long\t0x%lx\n" (gethi d);
-      Printf.fprintf oc "\t.long\t0x%lx\n" (getlo d))*)
     data;
   (*Printf.fprintf oc ".section\t\".text\"\n";*)
   List.iter (fun fundef -> h oc fundef) fundefs;
