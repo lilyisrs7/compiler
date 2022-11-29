@@ -56,6 +56,7 @@ and g' oc pos = function (* 各命令のアセンブリ生成 (caml2html: emit_gprime) *)
   | NonTail(x), Set(i) -> (* 即値をレジスタに入れる *)
       if i == 0 then
         Printf.fprintf oc "\taddi\t%s, %s, 0\t# %d\n" x reg_zero pos
+      else if 0 <= i && i <= 4095 then Printf.fprintf oc "\tori\t\t%s, %s, %d\t# %d\n" x reg_zero i pos
       else
         (Printf.fprintf oc "\tlui\t\t%s, %d\t# %d\n" x i pos;
          Printf.fprintf oc "\tori\t\t%s, %s, %d\t# %d\n" x reg_zero i pos)
