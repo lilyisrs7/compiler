@@ -235,32 +235,62 @@ and g'_non_tail_if oc dest x y e1 e2 b pos =
   stackset := S.inter stackset1 stackset2*)
   let b_cont = Id.genid (b ^ "_cont") in
   if b = "fle" || b = "feq" then
-    (let b_else = Id.genid (b ^ "_else") in
-     Printf.fprintf oc "\t%s\t\t%s, %s, %s\t# %d\n" b reg_sw x (pp_id_or_imm y) pos;
-     Printf.fprintf oc "\tbeq\t\t%s, %s, %s\t# %d\n" reg_sw reg_zero b_else pos;
-     let stackset_back = !stackset in
-     g oc (dest, e1);
-     let stackset1 = !stackset in
-     Printf.fprintf oc "\tjal\t\t%s, %s\t# %d\n" reg_zero b_cont pos;
-     Printf.fprintf oc "%s:\n" b_else;
-     stackset := stackset_back;
-     g oc (dest, e2);
-     Printf.fprintf oc "%s:\n" b_cont;
-     let stackset2 = !stackset in
-     stackset := S.inter stackset1 stackset2)
+    (match dest, e2 with
+     | _, Ans(Nop, _) -> (Printf.fprintf oc "\t%s\t\t%s, %s, %s\t# %d\n" b reg_sw x (pp_id_or_imm y) pos;
+                          Printf.fprintf oc "\tbeq\t\t%s, %s, %s\t# %d\n" reg_sw reg_zero b_cont pos;
+                          g oc (dest, e1);
+                          let stackset1 = !stackset in
+                          Printf.fprintf oc "%s:\n" b_cont;
+                          let stackset2 = !stackset in
+                          stackset := S.inter stackset1 stackset2)
+     | NonTail(x_), Ans(Mov(y_), _) | NonTail(x_), Ans(FMovD(y_), _) when x_ = y_ ->
+        (Printf.fprintf oc "\t%s\t\t%s, %s, %s\t# %d\n" b reg_sw x (pp_id_or_imm y) pos;
+         Printf.fprintf oc "\tbeq\t\t%s, %s, %s\t# %d\n" reg_sw reg_zero b_cont pos;
+         g oc (dest, e1);
+         let stackset1 = !stackset in
+         Printf.fprintf oc "%s:\n" b_cont;
+         let stackset2 = !stackset in
+         stackset := S.inter stackset1 stackset2)
+     | _, _ -> (let b_else = Id.genid (b ^ "_else") in
+                Printf.fprintf oc "\t%s\t\t%s, %s, %s\t# %d\n" b reg_sw x (pp_id_or_imm y) pos;
+                Printf.fprintf oc "\tbeq\t\t%s, %s, %s\t# %d\n" reg_sw reg_zero b_else pos;
+                let stackset_back = !stackset in
+                g oc (dest, e1);
+                let stackset1 = !stackset in
+                Printf.fprintf oc "\tjal\t\t%s, %s\t# %d\n" reg_zero b_cont pos;
+                Printf.fprintf oc "%s:\n" b_else;
+                stackset := stackset_back;
+                g oc (dest, e2);
+                Printf.fprintf oc "%s:\n" b_cont;
+                let stackset2 = !stackset in
+                stackset := S.inter stackset1 stackset2))
   else
-    (let b_id = Id.genid b in
-     Printf.fprintf oc "\t%s\t\t%s, %s, %s\t# %d\n" b x (pp_id_or_imm y) b_id pos;
-     let stackset_back = !stackset in
-     g oc (dest, e2);
-     let stackset1 = !stackset in
-     Printf.fprintf oc "\tjal\t\t%s, %s\t# %d\n" reg_zero b_cont pos;
-     Printf.fprintf oc "%s:\n" b_id;
-     stackset := stackset_back;
-     g oc (dest, e1);
-     Printf.fprintf oc "%s:\n" b_cont;
-     let stackset2 = !stackset in
-     stackset := S.inter stackset1 stackset2)
+    (match dest, e1 with
+     | _, Ans(Nop, _) -> (Printf.fprintf oc "\t%s\t\t%s, %s, %s\t# %d\n" b x (pp_id_or_imm y) b_cont pos;
+                          g oc (dest, e2);
+                          let stackset1 = !stackset in
+                          Printf.fprintf oc "%s:\n" b_cont;
+                          let stackset2 = !stackset in
+                          stackset := S.inter stackset1 stackset2)
+     | NonTail(x_), Ans(Mov(y_), _) | NonTail(x_), Ans(FMovD(y_), _) when x_ = y_ ->
+        (Printf.fprintf oc "\t%s\t\t%s, %s, %s\t# %d\n" b x (pp_id_or_imm y) b_cont pos;
+        g oc (dest, e2);
+        let stackset1 = !stackset in
+        Printf.fprintf oc "%s:\n" b_cont;
+        let stackset2 = !stackset in
+        stackset := S.inter stackset1 stackset2)
+     | _, _ -> (let b_id = Id.genid b in
+                Printf.fprintf oc "\t%s\t\t%s, %s, %s\t# %d\n" b x (pp_id_or_imm y) b_id pos;
+                let stackset_back = !stackset in
+                g oc (dest, e2);
+                let stackset1 = !stackset in
+                Printf.fprintf oc "\tjal\t\t%s, %s\t# %d\n" reg_zero b_cont pos;
+                Printf.fprintf oc "%s:\n" b_id;
+                stackset := stackset_back;
+                g oc (dest, e1);
+                Printf.fprintf oc "%s:\n" b_cont;
+                let stackset2 = !stackset in
+                stackset := S.inter stackset1 stackset2))
 and g'_args oc x_reg_cl ys zs =
   let (i, yrs) =
     List.fold_left
