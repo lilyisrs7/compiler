@@ -19,7 +19,7 @@ exec_read_float:
 	lui		x27, %hi(data)
 	ori		x27, x0, %lo(data)
 	add		x27, x27, x30
-	flw		f0, 0(x27)
+	flw		f1, 0(x27)
 	addi	x30, x30, 4
 	jalr	x0, x1, 0
 min_caml_create_array:
@@ -40,12 +40,12 @@ min_caml_create_float_array:
 create_float_array_loop:
 	beq		x5, x0, create_float_array_exit
 create_float_array_cont:
-	fsw		f0, 0(x3)
+	fsw		f1, 0(x3)
 	addi	x5, x5, -1
 	addi	x3, x3, 4
 	jal		x0, create_float_array_loop
 create_float_array_exit:
 	jalr	x0, x1, 0
 min_caml_sqrt:
-	fsqrt	f0, f0
+	fsqrt	f1, f1
 	jalr	x0, x1, 0
