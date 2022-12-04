@@ -1,7 +1,7 @@
 open Asm
 
-external gethi : float -> int32 = "gethi"
-external getlo : float -> int32 = "getlo"
+(* external gethi : float -> int32 = "gethi"
+external getlo : float -> int32 = "getlo" *)
 
 let stackset = ref S.empty (* すでにSaveされた変数の集合 (caml2html: emit_stackset) *)
 let stackmap = ref [] (* Saveされた変数の、スタックにおける位置 (caml2html: emit_stackmap) *)
@@ -53,13 +53,7 @@ let rec g oc = function (* 命令列のアセンブリ生成 (caml2html: emit_g) *) (* ここ
 and g' oc pos = function (* 各命令のアセンブリ生成 (caml2html: emit_gprime) *)
   (* 末尾でなかったら計算結果をdestにセット (caml2html: emit_nontail) *)
   | NonTail(_), Nop -> ()
-  | NonTail(x), Set(i) -> (* 即値をレジスタに入れる *)
-      if i == 0 then
-        Printf.fprintf oc "\taddi\t%s, %s, 0\t# %d\n" x reg_zero pos
-      else if 0 <= i && i <= 4095 then Printf.fprintf oc "\tori\t\t%s, %s, %d\t# %d\n" x reg_zero i pos
-      else
-        (Printf.fprintf oc "\tlui\t\t%s, %d\t# %d\n" x i pos;
-         Printf.fprintf oc "\tori\t\t%s, %s, %d\t# %d\n" x reg_zero i pos)
+  | NonTail(x), Set(i) -> Printf.fprintf oc "\taddi\t%s, %s, %d\t# %d\n" x reg_zero i pos (* 即値をレジスタに入れる *)
   | NonTail(x), SetL(Id.L(y)) -> (* ラベルからレジスタに値を移す *)
       Printf.fprintf oc "\tlui\t\t%s, %%hi(%s)\t# %d\n" x y pos;
       Printf.fprintf oc "\tori\t\t%s, %s, %%lo(%s)\t# %d\n" x reg_zero y pos
@@ -239,18 +233,12 @@ and g'_non_tail_if oc dest x y e1 e2 b pos =
      | _, Ans(Nop, _) -> (Printf.fprintf oc "\t%s\t\t%s, %s, %s\t# %d\n" b reg_sw x (pp_id_or_imm y) pos;
                           Printf.fprintf oc "\tbeq\t\t%s, %s, %s\t# %d\n" reg_sw reg_zero b_cont pos;
                           g oc (dest, e1);
-                          let stackset1 = !stackset in
-                          Printf.fprintf oc "%s:\n" b_cont;
-                          let stackset2 = !stackset in
-                          stackset := S.inter stackset1 stackset2)
+                          Printf.fprintf oc "%s:\n" b_cont)
      | NonTail(x_), Ans(Mov(y_), _) | NonTail(x_), Ans(FMovD(y_), _) when x_ = y_ ->
         (Printf.fprintf oc "\t%s\t\t%s, %s, %s\t# %d\n" b reg_sw x (pp_id_or_imm y) pos;
          Printf.fprintf oc "\tbeq\t\t%s, %s, %s\t# %d\n" reg_sw reg_zero b_cont pos;
          g oc (dest, e1);
-         let stackset1 = !stackset in
-         Printf.fprintf oc "%s:\n" b_cont;
-         let stackset2 = !stackset in
-         stackset := S.inter stackset1 stackset2)
+         Printf.fprintf oc "%s:\n" b_cont)
      | _, _ -> (let b_else = Id.genid (b ^ "_else") in
                 Printf.fprintf oc "\t%s\t\t%s, %s, %s\t# %d\n" b reg_sw x (pp_id_or_imm y) pos;
                 Printf.fprintf oc "\tbeq\t\t%s, %s, %s\t# %d\n" reg_sw reg_zero b_else pos;
@@ -268,17 +256,11 @@ and g'_non_tail_if oc dest x y e1 e2 b pos =
     (match dest, e1 with
      | _, Ans(Nop, _) -> (Printf.fprintf oc "\t%s\t\t%s, %s, %s\t# %d\n" b x (pp_id_or_imm y) b_cont pos;
                           g oc (dest, e2);
-                          let stackset1 = !stackset in
-                          Printf.fprintf oc "%s:\n" b_cont;
-                          let stackset2 = !stackset in
-                          stackset := S.inter stackset1 stackset2)
+                          Printf.fprintf oc "%s:\n" b_cont)
      | NonTail(x_), Ans(Mov(y_), _) | NonTail(x_), Ans(FMovD(y_), _) when x_ = y_ ->
         (Printf.fprintf oc "\t%s\t\t%s, %s, %s\t# %d\n" b x (pp_id_or_imm y) b_cont pos;
-        g oc (dest, e2);
-        let stackset1 = !stackset in
-        Printf.fprintf oc "%s:\n" b_cont;
-        let stackset2 = !stackset in
-        stackset := S.inter stackset1 stackset2)
+         g oc (dest, e2);
+         Printf.fprintf oc "%s:\n" b_cont)
      | _, _ -> (let b_id = Id.genid b in
                 Printf.fprintf oc "\t%s\t\t%s, %s, %s\t# %d\n" b x (pp_id_or_imm y) b_id pos;
                 let stackset_back = !stackset in
