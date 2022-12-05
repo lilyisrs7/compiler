@@ -9,12 +9,12 @@ let save x =
   stackset := S.add x !stackset;
   if not (List.mem x !stackmap) then
     stackmap := !stackmap @ [x]
-let savef x =
+(* let savef x =
   stackset := S.add x !stackset;
   if not (List.mem x !stackmap) then
     (let pad =
       if List.length !stackmap mod 2 = 0 then [] else [Id.gentmp Type.Int] in
-    stackmap := !stackmap @ pad @ [x; x])
+    stackmap := !stackmap @ pad @ [x; x]) *)
 let locate x =
   let rec loc = function
     | [] -> []
@@ -89,7 +89,7 @@ and g' oc pos = function (* 各命令のアセンブリ生成 (caml2html: emit_gprime) *)
       save y;
       Printf.fprintf oc "\tsw\t\t%s, %d(%s)\t# %d\n" x (- (offset y)) reg_sp pos (**)
   | NonTail(_), Save(x, y) when List.mem x allfregs && not (S.mem y !stackset) ->
-      savef y;
+      save y;
       Printf.fprintf oc "\tfsw\t\t%s, %d(%s)\t# %d\n" x (- (offset y)) reg_sp pos (**)
   | NonTail(_), Save(x, y) -> assert (S.mem y !stackset); ()
   (* 復帰の仮想命令の実装 (caml2html: emit_restore) *)
@@ -234,10 +234,10 @@ and g'_non_tail_if oc dest x y e1 e2 b pos =
   let b_cont = Id.genid (b ^ "_cont") in
   if b = "fle" || b = "feq" then
     (match dest, e2 with
-     | _, Ans(Nop, _) -> (Printf.fprintf oc "\t%s\t\t%s, %s, %s\t# %d\n" b reg_sw x (pp_id_or_imm y) pos;
-                          Printf.fprintf oc "\tbeq\t\t%s, %s, %s\t# %d\n" reg_sw reg_zero b_cont pos;
-                          g oc (dest, e1);
-                          Printf.fprintf oc "%s:\n" b_cont)
+     | NonTail(_), Ans(Nop, _) -> (Printf.fprintf oc "\t%s\t\t%s, %s, %s\t# %d\n" b reg_sw x (pp_id_or_imm y) pos;
+                                   Printf.fprintf oc "\tbeq\t\t%s, %s, %s\t# %d\n" reg_sw reg_zero b_cont pos;
+                                   g oc (dest, e1);
+                                   Printf.fprintf oc "%s:\n" b_cont)
      | NonTail(x_), Ans(Mov(y_), _) | NonTail(x_), Ans(FMovD(y_), _) when x_ = y_ ->
         (Printf.fprintf oc "\t%s\t\t%s, %s, %s\t# %d\n" b reg_sw x (pp_id_or_imm y) pos;
          Printf.fprintf oc "\tbeq\t\t%s, %s, %s\t# %d\n" reg_sw reg_zero b_cont pos;
@@ -258,9 +258,9 @@ and g'_non_tail_if oc dest x y e1 e2 b pos =
                 stackset := S.inter stackset1 stackset2))
   else
     (match dest, e1 with
-     | _, Ans(Nop, _) -> (Printf.fprintf oc "\t%s\t\t%s, %s, %s\t# %d\n" b x (pp_id_or_imm y) b_cont pos;
-                          g oc (dest, e2);
-                          Printf.fprintf oc "%s:\n" b_cont)
+     | NonTail(_), Ans(Nop, _) -> (Printf.fprintf oc "\t%s\t\t%s, %s, %s\t# %d\n" b x (pp_id_or_imm y) b_cont pos;
+                                   g oc (dest, e2);
+                                   Printf.fprintf oc "%s:\n" b_cont)
      | NonTail(x_), Ans(Mov(y_), _) | NonTail(x_), Ans(FMovD(y_), _) when x_ = y_ ->
         (Printf.fprintf oc "\t%s\t\t%s, %s, %s\t# %d\n" b x (pp_id_or_imm y) b_cont pos;
          g oc (dest, e2);
