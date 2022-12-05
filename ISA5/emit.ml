@@ -334,6 +334,7 @@ let f oc (Prog(data, fundefs, e)) =
   Printf.fprintf oc "\tlui\t\t%s, %%hi(%s)\n" regs.(0) !label_zero;
   Printf.fprintf oc "\tori\t\t%s, %s, %%lo(%s)\n" regs.(0) reg_zero !label_zero;
   Printf.fprintf oc "\tflw\t\t%s, 0(%s)\n" reg_fzero regs.(0);
+  (* Printf.fprintf oc "%d, %d\n" !RegAlloc.reg_max !RegAlloc.freg_max; *)
   stackset := S.empty;
   stackmap := [];
   g oc (NonTail(regs.(0)), e);

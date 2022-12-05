@@ -1,5 +1,8 @@
 open Asm
 
+let reg_max = ref 3
+let freg_max = ref 0
+
 (* for register coalescing *)
 (* [XXX] Callがあったら、そこから先は無意味というか逆効果なので追わない。
          そのために「Callがあったかどうか」を返り値の第1要素に含める。 *)
@@ -106,7 +109,11 @@ let rec alloc dest cont regenv x t =
 (* auxiliary function for g and g'_and_restore *)
 let add x r regenv =
   if is_reg x then (assert (x = r); regenv) else
-  M.add x r regenv
+  (if r.[0] = 'x' && String.length r = 2 && int_of_string (String.sub r 1 1) > !reg_max then reg_max := int_of_string (String.sub r 1 1)
+   else if r.[0] = 'x' && String.length r = 3 && int_of_string (String.sub r 1 2) < 27 && int_of_string (String.sub r 1 2) > !reg_max then reg_max := int_of_string (String.sub r 1 2)
+   else if r.[0] = 'f' && String.length r = 2 && int_of_string (String.sub r 1 1) > !freg_max then freg_max := int_of_string (String.sub r 1 1)
+   else if r.[0] = 'f' && String.length r = 3 && int_of_string (String.sub r 1 2) < 31 && int_of_string (String.sub r 1 2) > !freg_max then freg_max := int_of_string (String.sub r 1 2);
+   M.add x r regenv)
 
 (* auxiliary functions for g' *)
 exception NoReg of Id.t * Type.t
@@ -170,12 +177,12 @@ and g' dest cont regenv pos = function (* 各命令のレジスタ割り当て (caml2html: r
   | IfFLE(x, y, e1, e2) as exp -> g'_if dest cont regenv exp (fun e1' e2' -> IfFLE(find x Type.Float regenv, find y Type.Float regenv, e1', e2')) e1 e2 pos
   | CallCls(x, ys, zs) as exp ->
       if List.length ys > Array.length regs - 2 || List.length zs > Array.length fregs - 1 then
-        failwith (Format.sprintf "cannot allocate registers for arugments to %s" x)
+        failwith (Format.sprintf "cannot allocate registers for arguments to %s" x)
       else
         g'_call dest cont regenv exp (fun ys zs -> CallCls(find x Type.Int regenv, ys, zs)) ys zs pos
   | CallDir(Id.L(x), ys, zs) as exp ->
       if List.length ys > Array.length regs - 1 || List.length zs > Array.length fregs - 1 then
-        failwith (Format.sprintf "cannot allocate registers for arugments to %s" x)
+        failwith (Format.sprintf "cannot allocate registers for arguments to %s" x)
       else
         g'_call dest cont regenv exp (fun ys zs -> CallDir(Id.L(x), ys, zs)) ys zs pos
   | Save(x, y) -> assert false
