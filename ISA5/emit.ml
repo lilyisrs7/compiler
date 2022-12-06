@@ -24,6 +24,7 @@ let locate x =
 let offset x = 4 * List.hd (locate x)
 let stacksize () = (List.length !stackmap + 1) * 4
 (* let stacksize () = align((List.length !stackmap + 1) * 4) *)
+let loaded_labels = ref M.empty
 
 let pp_id_or_imm = function
   | V(x) -> x
@@ -47,6 +48,17 @@ let rec shuffle sw xys =
 type dest = Tail | NonTail of Id.t (* 末尾かどうかを表すデータ型 (caml2html: emit_dest) *)
 let rec g oc = function (* 命令列のアセンブリ生成 (caml2html: emit_g) *) (* ここをISA5に対応 PowerPCに寄せるかも *)
   | dest, Ans(exp, pos) -> g' oc pos (dest, exp)
+  | NonTail(w), Let((x, Type.Int), SetL(Id.L(y)), Ans(LdDF(z, C(0)), pos1), pos2) when x = z && M.mem y !loaded_labels ->
+      Printf.fprintf oc "\tfadd\t%s, %s, %s\t# %d\n" w reg_fzero (M.find y !loaded_labels) pos2
+  | NonTail(w), Let((x, Type.Int), SetL(Id.L(y)), Let((x_, _), LdDF(z, C(0)), e, pos1), pos2) when x = z && M.mem y !loaded_labels ->
+      Printf.fprintf oc "\tfadd\t%s, %s, %s\t# %d\n" x_ reg_fzero (M.find y !loaded_labels) pos2;
+      g oc (NonTail(w), e)
+  | Tail, Let((x, Type.Int), SetL(Id.L(y)), Ans(LdDF(z, C(0)), pos1), pos2) when x = z && M.mem y !loaded_labels ->
+      Printf.fprintf oc "\tfadd\t%s, %s, %s\t# %d\n" fregs.(0) reg_fzero (M.find y !loaded_labels) pos2;
+      Printf.fprintf oc "\tjalr\t%s, %s, 0\t# %d\n" reg_zero reg_ra pos2
+  | Tail, Let((x, Type.Int), SetL(Id.L(y)), Let((x_, _), LdDF(z, C(0)), e, pos1), pos2) when x = z && M.mem y !loaded_labels ->
+      Printf.fprintf oc "\tfadd\t%s, %s, %s\t# %d\n" x_ reg_fzero (M.find y !loaded_labels) pos2;
+      g oc (Tail, e)
   | dest, Let((x, t), exp, e, pos) ->
       g' oc pos (NonTail(x), exp);
       g oc (dest, e)
@@ -334,6 +346,7 @@ let f oc (Prog(data, fundefs, e)) =
   Printf.fprintf oc "\tlui\t\t%s, %%hi(%s)\n" regs.(0) !label_zero;
   Printf.fprintf oc "\tori\t\t%s, %s, %%lo(%s)\n" regs.(0) reg_zero !label_zero;
   Printf.fprintf oc "\tflw\t\t%s, 0(%s)\n" reg_fzero regs.(0);
+  loaded_labels := M.add !label_zero reg_fzero !loaded_labels;
   let reg_for_label = S.elements (S.diff (S.diff (S.of_list allfregs) (S.singleton reg_fsw)) !RegAlloc.used_regs) in
   Format.eprintf "reg_for_label : ";
   List.iter (Format.eprintf "%s ") reg_for_label;
@@ -346,6 +359,7 @@ let f oc (Prog(data, fundefs, e)) =
                                     (Printf.fprintf oc "\tlui\t\t%s, %%hi(%s)\n" regs.(0) label;
                                      Printf.fprintf oc "\tori\t\t%s, %s, %%lo(%s)\n" regs.(0) reg_zero label;
                                      Printf.fprintf oc "\tflw\t\t%s, 0(%s)\n" reg regs.(0);
+                                     loaded_labels := M.add label reg !loaded_labels;
                                      ld_label tl1 tl2)
                                   else ld_label reg_for_label tl2 in
   ld_label reg_for_label (List.map (fun (Id.L(x), _, _) -> x) data);
