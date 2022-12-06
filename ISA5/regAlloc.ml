@@ -1,7 +1,6 @@
 open Asm
 
-let reg_max = ref 3
-let freg_max = ref 0
+let used_regs = ref S.empty
 
 (* for register coalescing *)
 (* [XXX] Callがあったら、そこから先は無意味というか逆効果なので追わない。
@@ -109,10 +108,11 @@ let rec alloc dest cont regenv x t =
 (* auxiliary function for g and g'_and_restore *)
 let add x r regenv =
   if is_reg x then (assert (x = r); regenv) else
-  (if r.[0] = 'x' && String.length r = 2 && int_of_string (String.sub r 1 1) > !reg_max then reg_max := int_of_string (String.sub r 1 1)
+  (* (if r.[0] = 'x' && String.length r = 2 && int_of_string (String.sub r 1 1) > !reg_max then reg_max := int_of_string (String.sub r 1 1)
    else if r.[0] = 'x' && String.length r = 3 && int_of_string (String.sub r 1 2) < 27 && int_of_string (String.sub r 1 2) > !reg_max then reg_max := int_of_string (String.sub r 1 2)
    else if r.[0] = 'f' && String.length r = 2 && int_of_string (String.sub r 1 1) > !freg_max then freg_max := int_of_string (String.sub r 1 1)
-   else if r.[0] = 'f' && String.length r = 3 && int_of_string (String.sub r 1 2) < 31 && int_of_string (String.sub r 1 2) > !freg_max then freg_max := int_of_string (String.sub r 1 2);
+   else if r.[0] = 'f' && String.length r = 3 && int_of_string (String.sub r 1 2) < 31 && int_of_string (String.sub r 1 2) > !freg_max then freg_max := int_of_string (String.sub r 1 2); *)
+  (used_regs := S.add r !used_regs;
    M.add x r regenv)
 
 (* auxiliary functions for g' *)
