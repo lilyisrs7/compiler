@@ -337,6 +337,20 @@ let f oc (Prog(data, fundefs, e)) =
      label_zero := x;
      Printf.fprintf oc "%s:\t# %f\n" x 0.0;
      Printf.fprintf oc "\t.word\t%f\n" 0.0);
+  loaded_labels := M.add !label_zero reg_fzero !loaded_labels;
+  let reg_for_label = S.elements (S.diff (S.diff (S.of_list allfregs) (S.singleton reg_fsw)) !RegAlloc.used_regs) in
+  Format.eprintf "reg_for_label : ";
+  List.iter (Format.eprintf "%s ") reg_for_label;
+  Format.eprintf "\n";
+  let rec ld_label_noprint reg_for_label data =
+    match reg_for_label, data with
+    | [], [] -> ()
+    | [], hd :: tl | hd :: tl, [] -> ()
+    | reg :: tl1, label :: tl2 -> if label <> !label_zero then
+                                    (loaded_labels := M.add label reg !loaded_labels;
+                                     ld_label_noprint tl1 tl2)
+                                  else ld_label_noprint reg_for_label tl2 in
+  ld_label_noprint reg_for_label (List.map (fun (Id.L(x), _, _) -> x) data);
   (*Printf.fprintf oc ".section\t\".text\"\n";*)
   List.iter (fun fundef -> h oc fundef) fundefs;
   (*Printf.fprintf oc ".globl\tmin_caml_start\n";*)
@@ -346,11 +360,6 @@ let f oc (Prog(data, fundefs, e)) =
   Printf.fprintf oc "\tlui\t\t%s, %%hi(%s)\n" regs.(0) !label_zero;
   Printf.fprintf oc "\tori\t\t%s, %s, %%lo(%s)\n" regs.(0) reg_zero !label_zero;
   Printf.fprintf oc "\tflw\t\t%s, 0(%s)\n" reg_fzero regs.(0);
-  loaded_labels := M.add !label_zero reg_fzero !loaded_labels;
-  let reg_for_label = S.elements (S.diff (S.diff (S.of_list allfregs) (S.singleton reg_fsw)) !RegAlloc.used_regs) in
-  Format.eprintf "reg_for_label : ";
-  List.iter (Format.eprintf "%s ") reg_for_label;
-  Format.eprintf "\n";
   let rec ld_label reg_for_label data =
     match reg_for_label, data with
     | [], [] -> ()
@@ -359,7 +368,6 @@ let f oc (Prog(data, fundefs, e)) =
                                     (Printf.fprintf oc "\tlui\t\t%s, %%hi(%s)\n" regs.(0) label;
                                      Printf.fprintf oc "\tori\t\t%s, %s, %%lo(%s)\n" regs.(0) reg_zero label;
                                      Printf.fprintf oc "\tflw\t\t%s, 0(%s)\n" reg regs.(0);
-                                     loaded_labels := M.add label reg !loaded_labels;
                                      ld_label tl1 tl2)
                                   else ld_label reg_for_label tl2 in
   ld_label reg_for_label (List.map (fun (Id.L(x), _, _) -> x) data);

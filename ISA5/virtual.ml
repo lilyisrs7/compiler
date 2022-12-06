@@ -202,5 +202,5 @@ let f (Closure.Prog(fundefs, e)) =
   data := [];
   let fundefs = List.map h fundefs in
   let e = g M.empty e in
-  data := List.sort compare !data;
+  data := List.sort (fun (_, _, n1) (_, _, n2) -> compare n2 n1) !data;
   Prog(!data, fundefs, e)
