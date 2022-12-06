@@ -39,11 +39,20 @@ let rec g env = function (* 式の仮想マシンコード生成 (caml2html: virtual_g) *)
       let l =
         try
           (* すでに定数テーブルにあったら再利用 Cf. https://github.com/esumii/min-caml/issues/13 *)
-          let (l, _) = List.find (fun (_, d') -> d = d') !data in
+          (* let (l, _) = List.find (fun (_, d') -> d = d') !data in
+          l *)
+          let rec update lst d acc =
+            match lst with
+            | [] -> raise Not_found
+            | (l, d', num) :: tl when d = d' -> (l, ((l, d', num + 1) :: tl) @ acc)
+            | (l, d', num) :: tl when d <> d' -> update tl d ((l, d', num) :: acc)
+            | _ -> assert false in
+          let (l, new_data) = update !data d [] in
+          data := new_data;
           l
         with Not_found ->
           let l = Id.L(Id.genid "l") in
-          data := (l, d) :: !data;
+          data := (l, d, 1) :: !data;
           l in
       let x = Id.genid "l" in
       Let((x, Type.Int), SetL(l), Ans(LdDF(x, C(0)), pos), pos)
@@ -193,4 +202,5 @@ let f (Closure.Prog(fundefs, e)) =
   data := [];
   let fundefs = List.map h fundefs in
   let e = g M.empty e in
+  data := List.sort compare !data;
   Prog(!data, fundefs, e)
