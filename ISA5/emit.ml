@@ -315,7 +315,7 @@ let f oc (Prog(data, fundefs, e)) =
   Printf.fprintf oc "\t.word\t1.000000\n"; *)
   let label_zero = ref "" in
   List.iter
-    (fun (Id.L(x), d) ->
+    (fun (Id.L(x), d, _) ->
       if d = 0.0 then label_zero := x;
       Printf.fprintf oc "%s:\t# %f\n" x d;
       Printf.fprintf oc "\t.word\t%f\n" d)
@@ -334,6 +334,21 @@ let f oc (Prog(data, fundefs, e)) =
   Printf.fprintf oc "\tlui\t\t%s, %%hi(%s)\n" regs.(0) !label_zero;
   Printf.fprintf oc "\tori\t\t%s, %s, %%lo(%s)\n" regs.(0) reg_zero !label_zero;
   Printf.fprintf oc "\tflw\t\t%s, 0(%s)\n" reg_fzero regs.(0);
+  let reg_for_label = S.elements (S.diff (S.diff (S.of_list allfregs) (S.singleton reg_fsw)) !RegAlloc.used_regs) in
+  Format.eprintf "reg_for_label : ";
+  List.iter (Format.eprintf "%s ") reg_for_label;
+  Format.eprintf "\n";
+  let rec ld_label reg_for_label data =
+    match reg_for_label, data with
+    | [], [] -> ()
+    | [], hd :: tl | hd :: tl, [] -> ()
+    | reg :: tl1, label :: tl2 -> if label <> !label_zero then
+                                    (Printf.fprintf oc "\tlui\t\t%s, %%hi(%s)\n" regs.(0) label;
+                                     Printf.fprintf oc "\tori\t\t%s, %s, %%lo(%s)\n" regs.(0) reg_zero label;
+                                     Printf.fprintf oc "\tflw\t\t%s, 0(%s)\n" reg regs.(0);
+                                     ld_label tl1 tl2)
+                                  else ld_label reg_for_label tl2 in
+  ld_label reg_for_label (List.map (fun (Id.L(x), _, _) -> x) data);
   (* Printf.fprintf oc "%d, %d\n" !RegAlloc.reg_max !RegAlloc.freg_max; *)
   stackset := S.empty;
   stackmap := [];
