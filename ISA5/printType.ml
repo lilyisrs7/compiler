@@ -299,9 +299,9 @@ and print_asm_t oc tab_num e =
                                  print_asm_exp oc (tab_num + 1) exp; Printf.fprintf oc ",\n"; print_asm_t oc (tab_num + 1) e1;
                                  Printf.fprintf oc "\n"; print_tab oc tab_num; Printf.fprintf oc ")"
 
-let print_asm_data oc tab_num (Id.L(x), f) =
+let print_asm_data oc tab_num (Id.L(x), f, num) =
   print_tab oc tab_num;
-  Printf.fprintf oc "data (Id.L (%s), %f)\n" x f
+  Printf.fprintf oc "data (Id.L (%s), %f, %d)\n" x f num
 
 let print_asm_fundef oc tab_num ({ Asm.name = Id.L(l); Asm.args = xs; Asm.fargs = ys; Asm.body = e; Asm.ret = _ }) =
   print_tab oc tab_num;
