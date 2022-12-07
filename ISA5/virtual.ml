@@ -105,7 +105,12 @@ let rec g env = function (* 式の仮想マシンコード生成 (caml2html: virtual_g) *)
       Ans(CallCls(x, int, float), pos)
   | Closure.AppDir(Id.L(x), ys, pos) ->
       let (int, float) = separate (List.map (fun y -> (y, M.find y env)) ys) in
-      Ans(CallDir(Id.L(x), int, float), pos)
+      if x = "min_caml_sqrt" then
+        (match int, float with
+         | [], [y] -> Ans(Sqrt(y), pos)
+         |_ -> assert false)
+      else
+        Ans(CallDir(Id.L(x), int, float), pos)
   | Closure.Tuple(xs, pos) -> (* 組の生成 (caml2html: virtual_tuple) *)
       let y = Id.genid "t" in
       let (offset, store) =

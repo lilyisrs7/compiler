@@ -20,6 +20,7 @@ and exp =
   | FSubD of Id.t * Id.t
   | FMulD of Id.t * Id.t
   | FDivD of Id.t * Id.t
+  | Sqrt of Id.t
   | LdDF of Id.t * id_or_imm (*最終的には即値に*)
   | StDF of Id.t * Id.t * id_or_imm (*最終的には即値に*)
   | Comment of string

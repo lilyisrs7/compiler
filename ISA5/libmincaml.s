@@ -46,6 +46,3 @@ create_float_array_cont:
 	jal		x0, create_float_array_loop
 create_float_array_exit:
 	jalr	x0, x1, 0
-min_caml_sqrt:
-	fsqrt	f1, f1
-	jalr	x0, x1, 0

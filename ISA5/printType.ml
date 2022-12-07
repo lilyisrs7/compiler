@@ -253,6 +253,7 @@ let rec print_asm_exp oc tab_num e =
   | Asm.FSubD(x, y) -> Printf.fprintf oc "FSubD (%s, %s)" x y
   | Asm.FMulD(x, y) -> Printf.fprintf oc "FMulD (%s, %s)" x y
   | Asm.FDivD(x, y) -> Printf.fprintf oc "FDivD (%s, %s)" x y
+  | Asm.Sqrt(x) -> Printf.fprintf oc "Sqrt (%s)" x
   | Asm.LdDF(x, V(y)) -> Printf.fprintf oc "LdDF (%s, %s)" x y
   | Asm.LdDF(x, C(y)) -> Printf.fprintf oc "LdDF (%s, %d)" x y
   | Asm.StDF(x, y, V(z)) -> Printf.fprintf oc "StDF (%s, %s, %s)" x y z
