@@ -372,7 +372,6 @@ let f oc (Prog(data, fundefs, e)) =
                                      ld_label tl1 tl2)
                                   else ld_label reg_for_label tl2 in
   ld_label reg_for_label (List.map (fun (Id.L(x), _, _) -> x) data);
-  (* Printf.fprintf oc "%d, %d\n" !RegAlloc.reg_max !RegAlloc.freg_max; *)
   stackset := S.empty;
   stackmap := [];
   g oc (NonTail(regs.(0)), e);
