@@ -68,6 +68,7 @@ type alloc_result = (* allocにおいてspillingがあったかどうかを表すデータ型 *)
   try*)
 let rec alloc dest cont regenv x t =
   (* allocate a register or spill a variable *)
+  (* Format.eprintf "%s\n" x; *)
   assert (not (M.mem x regenv));
   let all =
     match t with
@@ -129,6 +130,7 @@ let find' x' regenv =
 let rec g dest cont regenv = function (* 命令列のレジスタ割り当て (caml2html: regalloc_g) *)
   | Ans(exp, pos) -> g'_and_restore dest cont regenv exp pos
   | Let((x, t) as xt, exp, e, pos) ->
+      (* Format.eprintf "%s\n" x; *)
       assert (not (M.mem x regenv));
       let cont' = concat e dest cont in
       let (e1', regenv1) = g'_and_restore xt cont' regenv exp pos in
