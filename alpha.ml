@@ -20,6 +20,8 @@ let rec g env = function (* α変換ルーチン本体 (caml2html: alpha_g) *)
   | FDiv(x, y, pos) -> FDiv(find x env, find y env, pos)
   | IfEq(x, y, e1, e2, pos) -> IfEq(find x env, find y env, g env e1, g env e2, pos)
   | IfLE(x, y, e1, e2, pos) -> IfLE(find x env, find y env, g env e1, g env e2, pos)
+  | Let(("reg_hp_init", t), e1, e2, pos) ->
+      Let(("reg_hp_init", t), g env e1, g env e2, pos)
   | Let((x, t), e1, e2, pos) -> (* letのα変換 (caml2html: alpha_let) *)
       let x' = Id.genid x in
       Let((x', t), g env e1, g (M.add x x' env) e2, pos)
