@@ -57,6 +57,7 @@ let rec g env = function (* 式の仮想マシンコード生成 (caml2html: virtual_g) *)
       let x = Id.genid "l" in
       Let((x, Type.Int), SetL(l), Ans(LdDF(x, C(0)), pos), pos)
   | Closure.Neg(x, pos) -> Ans(Neg(x), pos)
+  | Closure.Add("reg_hp_init", y, pos) -> Ans(Add(reg_hp_init, V(y)), pos) (*  *)
   | Closure.Add(x, y, pos) -> Ans(Add(x, V(y)), pos)
   | Closure.Sub(x, y, pos) -> Ans(Sub(x, y), pos)
   | Closure.Mul(x, y, pos) -> Ans(Mul(x, V(y)), pos)
@@ -77,9 +78,18 @@ let rec g env = function (* 式の仮想マシンコード生成 (caml2html: virtual_g) *)
       | Type.Float -> Ans(IfFLE(x, y, g env e1, g env e2), pos)
       | _ -> failwith "inequality supported only for bool, int, and float")
   | Closure.Let((x, t1), e1, e2, pos) ->
-      let e1' = g env e1 in
-      let e2' = g (M.add x t1 env) e2 in
-      concat e1' (x, t1) e2'
+      if x = "reg_hp_init" then
+        let e2' = g env e2 in
+        match e1 with
+        | Closure.Var("reg_hp", pos') ->
+            concat (Ans(Mov(reg_hp), pos')) (reg_hp_init, t1) e2'
+        | _ ->
+            let e1' = g env e1 in
+            concat e1' (reg_hp_init, t1) e2'
+      else
+        let e1' = g env e1 in
+        let e2' = g (M.add x t1 env) e2 in
+        concat e1' (x, t1) e2'
   | Closure.Var(x, pos) ->
       (match M.find x env with
       | Type.Unit -> Ans(Nop, pos)
@@ -141,7 +151,7 @@ let rec g env = function (* 式の仮想マシンコード生成 (caml2html: virtual_g) *)
       let z = Id.genid "z" in
       (match M.find x env with
       | Type.Array(Type.Unit) -> Ans(Nop, pos)
-      | Type.Array(Type.Float) -> (*Ans(LdDF(x, V(y)), pos)*) (* simm.g'で8かける *)
+      | Type.Array(Type.Float) -> (*Ans(LdDF(x, V(y)), pos)*)
           (*Let((offset, Type.Int), Mul(y, C(8)),
               Ans(LdDF(x, V(offset)), pos), pos)*)
           Let((z, Type.Int), Set(4),
@@ -149,7 +159,7 @@ let rec g env = function (* 式の仮想マシンコード生成 (caml2html: virtual_g) *)
                   Let((x', Type.Int), Add(x, V(offset)),
                       Ans(LdDF(x', C(0)), pos), pos), pos), pos)
           (*offsetをxに足してからロード*)
-      | Type.Array(_) -> (*Ans(Ld(x, V(y)), pos)*) (* simm.g'で4かける *)
+      | Type.Array(_) -> (*Ans(Ld(x, V(y)), pos)*)
           (*Let((offset, Type.Int), Mul(y, C(4)),
               Ans(Ld(x, V(offset)), pos), pos)*)
           Let((z, Type.Int), Set(4),
@@ -163,14 +173,14 @@ let rec g env = function (* 式の仮想マシンコード生成 (caml2html: virtual_g) *)
       let w = Id.genid "w" in
       (match M.find x env with
       | Type.Array(Type.Unit) -> Ans(Nop, pos)
-      | Type.Array(Type.Float) -> (*Ans(StDF(z, x, V(y)), pos)*) (* simm.g'で8かける *)
+      | Type.Array(Type.Float) -> (*Ans(StDF(z, x, V(y)), pos)*)
           (*Let((offset, Type.Int), Mul(y, C(8)),
               Ans(StDF(z, x, V(offset)), pos), pos)*)
           Let((w, Type.Int), Set(4),
               Let((offset, Type.Int), Mul(y, V(w)),
                   Let((x', Type.Int), Add(x, V(offset)),
                       Ans(StDF(z, x', C(0)), pos), pos), pos), pos)
-      | Type.Array(_) -> (*Ans(St(z, x, V(y)), pos)*) (* simm.g'で4かける *)
+      | Type.Array(_) -> (*Ans(St(z, x, V(y)), pos)*)
           (*Let((offset, Type.Int), Mul(y, C(4)),
               Ans(St(z, x, V(offset)), pos), pos)*)
           Let((w, Type.Int), Set(4),
