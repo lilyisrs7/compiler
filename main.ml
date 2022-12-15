@@ -2,11 +2,14 @@ open PrintType
 
 let limit = ref 1000
 let nocse_flag = ref false
+let nologic_flag = ref false
 
 let rec iter n e = (* 最適化処理をくりかえす (caml2html: main_iter) *)
   Format.eprintf "iteration %d@." n;
   if n = 0 then e else
-  let e' = Elim.f (ConstFold.f (Inline.f (Assoc.f (Beta.f (if !nocse_flag then e else Cse.f e))))) in
+  let e' =
+    (fun e -> if !nologic_flag then e else LogicOpt.f e)
+      (Elim.f (ConstFold.f (Inline.f (Assoc.f (Beta.f (if !nocse_flag then e else Cse.f e)))))) in
   if e = e' then e else
   iter (n - 1) e'
 
@@ -129,7 +132,8 @@ let () = (* ここからコンパイラの実行が開始される (caml2html: main_entry) *)
   Arg.parse
     [("-inline", Arg.Int(fun i -> Inline.threshold := i), "maximum size of functions inlined");
      ("-iter", Arg.Int(fun i -> limit := i), "maximum number of optimizations iterated");
-     ("-nocse", Arg.Unit(fun () -> nocse_flag := true), "nocse flag")]
+     ("-nocse", Arg.Unit(fun () -> nocse_flag := true), "nocse flag");
+     ("-nologic", Arg.Unit(fun () -> nologic_flag := true), "nologic flag")]
     (fun s -> files := !files @ [s])
     ("Mitou Min-Caml Compiler (C) Eijiro Sumii\n" ^
      Printf.sprintf "usage: %s [-inline m] [-iter n] ...filenames without \".ml\"..." Sys.argv.(0));
