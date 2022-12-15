@@ -28,7 +28,7 @@ minrt.ml: min-rt/minrt.ml library.ml min-rt/globals.ml
 SOURCES = float.c type.ml id.ml m.ml s.ml \
 syntax.ml parser.mly lexer.mll typing.mli typing.ml kNormal.mli kNormal.ml \
 alpha.mli alpha.ml cse.mli cse.ml beta.mli beta.ml assoc.mli assoc.ml \
-inline.mli inline.ml constFold.mli constFold.ml elim.mli elim.ml constFoldGlobals.mli constFoldGlobals.ml \
+inline.mli inline.ml logicOpt.mli logicOpt.ml constFold.mli constFold.ml elim.mli elim.ml constFoldGlobals.mli constFoldGlobals.ml \
 closure.mli closure.ml betaCls.ml betaCls.mli assocCls.ml assocCls.mli constFoldCls.ml constFoldCls.mli elimCls.ml elimCls.mli \
 asm.mli asm.ml virtual.mli virtual.ml simm.mli simm.ml regAlloc.mli regAlloc.ml emit.mli emit.ml \
 printType.ml main.mli main.ml
@@ -61,7 +61,7 @@ test/%main.ml: library.ml test/%.ml
 	cat library.ml >> $@
 	cat test/$*.ml >> $@
 test/%.s: $(RESULT) test/%main.ml
-	./$(RESULT) test/$*main
+	./$(RESULT) -inline 10 test/$*main
 test/%: test/%.s libmincaml.S stub.c
 	$(CC) $(CFLAGS) -m32 $^ -lm -o $@
 test/%.res: test/%
@@ -74,8 +74,9 @@ test/%.cmp: test/%.res test/%.ans
 min-caml.html: main.mli main.ml id.ml m.ml s.ml \
 		syntax.ml type.ml parser.mly lexer.mll typing.mli typing.ml kNormal.mli kNormal.ml \
 		alpha.mli alpha.ml cse.mli cse.ml beta.mli beta.ml assoc.mli assoc.ml \
-		inline.mli inline.ml constFold.mli constFold.ml elim.mli elim.ml constFoldGlobals.mli constFoldGlobals.ml \
-		closure.mli closure.ml betaCls.ml betaCls.mli assocCls.ml assocCls.mli constFoldCls.ml constFoldCls.mli elimCls.ml elimCls.mli \
+		inline.mli inline.ml logicOpt.mli logicOpt.ml constFold.mli constFold.ml elim.mli elim.ml \
+		constFoldGlobals.mli constFoldGlobals.ml closure.mli closure.ml \
+		betaCls.ml betaCls.mli assocCls.ml assocCls.mli constFoldCls.ml constFoldCls.mli elimCls.ml elimCls.mli \
 		asm.mli asm.ml virtual.mli virtual.ml simm.mli simm.ml regAlloc.mli regAlloc.ml emit.mli emit.ml printType.ml 
 	./to_sparc
 	caml2html -o min-caml.html $^
