@@ -214,6 +214,7 @@ and g'_if dest cont regenv exp constr e1 e2 pos = (* ifのレジスタ割り当て (caml2
 and g'_call dest cont regenv exp constr ys zs pos = (* 関数呼び出しのレジスタ割り当て (caml2html: regalloc_call) *)
   (List.fold_left
      (fun e x ->
+       (* Format.eprintf "%s\n" x; *)
        if x = fst dest || not (M.mem x regenv) then e else
        seq(Save(M.find x regenv, x), e))
      (Ans(constr

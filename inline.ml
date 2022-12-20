@@ -14,8 +14,11 @@ let rec g env = function (* インライン展開ルーチン本体 (caml2html: inline_g) *)
   | IfLE(x, y, e1, e2, pos) -> IfLE(x, y, g env e1, g env e2, pos)
   | Let(xt, e1, e2, pos) -> Let(xt, g env e1, g env e2, pos)
   | LetRec({ name = (x, t); args = yts; body = e1 }, e2, pos) -> (* 関数定義の場合 (caml2html: inline_letrec) *)
-      let env = if size e1 > !threshold then env else M.add x (yts, e1) env in
-      LetRec({ name = (x, t); args = yts; body = g env e1}, g env e2, pos)
+      if S.mem x (fv e1) then (* 再帰関数はインライン展開しない *)
+        LetRec({ name = (x, t); args = yts; body = g env e1}, g env e2, pos)
+      else
+        let env = if size e1 > !threshold then env else M.add x (yts, e1) env in
+        LetRec({ name = (x, t); args = yts; body = g env e1}, g env e2, pos)
   | App(x, ys, pos) when M.mem x env -> (* 関数適用の場合 (caml2html: inline_app) *)
       let (zs, e) = M.find x env in
       Format.eprintf "inlining %s@." x;

@@ -272,6 +272,7 @@ let rec g int_env = function (* 初めに定義されるグローバル配列の
           Let((x, t),
               Add("reg_hp_init", v, pos2),
               Let((x_, t), ExtFunApp(i, [y; z], pos2), g int_env e, pos1), pos1), pos1)
+    (* with Not_found -> Let((x, t), ExtFunApp(i, [y; z], pos2), e, pos1)) *)
 | Let((x, t), Int(y, pos2), e, pos1) -> Let((x, t), Int(y, pos2), g (M.add x y int_env) e, pos1)
 | Let(xt, e1, e2, pos) ->
     let e1' = g int_env e1 in
