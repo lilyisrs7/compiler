@@ -43,17 +43,23 @@ manyargs fiszero fless fib2 ack2 adder2 global
 
 do_test: $(TESTS:%=test/%.s) # do_test: $(TESTS:%=test/%.cmp)
 
-.PRECIOUS: test/%.s test/% test/%.res test/%.ans test/%.cmp test/%.parsed test/%.normalized test/%.alpha test/%.iterated \
+.PRECIOUS: test/%.s test/% test/%.res test/%.ans test/%.cmp test/%.parsed test/%.normalized test/%.alpha \
+test/%*.cse test/%*.beta test/%*.assoc test/%*.inline test/%*.cf test/%*.elim test/%*.logic test/%.iterated \
 test/%.cfg test/%.closure test/%.cls_opt test/%.virtual test/%.simm test/%.regalloc \
 test/%main.ml test/%main.s test/%main test/%main.res test/%main.ans test/%main.cmp \
-test/%main.parsed test/%main.normalized test/%main.alpha test/%main.iterated test/%main.cfg test/%main.closure test/%main.cls_opt \
+test/%main.parsed test/%main.normalized test/%main.alpha test/%main*.cse test/%main*.beta test/%main*.assoc test/%main*.inline \
+test/%main*.cf test/%main*.elim test/%main*.logic test/%main.iterated test/%main.cfg test/%main.closure test/%main.cls_opt \
 test/%main.virtual test/%main.simm test/%main.regalloc minrt.*
 TRASH = $(TESTS:%=test/%.s) $(TESTS:%=test/%) $(TESTS:%=test/%.res) $(TESTS:%=test/%.ans) $(TESTS:%=test/%.cmp) \
-$(TESTS:%=test/%.parsed) $(TESTS:%=test/%.normalized) $(TESTS:%=test/%.alpha) $(TESTS:%=test/%.iterated) $(TESTS:%=test/%.cfg) \
+$(TESTS:%=test/%.parsed) $(TESTS:%=test/%.normalized) $(TESTS:%=test/%.alpha) \
+$(TESTS:%=test/%*.cse) $(TESTS:%=test/%*.beta) $(TESTS:%=test/%*.assoc) $(TESTS:%=test/%*.inline) $(TESTS:%=test/%*.cf) \
+$(TESTS:%=test/%*.elim) $(TESTS:%=test/%*.logic) $(TESTS:%=test/%.iterated) $(TESTS:%=test/%.cfg) \
 $(TESTS:%=test/%.closure) $(TESTS:%=test/%.cls_opt) $(TESTS:%=test/%.virtual) $(TESTS:%=test/%.simm) $(TESTS:%=test/%.regalloc) \
 $(TESTS:%=test/%main.ml) $(TESTS:%=test/%main.s) $(TESTS:%=test/%main) $(TESTS:%=test/%main.res) $(TESTS:%=test/%main.ans) \
 $(TESTS:%=test/%main.cmp) $(TESTS:%=test/%main.parsed) $(TESTS:%=test/%main.normalized) $(TESTS:%=test/%main.alpha) \
-$(TESTS:%=test/%main.iterated) $(TESTS:%=test/%main.cfg) $(TESTS:%=test/%main.closure) $(TESTS:%=test/%main.cls_opt) \
+$(TESTS:%=test/%main*.cse) $(TESTS:%=test/%main*.beta) $(TESTS:%=test/%main*.assoc) $(TESTS:%=test/%main*.inline) \
+$(TESTS:%=test/%main*.cf) $(TESTS:%=test/%main*.elim) $(TESTS:%=test/%main*.logic) $(TESTS:%=test/%main.iterated) \
+$(TESTS:%=test/%main.cfg) $(TESTS:%=test/%main.closure) $(TESTS:%=test/%main.cls_opt) \
 $(TESTS:%=test/%main.virtual) $(TESTS:%=test/%main.simm) $(TESTS:%=test/%main.regalloc) minrt.*
 
 test/%main.ml: library.ml test/%.ml
@@ -61,7 +67,7 @@ test/%main.ml: library.ml test/%.ml
 	cat library.ml >> $@
 	cat test/$*.ml >> $@
 test/%.s: $(RESULT) test/%main.ml
-	./$(RESULT) -inline 10 test/$*main
+	./$(RESULT) -inline 10 -printiter test/$*main
 test/%: test/%.s libmincaml.S stub.c
 	$(CC) $(CFLAGS) -m32 $^ -lm -o $@
 test/%.res: test/%

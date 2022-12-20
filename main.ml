@@ -3,21 +3,61 @@ open PrintType
 let limit = ref 1000
 let nocse_flag = ref false
 let nologic_flag = ref false
+let printiter_flag = ref false
 
-let rec iter n e = (* 最適化処理をくりかえす (caml2html: main_iter) *)
+let rec iter n f e = (* 最適化処理をくりかえす (caml2html: main_iter) *)
   Format.eprintf "iteration %d@." n;
   if n = 0 then e else
-  let e' =
-    (fun e -> if !nologic_flag then e else LogicOpt.f e)
-      (Elim.f (ConstFold.f (Inline.f (Assoc.f (Beta.f (if !nocse_flag then e else Cse.f e)))))) in
-  if e = e' then e else
-  iter (n - 1) e'
+  if !printiter_flag then
+    let e_cse = if !nocse_flag then e else Cse.f e in
+    let oc = open_out (f ^ string_of_int n ^ ".cse") in
+    let _ = print_knormal_t oc 0 e_cse in
+    let _ = close_out oc in
+
+    let e_beta = Beta.f e_cse in
+    let oc = open_out (f ^ string_of_int n ^ ".beta") in
+    let _ = print_knormal_t oc 0 e_beta in
+    let _ = close_out oc in
+
+    let e_assoc = Assoc.f e_beta in
+    let oc = open_out (f ^ string_of_int n ^ ".assoc") in
+    let _ = print_knormal_t oc 0 e_assoc in
+    let _ = close_out oc in
+
+    let e_inline = Inline.f e_assoc in
+    let oc = open_out (f ^ string_of_int n ^ ".inline") in
+    let _ = print_knormal_t oc 0 e_inline in
+    let _ = close_out oc in
+
+    let e_cf = ConstFold.f e_inline in
+    let oc = open_out (f ^ string_of_int n ^ ".cf") in
+    let _ = print_knormal_t oc 0 e_cf in
+    let _ = close_out oc in
+
+    let e_elim = Elim.f e_cf in
+    let oc = open_out (f ^ string_of_int n ^ ".elim") in
+    let _ = print_knormal_t oc 0 e_elim in
+    let _ = close_out oc in
+
+    let e_logic = if !nologic_flag then e_elim else LogicOpt.f e_elim in
+    let oc = open_out (f ^ string_of_int n ^ ".logic") in
+    let _ = print_knormal_t oc 0 e_logic in
+    let _ = close_out oc in
+
+    if e = e_logic then e else
+    iter (n - 1) f e_logic
+  else
+    let e' =
+      (fun e -> if !nologic_flag then e else LogicOpt.f e)
+        (Elim.f (ConstFold.f (Inline.f (Assoc.f (Beta.f (if !nocse_flag then e else Cse.f e)))))) in
+    if e = e' then e else
+    iter (n - 1) f e'
 
 let closure_opt e = (* タプル平坦化、tace後の最適化 *)
   ElimCls.f (ConstFoldCls.f (AssocCls.f (BetaCls.f e)))
 
-let lexbuf outchan l outchan_parsed outchan_normalized outchan_alpha outchan_iterated outchan_cfg outchan_closure outchan_cls_opt
-                     outchan_virtual outchan_simm outchan_regalloc =
+let lexbuf outchan l f outchan_parsed outchan_normalized outchan_alpha outchan_iterated outchan_cfg outchan_closure outchan_cls_opt
+                       outchan_virtual outchan_simm outchan_regalloc =
   (* バッファをコンパイルしてチャンネルへ出力する (caml2html: main_lexbuf) *)
   Id.counter := 0;
   Typing.extenv := M.empty;
@@ -31,7 +71,7 @@ let lexbuf outchan l outchan_parsed outchan_normalized outchan_alpha outchan_ite
   let alpha = Alpha.f normalized in
   print_knormal_t outchan_alpha 0 alpha;
 
-  let iterated = iter !limit alpha in
+  let iterated = iter !limit f alpha in
   print_knormal_t outchan_iterated 0 iterated;
   
   let cfg = Alpha.f (ConstFoldGlobals.f iterated) in
@@ -97,8 +137,8 @@ let file f = (* ファイルをコンパイルしてファイルに出力する (caml2html: main_file
   let outchan_simm = open_out (f ^ ".simm") in
   let outchan_regalloc = open_out (f ^ ".regalloc") in
   try
-    lexbuf outchan (Lexing.from_channel inchan) outchan_parsed outchan_normalized outchan_alpha outchan_iterated outchan_cfg
-                                                outchan_closure outchan_cls_opt outchan_virtual outchan_simm outchan_regalloc;
+    lexbuf outchan (Lexing.from_channel inchan) f outchan_parsed outchan_normalized outchan_alpha outchan_iterated outchan_cfg
+                                                  outchan_closure outchan_cls_opt outchan_virtual outchan_simm outchan_regalloc;
     close_in inchan;
     close_out outchan;
     close_out outchan_parsed;
@@ -132,6 +172,7 @@ let () = (* ここからコンパイラの実行が開始される (caml2html: main_entry) *)
   Arg.parse
     [("-inline", Arg.Int(fun i -> Inline.threshold := i), "maximum size of functions inlined");
      ("-iter", Arg.Int(fun i -> limit := i), "maximum number of optimizations iterated");
+     ("-printiter", Arg.Unit(fun () -> printiter_flag := true), "printiter flag");
      ("-nocse", Arg.Unit(fun () -> nocse_flag := true), "nocse flag");
      ("-nologic", Arg.Unit(fun () -> nologic_flag := true), "nologic flag")]
     (fun s -> files := !files @ [s])
