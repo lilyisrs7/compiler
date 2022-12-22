@@ -170,7 +170,7 @@ and g' dest cont regenv pos = function (* 各命令のレジスタ割り当て (caml2html: r
   | FSubD(x, y) -> (Ans(FSubD(find x Type.Float regenv, find y Type.Float regenv), pos), regenv)
   | FMulD(x, y) -> (Ans(FMulD(find x Type.Float regenv, find y Type.Float regenv), pos), regenv)
   | FDivD(x, y) -> (Ans(FDivD(find x Type.Float regenv, find y Type.Float regenv), pos), regenv)
-  | Sqrt(x) -> (Ans(Sqrt(find x Type.Int regenv), pos), regenv)
+  | Sqrt(x) -> (Ans(Sqrt(find x Type.Float regenv), pos), regenv)
   | LdDF(x, y') -> (Ans(LdDF(find x Type.Int regenv, find' y' regenv), pos), regenv)
   | StDF(x, y, z') -> (Ans(StDF(find x Type.Float regenv, find y Type.Int regenv, find' z' regenv), pos), regenv)
   | IfEq(x, y, e1, e2) as exp -> g'_if dest cont regenv exp (fun e1' e2' -> IfEq(find x Type.Int regenv, find y Type.Int regenv, e1', e2')) e1 e2 pos
