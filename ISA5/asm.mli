@@ -54,6 +54,7 @@ val reg_hp_init : Id.t
 val reg_sp : Id.t
 val reg_zero : Id.t
 val reg_fzero : Id.t
+val reg_four : Id.t
 (* val reg_rv : Id.t
 val reg_frv : Id.t *)
 val reg_size_program_section : Id.t
