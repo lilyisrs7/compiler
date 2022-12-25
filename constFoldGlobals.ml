@@ -1,87 +1,108 @@
 open KNormal
 
 let globals = ref M.empty
-let addr = ref 0
+let addr = ref 50000 (* emit.mlと合わせる *)
 let first = ref true
 
 let rec h = function (* fundef中のグローバル配列のアドレスを書き換え *)
 | Neg(x, pos) when M.mem x !globals ->
     let t, v = M.find x !globals in
     let v_ = Id.genid "addr" in
-    Let((v_, Type.Int), Int(v, pos), Let((x, t), Add("reg_hp_init", v_, pos), Neg(x, pos), pos), pos)
+    (* Let((v_, Type.Int), Int(v, pos), Let((x, t), Add("reg_hp_init", v_, pos), Neg(x, pos), pos), pos) *)
+    Let((x, t), Int(v, pos), Neg(x, pos), pos)
 | Add(x, y, pos) when M.mem x !globals && M.mem y !globals ->
     let tx, vx = M.find x !globals in
     let ty, vy = M.find y !globals in
     let vx_ = Id.genid "addr" in
     let vy_ = Id.genid "addr" in
-    Let((vx_, Type.Int), Int(vx, pos),
+    (* Let((vx_, Type.Int), Int(vx, pos),
         Let((vy_, Type.Int), Int(vy, pos),
             Let((x, tx), Add("reg_hp_init", vx_, pos),
                 Let((y, ty), Add("reg_hp_init", vy_, pos),
-                    Add(x, y, pos), pos), pos), pos), pos)
+                    Add(x, y, pos), pos), pos), pos), pos) *)
+    Let((x, tx), Int(vx, pos),
+        Let((y, ty), Int(vy, pos),
+            Add(x, y, pos), pos), pos)
 | Add(x, y, pos) when M.mem x !globals ->
     let t, v = M.find x !globals in
     let v_ = Id.genid "addr" in
-    Let((v_, Type.Int), Int(v, pos), Let((x, t), Add("reg_hp_init", v_, pos), Add(x, y, pos), pos), pos)
+    (* Let((v_, Type.Int), Int(v, pos), Let((x, t), Add("reg_hp_init", v_, pos), Add(x, y, pos), pos), pos) *)
+    Let((x, t), Int(v, pos), Add(x, y, pos), pos)
 | Add(x, y, pos) when M.mem y !globals ->
     let t, v = M.find y !globals in
     let v_ = Id.genid "addr" in
-    Let((v_, Type.Int), Int(v, pos), Let((y, t), Add("reg_hp_init", v_, pos), Add(x, y, pos), pos), pos)
+    (* Let((v_, Type.Int), Int(v, pos), Let((y, t), Add("reg_hp_init", v_, pos), Add(x, y, pos), pos), pos) *)
+    Let((y, t), Int(v, pos), Add(x, y, pos), pos)
 | Sub(x, y, pos) when M.mem x !globals && M.mem y !globals ->
     let tx, vx = M.find x !globals in
     let ty, vy = M.find y !globals in
     let vx_ = Id.genid "addr" in
     let vy_ = Id.genid "addr" in
-    Let((vx_, Type.Int), Int(vx, pos),
+    (* Let((vx_, Type.Int), Int(vx, pos),
         Let((vy_, Type.Int), Int(vy, pos),
             Let((x, tx), Add("reg_hp_init", vx_, pos),
                 Let((y, ty), Add("reg_hp_init", vy_, pos),
-                    Sub(x, y, pos), pos), pos), pos), pos)
+                    Sub(x, y, pos), pos), pos), pos), pos) *)
+    Let((x, tx), Int(vx, pos),
+        Let((y, ty), Int(vy, pos),
+            Sub(x, y, pos), pos), pos)
 | Sub(x, y, pos) when M.mem x !globals ->
     let t, v = M.find x !globals in
     let v_ = Id.genid "addr" in
-    Let((v_, Type.Int), Int(v, pos), Let((x, t), Add("reg_hp_init", v_, pos), Sub(x, y, pos), pos), pos)
+    (* Let((v_, Type.Int), Int(v, pos), Let((x, t), Add("reg_hp_init", v_, pos), Sub(x, y, pos), pos), pos) *)
+    Let((x, t), Int(v, pos), Sub(x, y, pos), pos)
 | Sub(x, y, pos) when M.mem y !globals ->
     let t, v = M.find y !globals in
     let v_ = Id.genid "addr" in
-    Let((v_, Type.Int), Int(v, pos), Let((y, t), Add("reg_hp_init", v_, pos), Sub(x, y, pos), pos), pos)
+    (* Let((v_, Type.Int), Int(v, pos), Let((y, t), Add("reg_hp_init", v_, pos), Sub(x, y, pos), pos), pos) *)
+    Let((y, t), Int(v, pos), Sub(x, y, pos), pos)
 | Mul(x, y, pos) when M.mem x !globals && M.mem y !globals ->
     let tx, vx = M.find x !globals in
     let ty, vy = M.find y !globals in
     let vx_ = Id.genid "addr" in
     let vy_ = Id.genid "addr" in
-    Let((vx_, Type.Int), Int(vx, pos),
+    (* Let((vx_, Type.Int), Int(vx, pos),
         Let((vy_, Type.Int), Int(vy, pos),
             Let((x, tx), Add("reg_hp_init", vx_, pos),
                 Let((y, ty), Add("reg_hp_init", vy_, pos),
-                    Mul(x, y, pos), pos), pos), pos), pos)
+                    Mul(x, y, pos), pos), pos), pos), pos) *)
+    Let((x, tx), Int(vx, pos),
+        Let((y, ty), Int(vy, pos),
+            Mul(x, y, pos), pos), pos)
 | Mul(x, y, pos) when M.mem x !globals ->
     let t, v = M.find x !globals in
     let v_ = Id.genid "addr" in
-    Let((v_, Type.Int), Int(v, pos), Let((x, t), Add("reg_hp_init", v_, pos), Mul(x, y, pos), pos), pos)
+    (* Let((v_, Type.Int), Int(v, pos), Let((x, t), Add("reg_hp_init", v_, pos), Mul(x, y, pos), pos), pos) *)
+    Let((x, t), Int(v, pos), Mul(x, y, pos), pos)
 | Mul(x, y, pos) when M.mem y !globals ->
     let t, v = M.find y !globals in
     let v_ = Id.genid "addr" in
-    Let((v_, Type.Int), Int(v, pos), Let((y, t), Add("reg_hp_init", v_, pos), Mul(x, y, pos), pos), pos)
+    (* Let((v_, Type.Int), Int(v, pos), Let((y, t), Add("reg_hp_init", v_, pos), Mul(x, y, pos), pos), pos) *)
+    Let((y, t), Int(v, pos), Mul(x, y, pos), pos)
 | Div(x, y, pos) when M.mem x !globals && M.mem y !globals ->
     let tx, vx = M.find x !globals in
     let ty, vy = M.find y !globals in
     let vx_ = Id.genid "addr" in
     let vy_ = Id.genid "addr" in
-    Let((vx_, Type.Int), Int(vx, pos),
+    (* Let((vx_, Type.Int), Int(vx, pos),
         Let((vy_, Type.Int), Int(vy, pos),
             Let((x, tx), Add("reg_hp_init", vx_, pos),
                 Let((y, ty), Add("reg_hp_init", vy_, pos),
-                    Div(x, y, pos), pos), pos), pos), pos)
+                    Div(x, y, pos), pos), pos), pos), pos) *)
+    Let((x, tx), Int(vx, pos),
+        Let((y, ty), Int(vy, pos),
+            Div(x, y, pos), pos), pos)
 | Div(x, y, pos) when M.mem x !globals ->
     let t, v = M.find x !globals in
     let v_ = Id.genid "addr" in
-    Let((v_, Type.Int), Int(v, pos), Let((x, t), Add("reg_hp_init", v_, pos), Div(x, y, pos), pos), pos)
+    (* Let((v_, Type.Int), Int(v, pos), Let((x, t), Add("reg_hp_init", v_, pos), Div(x, y, pos), pos), pos) *)
+    Let((x, t), Int(v, pos), Div(x, y, pos), pos)
 | Div(x, y, pos) when M.mem y !globals ->
     let t, v = M.find y !globals in
     let v_ = Id.genid "addr" in
-    Let((v_, Type.Int), Int(v, pos), Let((y, t), Add("reg_hp_init", v_, pos), Div(x, y, pos), pos), pos)
-| FNeg(x, pos) when M.mem x !globals ->
+    (* Let((v_, Type.Int), Int(v, pos), Let((y, t), Add("reg_hp_init", v_, pos), Div(x, y, pos), pos), pos) *)
+    Let((y, t), Int(v, pos), Div(x, y, pos), pos)
+(* | FNeg(x, pos) when M.mem x !globals ->
     let t, v = M.find x !globals in
     let v_ = Id.genid "addr" in
     Let((v_, Type.Int), Int(v, pos), Let((x, t), Add("reg_hp_init", v_, pos), FNeg(x, pos), pos), pos)
@@ -156,50 +177,61 @@ let rec h = function (* fundef中のグローバル配列のアドレスを書�
 | FDiv(x, y, pos) when M.mem y !globals ->
     let t, v = M.find y !globals in
     let v_ = Id.genid "addr" in
-    Let((v_, Type.Int), Int(v, pos), Let((y, t), Add("reg_hp_init", v_, pos), FDiv(x, y, pos), pos), pos)
+    Let((v_, Type.Int), Int(v, pos), Let((y, t), Add("reg_hp_init", v_, pos), FDiv(x, y, pos), pos), pos) *)
 | IfEq(x, y, e1, e2, pos) when M.mem x !globals && M.mem y !globals ->
     let tx, vx = M.find x !globals in
     let ty, vy = M.find y !globals in
     let vx_ = Id.genid "addr" in
     let vy_ = Id.genid "addr" in
-    Let((vx_, Type.Int), Int(vx, pos),
+    (* Let((vx_, Type.Int), Int(vx, pos),
         Let((vy_, Type.Int), Int(vy, pos),
             Let((x, tx), Add("reg_hp_init", vx_, pos),
                 Let((y, ty), Add("reg_hp_init", vy_, pos),
-                    IfEq(x, y, h e1, h e2, pos), pos), pos), pos), pos)
+                    IfEq(x, y, h e1, h e2, pos), pos), pos), pos), pos) *)
+    Let((x, tx), Int(vx, pos),
+        Let((y, ty), Int(vy, pos),
+            IfEq(x, y, h e1, h e2, pos), pos), pos)
 | IfEq(x, y, e1, e2, pos) when M.mem x !globals ->
     let t, v = M.find x !globals in
     let v_ = Id.genid "addr" in
-    Let((v_, Type.Int), Int(v, pos), Let((x, t), Add("reg_hp_init", v_, pos), IfEq(x, y, h e1, h e2, pos), pos), pos)
+    (* Let((v_, Type.Int), Int(v, pos), Let((x, t), Add("reg_hp_init", v_, pos), IfEq(x, y, h e1, h e2, pos), pos), pos) *)
+    Let((x, t), Int(v, pos), IfEq(x, y, h e1, h e2, pos), pos)
 | IfEq(x, y, e1, e2, pos) when M.mem y !globals ->
     let t, v = M.find y !globals in
     let v_ = Id.genid "addr" in
-    Let((v_, Type.Int), Int(v, pos), Let((y, t), Add("reg_hp_init", v_, pos), IfEq(x, y, h e1, h e2, pos), pos), pos)
+    (* Let((v_, Type.Int), Int(v, pos), Let((y, t), Add("reg_hp_init", v_, pos), IfEq(x, y, h e1, h e2, pos), pos), pos) *)
+    Let((y, t), Int(v, pos), IfEq(x, y, h e1, h e2, pos), pos)
 | IfEq(x, y, e1, e2, pos) -> IfEq(x, y, h e1, h e2, pos)
 | IfLE(x, y, e1, e2, pos) when M.mem x !globals && M.mem y !globals ->
     let tx, vx = M.find x !globals in
     let ty, vy = M.find y !globals in
     let vx_ = Id.genid "addr" in
     let vy_ = Id.genid "addr" in
-    Let((vx_, Type.Int), Int(vx, pos),
+    (* Let((vx_, Type.Int), Int(vx, pos),
         Let((vy_, Type.Int), Int(vy, pos),
             Let((x, tx), Add("reg_hp_init", vx_, pos),
                 Let((y, ty), Add("reg_hp_init", vy_, pos),
-                    IfLE(x, y, h e1, h e2, pos), pos), pos), pos), pos)
+                    IfLE(x, y, h e1, h e2, pos), pos), pos), pos), pos) *)
+    Let((x, tx), Int(vx, pos),
+        Let((y, ty), Int(vy, pos),
+            IfLE(x, y, h e1, h e2, pos), pos), pos)
 | IfLE(x, y, e1, e2, pos) when M.mem x !globals ->
     let t, v = M.find x !globals in
     let v_ = Id.genid "addr" in
-    Let((v_, Type.Int), Int(v, pos), Let((x, t), Add("reg_hp_init", v_, pos), IfLE(x, y, h e1, h e2, pos), pos), pos)
+    (* Let((v_, Type.Int), Int(v, pos), Let((x, t), Add("reg_hp_init", v_, pos), IfLE(x, y, h e1, h e2, pos), pos), pos) *)
+    Let((x, t), Int(v, pos), IfLE(x, y, h e1, h e2, pos), pos)
 | IfLE(x, y, e1, e2, pos) when M.mem y !globals ->
     let t, v = M.find y !globals in
     let v_ = Id.genid "addr" in
-    Let((v_, Type.Int), Int(v, pos), Let((y, t), Add("reg_hp_init", v_, pos), IfLE(x, y, h e1, h e2, pos), pos), pos)
+    (* Let((v_, Type.Int), Int(v, pos), Let((y, t), Add("reg_hp_init", v_, pos), IfLE(x, y, h e1, h e2, pos), pos), pos) *)
+    Let((y, t), Int(v, pos), IfLE(x, y, h e1, h e2, pos), pos)
 | IfLE(x, y, e1, e2, pos) -> IfLE(x, y, h e1, h e2, pos)
 | Let(xt, e1, e2, pos) -> Let(xt, h e1, h e2, pos)
 | Var(x, pos) when M.mem x !globals ->
     let t, v = M.find x !globals in
     let v_ = Id.genid "addr" in
-    Let((v_, Type.Int), Int(v, pos), Let((x, t), Add("reg_hp_init", v_, pos), Var(x, pos), pos), pos)
+    (* Let((v_, Type.Int), Int(v, pos), Let((x, t), Add("reg_hp_init", v_, pos), Var(x, pos), pos), pos) *)
+    Let((x, t), Int(v, pos), Var(x, pos), pos)
 | LetRec({ name = xt; args = yts; body = e1 }, e2, pos) ->
     LetRec({ name = xt; args = yts; body = h e1 }, h e2, pos)
 | App(x, ys, pos) ->
@@ -207,7 +239,8 @@ let rec h = function (* fundef中のグローバル配列のアドレスを書�
       if M.mem y !globals then
         let t, v = M.find y !globals in
         let v_ = Id.genid "addr" in
-        Let((v_, Type.Int), Int(v, pos), Let((y, t), Add("reg_hp_init", v_, pos), e, pos), pos)
+        (* Let((v_, Type.Int), Int(v, pos), Let((y, t), Add("reg_hp_init", v_, pos), e, pos), pos) *)
+        Let((y, t), Int(v, pos), e, pos)
       else e in
     List.fold_left h' (App(x, ys, pos)) ys
 | Tuple(xs, pos) ->
@@ -215,28 +248,48 @@ let rec h = function (* fundef中のグローバル配列のアドレスを書�
       if M.mem x !globals then
         let t, v = M.find x !globals in
         let v_ = Id.genid "addr" in
-        Let((v_, Type.Int), Int(v, pos), Let((x, t), Add("reg_hp_init", v_, pos), e, pos), pos)
+        (* Let((v_, Type.Int), Int(v, pos), Let((x, t), Add("reg_hp_init", v_, pos), e, pos), pos) *)
+        Let((x, t), Int(v, pos), e, pos)
       else e in
     List.fold_left h' (Tuple(xs, pos)) xs
 | LetTuple(xts, y, e, pos) when M.mem y !globals ->
     let t, v = M.find y !globals in
     let v_ = Id.genid "addr" in
-    Let((v_, Type.Int), Int(v, pos), Let((y, t), Add("reg_hp_init", v_, pos), LetTuple(xts, y, h e, pos), pos), pos)
+    (* Let((v_, Type.Int), Int(v, pos), Let((y, t), Add("reg_hp_init", v_, pos), LetTuple(xts, y, h e, pos), pos), pos) *)
+    Let((y, t), Int(v, pos), LetTuple(xts, y, h e, pos), pos)
 | LetTuple(xts, y, e, pos) -> LetTuple(xts, y, h e, pos)
 | Get(x, y, pos) when M.mem x !globals ->
     let t, v = M.find x !globals in
     let v_ = Id.genid "addr" in
-    Let((v_, Type.Int), Int(v, pos), Let((x, t), Add("reg_hp_init", v_, pos), Get(x, y, pos), pos), pos)
+    (* Let((v_, Type.Int), Int(v, pos), Let((x, t), Add("reg_hp_init", v_, pos), Get(x, y, pos), pos), pos) *)
+    Let((x, t), Int(v, pos), Get(x, y, pos), pos)
+| Get(x, y, pos) when M.mem y !globals ->
+    let t, v = M.find y !globals in
+    let v_ = Id.genid "addr" in
+    (* Let((v_, Type.Int), Int(v, pos), Let((x, t), Add("reg_hp_init", v_, pos), Get(x, y, pos), pos), pos) *)
+    Let((y, t), Int(v, pos), Get(x, y, pos), pos)
 | Put(x, y, z, pos) when M.mem x !globals ->
     let t, v = M.find x !globals in
     let v_ = Id.genid "addr" in
-    Let((v_, Type.Int), Int(v, pos), Let((x, t), Add("reg_hp_init", v_, pos), Put(x, y, z, pos), pos), pos)
+    (* Let((v_, Type.Int), Int(v, pos), Let((x, t), Add("reg_hp_init", v_, pos), Put(x, y, z, pos), pos), pos) *)
+    Let((x, t), Int(v, pos), Put(x, y, z, pos), pos)
+| Put(x, y, z, pos) when M.mem y !globals ->
+    let t, v = M.find y !globals in
+    let v_ = Id.genid "addr" in
+    (* Let((v_, Type.Int), Int(v, pos), Let((x, t), Add("reg_hp_init", v_, pos), Put(x, y, z, pos), pos), pos) *)
+    Let((y, t), Int(v, pos), Put(x, y, z, pos), pos)
+| Put(x, y, z, pos) when M.mem z !globals ->
+    let t, v = M.find z !globals in
+    let v_ = Id.genid "addr" in
+    (* Let((v_, Type.Int), Int(v, pos), Let((x, t), Add("reg_hp_init", v_, pos), Put(x, y, z, pos), pos), pos) *)
+    Let((z, t), Int(v, pos), Put(x, y, z, pos), pos)
 | ExtFunApp(x, ys, pos) ->
     let h' e y =
       if M.mem y !globals then
         let t, v = M.find y !globals in
         let v_ = Id.genid "addr" in
-        Let((v_, Type.Int), Int(v, pos), Let((y, t), Add("reg_hp_init", v_, pos), e, pos), pos)
+        (* Let((v_, Type.Int), Int(v, pos), Let((y, t), Add("reg_hp_init", v_, pos), e, pos), pos) *)
+        Let((y, t), Int(v, pos), e, pos)
       else e in
     List.fold_left h' (ExtFunApp(x, ys, pos)) ys
 | e -> e
@@ -257,7 +310,7 @@ let rec g int_env = function (* 初めに定義されるグローバル配列の
     addr := addr_backup + arr_size;
     let x_ = Id.genid x in
     let v = Id.genid "addr" in
-    if !first then
+    (* if !first then
       (first := false;
        Let(("reg_hp_init", Type.Int),
            Var("reg_hp", pos2),
@@ -271,7 +324,10 @@ let rec g int_env = function (* 初めに定義されるグローバル配列の
           Int(addr_backup, pos2),
           Let((x, t),
               Add("reg_hp_init", v, pos2),
-              Let((x_, t), ExtFunApp(i, [y; z], pos2), g int_env e, pos1), pos1), pos1)
+              Let((x_, t), ExtFunApp(i, [y; z], pos2), g int_env e, pos1), pos1), pos1) *)
+    Let((x, t),
+        Int(addr_backup, pos2),
+        Let((x_, t), ExtFunApp(i, [y; z], pos2), g int_env e, pos1), pos1)
     (* with Not_found -> Let((x, t), ExtFunApp(i, [y; z], pos2), e, pos1)) *)
 | Let((x, t), Int(y, pos2), e, pos1) -> Let((x, t), Int(y, pos2), g (M.add x y int_env) e, pos1)
 | Let(xt, e1, e2, pos) ->
