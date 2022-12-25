@@ -20,8 +20,8 @@ clean:: nobackup
 
 minrt.ml: min-rt/minrt.ml library.ml min-rt/globals.ml
 	cp /dev/null minrt.ml
-	cat library.ml >> minrt.ml
 	cat min-rt/globals.ml >> minrt.ml
+	cat library.ml >> minrt.ml
 	cat min-rt/minrt.ml >> minrt.ml
 
 # ↓もし実装を改造したら、それに合わせて変える
