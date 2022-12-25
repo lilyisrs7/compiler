@@ -18,7 +18,7 @@ let rec g env = function (* β簡約ルーチン本体 (caml2html: beta_g) *)
   | FDiv(x, y, pos) -> FDiv(find x env, find y env, pos)
   | IfEq(x, y, e1, e2, pos) -> IfEq(find x env, find y env, g env e1, g env e2, pos)
   | IfLE(x, y, e1, e2, pos) -> IfLE(find x env, find y env, g env e1, g env e2, pos)
-  | Let(("reg_hp_init", t), Var("reg_hp", pos2), e, pos1) -> Let(("reg_hp_init", t), Var("reg_hp", pos2), g env e, pos1)
+  (* | Let(("reg_hp_init", t), Var("reg_hp", pos2), e, pos1) -> Let(("reg_hp_init", t), Var("reg_hp", pos2), g env e, pos1) *)
   | Let((x, t), e1, e2, pos) -> (* letのβ簡約 (caml2html: beta_let) *)
       (match g env e1 with
       | Var(y, pos) ->

@@ -50,7 +50,7 @@ val reg_sw : Id.t
 val reg_fsw : Id.t
 val reg_ra : Id.t
 val reg_hp : Id.t
-val reg_hp_init : Id.t
+(* val reg_hp_init : Id.t *)
 val reg_sp : Id.t
 val reg_zero : Id.t
 val reg_fzero : Id.t

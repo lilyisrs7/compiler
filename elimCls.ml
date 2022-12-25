@@ -12,7 +12,8 @@ let rec g = function (* 不要定義削除ルーチン本体 (caml2html: elim_f) *)
   | Let((x, t), e1, e2, pos) -> (* letの場合 (caml2html: elim_let) *)
       let e1' = g e1 in
       let e2' = g e2 in
-      if effect e1' || S.mem x (fv e2') || x = "reg_hp_init" then Let((x, t), e1', e2', pos) else
+      (* if effect e1' || S.mem x (fv e2') || x = "reg_hp_init" then Let((x, t), e1', e2', pos) else *)
+      if effect e1' || S.mem x (fv e2') then Let((x, t), e1', e2', pos) else
       (Format.eprintf "eliminating variable %s@." x;
        e2')
   | MakeCls((x, t), cls, e, pos) -> MakeCls((x, t), cls, g e, pos)

@@ -75,7 +75,8 @@ let rec g env known = function (* クロージャ変換ルーチン本体 (caml2html: closure
       (* 本当に自由変数がなかったか、変換結果e1'を確認する *)
       (* 注意: e1'にx自身が変数として出現する場合はclosureが必要!
          (thanks to nuevo-namasute and azounoman; test/cls-bug2.ml参照) *)
-      let zs = S.diff (S.diff (fv e1') (S.of_list (List.map fst yts))) (S.of_list ["reg_hp"; "reg_hp_init"]) in
+      (* let zs = S.diff (S.diff (fv e1') (S.of_list (List.map fst yts))) (S.of_list ["reg_hp"; "reg_hp_init"]) in *)
+      let zs = S.diff (fv e1') (S.of_list (List.map fst yts)) in
       let known', e1' =
         if S.is_empty zs then known', e1' else
         (* 駄目だったら状態(toplevelの値)を戻して、クロージャ変換をやり直す *)
@@ -84,7 +85,8 @@ let rec g env known = function (* クロージャ変換ルーチン本体 (caml2html: closure
          toplevel := toplevel_backup;
          let e1' = g (M.add_list yts env') known e1 in
          known, e1') in
-      let zs = S.elements (S.diff (S.diff (fv e1') (S.add x (S.of_list (List.map fst yts)))) (S.of_list ["reg_hp"; "reg_hp_init"])) in (* 自由変数のリスト *) (* S.diff s1 s2 = s1/s2 *)
+      (* let zs = S.elements (S.diff (S.diff (fv e1') (S.add x (S.of_list (List.map fst yts)))) (S.of_list ["reg_hp"; "reg_hp_init"])) in *)
+      let zs = S.elements (S.diff (fv e1') (S.add x (S.of_list (List.map fst yts)))) in (* 自由変数のリスト *) (* S.diff s1 s2 = s1/s2 *)
       (* S.iter (Format.eprintf "%s ") (fv e1');
       Format.eprintf "\n";
       S.iter (Format.eprintf "%s ") (S.add x (S.of_list (List.map fst yts)));

@@ -57,7 +57,7 @@ let rec g env = function (* 式の仮想マシンコード生成 (caml2html: virtual_g) *)
       let x = Id.genid "l" in
       Let((x, Type.Int), SetL(l), Ans(LdDF(x, C(0)), pos), pos)
   | Closure.Neg(x, pos) -> Ans(Neg(x), pos)
-  | Closure.Add("reg_hp_init", y, pos) -> Ans(Add(reg_hp_init, V(y)), pos) (*  *)
+  (* | Closure.Add("reg_hp_init", y, pos) -> Ans(Add(reg_hp_init, V(y)), pos) *)
   | Closure.Add(x, y, pos) -> Ans(Add(x, V(y)), pos)
   | Closure.Sub(x, y, pos) -> Ans(Sub(x, y), pos)
   | Closure.Mul(x, y, pos) -> Ans(Mul(x, V(y)), pos)
@@ -78,7 +78,7 @@ let rec g env = function (* 式の仮想マシンコード生成 (caml2html: virtual_g) *)
       | Type.Float -> Ans(IfFLE(x, y, g env e1, g env e2), pos)
       | _ -> failwith "inequality supported only for bool, int, and float")
   | Closure.Let((x, t1), e1, e2, pos) ->
-      if x = "reg_hp_init" then
+      (* if x = "reg_hp_init" then
         let e2' = g env e2 in
         match e1 with
         | Closure.Var("reg_hp", pos') ->
@@ -86,7 +86,7 @@ let rec g env = function (* 式の仮想マシンコード生成 (caml2html: virtual_g) *)
         | _ ->
             let e1' = g env e1 in
             concat e1' (reg_hp_init, t1) e2'
-      else
+      else *)
         let e1' = g env e1 in
         let e2' = g (M.add x t1 env) e2 in
         concat e1' (x, t1) e2'
