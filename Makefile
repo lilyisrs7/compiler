@@ -48,7 +48,8 @@ test/%.cfg test/%.closure test/%.cls_opt test/%.virtual test/%.simm test/%.regal
 test/%main.ml test/%main.s test/%main test/%main.res test/%main.ans test/%main.cmp \
 test/%main.parsed test/%main.normalized test/%main.alpha test/%main.iterated test/%main.cfg test/%main.closure test/%main.cls_opt \
 test/%main.virtual test/%main.simm test/%main.regalloc \
-minrt.* test/*.cse test/*.beta test/*.assoc test/*.inline test/*.cf test/*.elim test/*.logic
+minrt.* test/*.cse test/*.beta test/*.assoc test/*.inline test/*.cf test/*.elim test/*.logic \
+*.cse *.beta *.assoc *.inline *.cf *.elim *.logic
 TRASH = $(TESTS:%=test/%.s) $(TESTS:%=test/%) $(TESTS:%=test/%.res) $(TESTS:%=test/%.ans) $(TESTS:%=test/%.cmp) \
 $(TESTS:%=test/%.parsed) $(TESTS:%=test/%.normalized) $(TESTS:%=test/%.alpha) $(TESTS:%=test/%.iterated) $(TESTS:%=test/%.cfg) \
 $(TESTS:%=test/%.closure) $(TESTS:%=test/%.cls_opt) $(TESTS:%=test/%.virtual) $(TESTS:%=test/%.simm) $(TESTS:%=test/%.regalloc) \
@@ -56,7 +57,8 @@ $(TESTS:%=test/%main.ml) $(TESTS:%=test/%main.s) $(TESTS:%=test/%main) $(TESTS:%
 $(TESTS:%=test/%main.cmp) $(TESTS:%=test/%main.parsed) $(TESTS:%=test/%main.normalized) $(TESTS:%=test/%main.alpha) \
 $(TESTS:%=test/%main.iterated) $(TESTS:%=test/%main.cfg) $(TESTS:%=test/%main.closure) $(TESTS:%=test/%main.cls_opt) \
 $(TESTS:%=test/%main.virtual) $(TESTS:%=test/%main.simm) $(TESTS:%=test/%main.regalloc) \
-minrt.* test/*.cse test/*.beta test/*.assoc test/*.inline test/*.cf test/*.elim test/*.logic
+minrt.* test/*.cse test/*.beta test/*.assoc test/*.inline test/*.cf test/*.elim test/*.logic \
+*.cse *.beta *.assoc *.inline *.cf *.elim *.logic
 
 test/%main.ml: library.ml test/%.ml
 	cp /dev/null $@
