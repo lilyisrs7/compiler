@@ -3,6 +3,7 @@ open PrintType
 let limit = ref 1000
 let nocse_flag = ref false
 let nologic_flag = ref false
+let nocfg_flag = ref false
 let printiter_flag = ref false
 
 let rec iter n f e = (* 最適化処理をくりかえす (caml2html: main_iter) *)
@@ -74,7 +75,7 @@ let lexbuf outchan l f outchan_parsed outchan_normalized outchan_alpha outchan_i
   let iterated = iter !limit f alpha in
   print_knormal_t outchan_iterated 0 iterated;
   
-  let cfg = Alpha.f (ConstFoldGlobals.f iterated) in
+  let cfg = if !nocfg_flag then iterated else Alpha.f (ConstFoldGlobals.f iterated) in
   print_knormal_t outchan_cfg 0 cfg;
 
   let closure = Closure.f cfg in
@@ -174,7 +175,8 @@ let () = (* ここからコンパイラの実行が開始される (caml2html: main_entry) *)
      ("-iter", Arg.Int(fun i -> limit := i), "maximum number of optimizations iterated");
      ("-printiter", Arg.Unit(fun () -> printiter_flag := true), "printiter flag");
      ("-nocse", Arg.Unit(fun () -> nocse_flag := true), "nocse flag");
-     ("-nologic", Arg.Unit(fun () -> nologic_flag := true), "nologic flag")]
+     ("-nologic", Arg.Unit(fun () -> nologic_flag := true), "nologic flag");
+     ("-nocfg", Arg.Unit(fun () -> nocfg_flag := true), "nocfg flag")]
     (fun s -> files := !files @ [s])
     ("Mitou Min-Caml Compiler (C) Eijiro Sumii\n" ^
      Printf.sprintf "usage: %s [-inline m] [-iter n] ...filenames without \".ml\"..." Sys.argv.(0));
