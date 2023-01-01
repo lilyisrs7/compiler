@@ -1,8 +1,8 @@
 open KNormal
 
 let globals = ref M.empty
-let addr = ref 50000 (* emit.mlと合わせる *)
-(* let first = ref true *)
+let addr = ref 60000 (* emit.mlと合わせる *)
+let last = ref false
 
 let rec h = function (* fundef中のグローバル配列のアドレスを書き換え *)
 | Neg(x, pos) when M.mem x !globals ->
@@ -304,11 +304,15 @@ let rec g int_env = function (* 初めに定義されるグローバル配列の
     let e2' = g int_env e2 in
     IfLE(x, y, e1', e2', pos)
 | Let((x, t), ExtFunApp(i, [y; z], pos2), e, pos1) when i = "create_array" || i = "create_float_array" ->
-    let arr_size = M.find y int_env * 4 in
-    let addr_backup = !addr in
-    globals := M.add x (t, addr_backup) !globals;
-    addr := addr_backup + arr_size;
-    let x_ = Id.genid x in
+    if !last then
+      Let((x, t), ExtFunApp(i, [y; z], pos2), e, pos1)
+    else
+      (if String.starts_with ~prefix:"n_reflections" x then last := true;
+       let arr_size = M.find y int_env * 4 in
+       let addr_backup = !addr in
+       globals := M.add x (t, addr_backup) !globals;
+       addr := addr_backup + arr_size;
+       let x_ = Id.genid x in
     (* let v = Id.genid "addr" in
     if !first then
       (first := false;
@@ -325,10 +329,10 @@ let rec g int_env = function (* 初めに定義されるグローバル配列の
           Let((x, t),
               Add("reg_hp_init", v, pos2),
               Let((x_, t), ExtFunApp(i, [y; z], pos2), g int_env e, pos1), pos1), pos1) *)
-    Let((x, t),
-        Int(addr_backup, pos2),
-        Let((x_, t), ExtFunApp(i, [y; z], pos2), g int_env e, pos1), pos1)
-    (* with Not_found -> Let((x, t), ExtFunApp(i, [y; z], pos2), e, pos1)) *)
+       Let((x, t),
+           Int(addr_backup, pos2),
+           Let((x_, t), ExtFunApp(i, [y; z], pos2), g int_env e, pos1), pos1))
+    (* with Not_found -> Format.eprintf "%s\n" x; Let((x, t), ExtFunApp(i, [y; z], pos2), e, pos1)) *)
 | Let((x, t), Int(y, pos2), e, pos1) -> Let((x, t), Int(y, pos2), g (M.add x y int_env) e, pos1)
 | Let(xt, e1, e2, pos) ->
     let e1' = g int_env e1 in
