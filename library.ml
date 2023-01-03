@@ -6,9 +6,11 @@ let rec fabs x = if x > 0.0 then x else -.x in
 let rec fless x y = (x < y) in
 let rec fhalf x = x *. 0.5 in
 let rec fsqr x = x *. x in
+let rec int_of_float_rem x =
+  if x >= 1.0 then int_of_float_rem (x -. 1.0) + 1 else 0 in
 let rec int_of_float x =
   if x >= 0.0 then
-    if x >= 1.0 then int_of_float (x -. 1.0) + 1 else 0
+    if x >= 4.0 then int_of_float (x -. 4.0) + 4 else int_of_float_rem x
   else - int_of_float (-.x) in
 let rec float_of_int x =
   if x >= 0 then

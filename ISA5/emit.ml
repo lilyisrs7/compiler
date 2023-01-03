@@ -327,9 +327,11 @@ let f oc (Prog(data, fundefs, e)) =
   Printf.fprintf oc "l.2:\t# 1.000000\n";
   Printf.fprintf oc "\t.word\t1.000000\n"; *)
   let label_zero = ref "" in
+  let label_four = ref "" in
   List.iter
     (fun (Id.L(x), d, _) ->
       if d = 0.0 then label_zero := x;
+      if d = 4.0 then label_four := x;
       Printf.fprintf oc "%s:\t# %f\n" x d;
       Printf.fprintf oc "\t.word\t%f\n" d)
     data;
@@ -338,7 +340,13 @@ let f oc (Prog(data, fundefs, e)) =
      label_zero := x;
      Printf.fprintf oc "%s:\t# %f\n" x 0.0;
      Printf.fprintf oc "\t.word\t%f\n" 0.0);
+  if !label_four = "" then
+    (let x = Id.genid "l" in
+     label_four := x;
+     Printf.fprintf oc "%s:\t# %f\n" x 4.0;
+     Printf.fprintf oc "\t.word\t%f\n" 4.0);
   loaded_labels := M.add !label_zero reg_fzero !loaded_labels;
+  loaded_labels := M.add !label_four reg_ffour !loaded_labels;
   let reg_for_label = S.elements (S.diff (S.diff (S.of_list allfregs) (S.singleton reg_fsw)) !RegAlloc.used_regs) in
   Format.eprintf "reg_for_label : ";
   List.iter (Format.eprintf "%s ") reg_for_label;
@@ -347,7 +355,7 @@ let f oc (Prog(data, fundefs, e)) =
     match reg_for_label, data with
     | [], [] -> ()
     | [], hd :: tl | hd :: tl, [] -> ()
-    | reg :: tl1, label :: tl2 -> if label <> !label_zero then
+    | reg :: tl1, label :: tl2 -> if label <> !label_zero && label <> !label_four then
                                     (loaded_labels := M.add label reg !loaded_labels;
                                      ld_label_noprint tl1 tl2)
                                   else ld_label_noprint reg_for_label tl2 in
@@ -363,11 +371,14 @@ let f oc (Prog(data, fundefs, e)) =
   Printf.fprintf oc "\tlui\t\t%s, %%hi(%s)\n" regs.(0) !label_zero;
   Printf.fprintf oc "\tori\t\t%s, %s, %%lo(%s)\n" regs.(0) reg_zero !label_zero;
   Printf.fprintf oc "\tflw\t\t%s, 0(%s)\n" reg_fzero regs.(0);
+  Printf.fprintf oc "\tlui\t\t%s, %%hi(%s)\n" regs.(0) !label_four;
+  Printf.fprintf oc "\tori\t\t%s, %s, %%lo(%s)\n" regs.(0) reg_zero !label_four;
+  Printf.fprintf oc "\tflw\t\t%s, 0(%s)\n" reg_ffour regs.(0);
   let rec ld_label reg_for_label data =
     match reg_for_label, data with
     | [], [] -> ()
     | [], hd :: tl | hd :: tl, [] -> ()
-    | reg :: tl1, label :: tl2 -> if label <> !label_zero then
+    | reg :: tl1, label :: tl2 -> if label <> !label_zero && label <> !label_four then
                                     (Printf.fprintf oc "\tlui\t\t%s, %%hi(%s)\n" regs.(0) label;
                                      Printf.fprintf oc "\tori\t\t%s, %s, %%lo(%s)\n" regs.(0) reg_zero label;
                                      Printf.fprintf oc "\tflw\t\t%s, 0(%s)\n" reg regs.(0);
