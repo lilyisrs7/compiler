@@ -171,7 +171,7 @@ let file f = (* ファイルをコンパイルしてファイルに出力する (caml2html: main_file
 let () = (* ここからコンパイラの実行が開始される (caml2html: main_entry) *)
   let files = ref [] in
   Arg.parse
-    [("-inline", Arg.Int(fun i -> Inline.threshold := i), "maximum size of functions inlined");
+    [("-inline", Arg.Int(fun i -> Inline.threshold := i)(* fun i j -> Inline.thr_size := i; Inline.thr_num := j *), "maximum size and num of functions inlined");
      ("-iter", Arg.Int(fun i -> limit := i), "maximum number of optimizations iterated");
      ("-printiter", Arg.Unit(fun () -> printiter_flag := true), "printiter flag");
      ("-nocse", Arg.Unit(fun () -> nocse_flag := true), "nocse flag");
