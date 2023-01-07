@@ -57,8 +57,8 @@ let rec iter n f e = (* 最適化処理をくりかえす (caml2html: main_iter) *)
 let closure_opt e = (* タプル平坦化、tace後の最適化 *)
   ElimCls.f (ConstFoldCls.f (AssocCls.f (BetaCls.f e)))
 
-let lexbuf outchan l f outchan_parsed outchan_normalized outchan_alpha outchan_iterated outchan_cfg outchan_closure outchan_cls_opt
-                       outchan_virtual outchan_simm outchan_regalloc =
+let lexbuf outchan l f outchan_parsed outchan_normalized outchan_alpha outchan_iterated outchan_cfg outchan_closure outchan_flatten
+                       outchan_tace outchan_cls_opt outchan_virtual outchan_simm outchan_regalloc =
   (* バッファをコンパイルしてチャンネルへ出力する (caml2html: main_lexbuf) *)
   Id.counter := 0;
   Typing.extenv := M.empty;
@@ -82,6 +82,16 @@ let lexbuf outchan l f outchan_parsed outchan_normalized outchan_alpha outchan_i
   let Closure.Prog(fundefs, e) = closure in
   List.iter (print_closure_fundef outchan_closure 0) fundefs;
   print_closure_t outchan_closure 0 e;
+
+  let flatten = Flatten.f closure in
+  let Closure.Prog(fundefs, e) = flatten in
+  List.iter (print_closure_fundef outchan_flatten 0) fundefs;
+  print_closure_t outchan_flatten 0 e;
+
+  let tace = Tace.f flatten in
+  let Closure.Prog(fundefs, e) = tace in
+  List.iter (print_closure_fundef outchan_tace 0) fundefs;
+  print_closure_t outchan_tace 0 e;
 
   let cls_opt = closure_opt closure in
   let Closure.Prog(fundefs, e) = cls_opt in
@@ -113,13 +123,16 @@ let lexbuf outchan l f outchan_parsed outchan_normalized outchan_alpha outchan_i
        (Simm.f
           (Virtual.f
              (closure_opt
-                (Closure.f
-                   (ConstFoldGlobals.f
-                      (iter !limit
-                          (Alpha.f
-                              (KNormal.f
-                                  (Typing.f
-                                      (Parser.exp Lexer.token l)))))))))))
+                (Tace.f
+                   (Flatten.f
+                      (Closure.f
+                         (Alpha.f
+                            (ConstFoldGlobals.f
+                               (iter !limit
+                                  (Alpha.f
+                                     (KNormal.f
+                                        (Typing.f
+                                           (Parser.exp Lexer.token l))))))))))))))
   *)
 
 let string s = lexbuf stdout (Lexing.from_string s) (* 文字列をコンパイルして標準出力に表示する (caml2html: main_string) *)
@@ -133,13 +146,16 @@ let file f = (* ファイルをコンパイルしてファイルに出力する (caml2html: main_file
   let outchan_iterated = open_out (f ^ ".iterated") in
   let outchan_cfg = open_out (f ^ ".cfg") in
   let outchan_closure = open_out (f ^ ".closure") in
+  let outchan_flatten = open_out (f ^ ".flatten") in
+  let outchan_tace = open_out (f ^ ".tace") in
   let outchan_cls_opt = open_out (f ^ ".cls_opt") in
   let outchan_virtual = open_out (f ^ ".virtual") in
   let outchan_simm = open_out (f ^ ".simm") in
   let outchan_regalloc = open_out (f ^ ".regalloc") in
   try
     lexbuf outchan (Lexing.from_channel inchan) f outchan_parsed outchan_normalized outchan_alpha outchan_iterated outchan_cfg
-                                                  outchan_closure outchan_cls_opt outchan_virtual outchan_simm outchan_regalloc;
+                                                  outchan_closure outchan_flatten outchan_tace outchan_cls_opt outchan_virtual
+                                                  outchan_simm outchan_regalloc;
     close_in inchan;
     close_out outchan;
     close_out outchan_parsed;
@@ -148,13 +164,16 @@ let file f = (* ファイルをコンパイルしてファイルに出力する (caml2html: main_file
     close_out outchan_iterated;
     close_out outchan_cfg;
     close_out outchan_closure;
+    close_out outchan_flatten;
+    close_out outchan_tace;
     close_out outchan_cls_opt;
     close_out outchan_virtual;
     close_out outchan_simm;
     close_out outchan_regalloc
   with e -> (close_in inchan; close_out outchan; close_out outchan_parsed; close_out outchan_normalized; close_out outchan_alpha;
-             close_out outchan_iterated; close_out outchan_cfg; close_out outchan_closure; close_out outchan_cls_opt;
-             close_out outchan_virtual; close_out outchan_simm; close_out outchan_regalloc;
+             close_out outchan_iterated; close_out outchan_cfg; close_out outchan_closure; close_out outchan_flatten;
+             close_out outchan_tace; close_out outchan_cls_opt; close_out outchan_virtual; close_out outchan_simm;
+             close_out outchan_regalloc;
              raise e)
 
 (*

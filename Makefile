@@ -29,9 +29,9 @@ SOURCES = float.c type.ml id.ml m.ml s.ml \
 syntax.ml parser.mly lexer.mll typing.mli typing.ml kNormal.mli kNormal.ml \
 alpha.mli alpha.ml cse.mli cse.ml beta.mli beta.ml assoc.mli assoc.ml \
 inline.mli inline.ml logicOpt.mli logicOpt.ml constFold.mli constFold.ml elim.mli elim.ml constFoldGlobals.mli constFoldGlobals.ml \
-closure.mli closure.ml betaCls.ml betaCls.mli assocCls.ml assocCls.mli constFoldCls.ml constFoldCls.mli elimCls.ml elimCls.mli \
-asm.mli asm.ml virtual.mli virtual.ml simm.mli simm.ml regAlloc.mli regAlloc.ml emit.mli emit.ml \
-printType.ml main.mli main.ml
+closure.mli closure.ml flatten.mli flatten.ml elimTuple.mli elimTuple.ml tace.mli tace.ml betaCls.ml betaCls.mli \
+assocCls.ml assocCls.mli constFoldCls.ml constFoldCls.mli elimCls.ml elimCls.mli asm.mli asm.ml virtual.mli virtual.ml \
+simm.mli simm.ml regAlloc.mli regAlloc.ml emit.mli emit.ml printType.ml main.mli main.ml
 
 # ↓テストプログラムが増えたら、これも増やす
 TESTS = print sum-tail gcd sum fib ack even-odd \
@@ -44,18 +44,19 @@ manyargs fiszero fless fib2 ack2 adder2 global
 do_test: $(TESTS:%=test/%.s) # do_test: $(TESTS:%=test/%.cmp)
 
 .PRECIOUS: test/%.s test/% test/%.res test/%.ans test/%.cmp test/%.parsed test/%.normalized test/%.alpha test/%.iterated \
-test/%.cfg test/%.closure test/%.cls_opt test/%.virtual test/%.simm test/%.regalloc \
+test/%.cfg test/%.closure test/%.flatten test/%.tace test/%.cls_opt test/%.virtual test/%.simm test/%.regalloc \
 test/%main.ml test/%main.s test/%main test/%main.res test/%main.ans test/%main.cmp \
-test/%main.parsed test/%main.normalized test/%main.alpha test/%main.iterated test/%main.cfg test/%main.closure test/%main.cls_opt \
-test/%main.virtual test/%main.simm test/%main.regalloc \
+test/%main.parsed test/%main.normalized test/%main.alpha test/%main.iterated test/%main.cfg test/%main.closure test/%main.flatten \
+test/%main.tace test/%main.cls_opt test/%main.virtual test/%main.simm test/%main.regalloc \
 minrt.* test/*.cse test/*.beta test/*.assoc test/*.inline test/*.cf test/*.elim test/*.logic \
 *.cse *.beta *.assoc *.inline *.cf *.elim *.logic
 TRASH = $(TESTS:%=test/%.s) $(TESTS:%=test/%) $(TESTS:%=test/%.res) $(TESTS:%=test/%.ans) $(TESTS:%=test/%.cmp) \
 $(TESTS:%=test/%.parsed) $(TESTS:%=test/%.normalized) $(TESTS:%=test/%.alpha) $(TESTS:%=test/%.iterated) $(TESTS:%=test/%.cfg) \
-$(TESTS:%=test/%.closure) $(TESTS:%=test/%.cls_opt) $(TESTS:%=test/%.virtual) $(TESTS:%=test/%.simm) $(TESTS:%=test/%.regalloc) \
-$(TESTS:%=test/%main.ml) $(TESTS:%=test/%main.s) $(TESTS:%=test/%main) $(TESTS:%=test/%main.res) $(TESTS:%=test/%main.ans) \
-$(TESTS:%=test/%main.cmp) $(TESTS:%=test/%main.parsed) $(TESTS:%=test/%main.normalized) $(TESTS:%=test/%main.alpha) \
-$(TESTS:%=test/%main.iterated) $(TESTS:%=test/%main.cfg) $(TESTS:%=test/%main.closure) $(TESTS:%=test/%main.cls_opt) \
+$(TESTS:%=test/%.closure) $(TESTS:%=test/%.flatten) $(TESTS:%=test/%.tace) $(TESTS:%=test/%.cls_opt) $(TESTS:%=test/%.virtual) \
+$(TESTS:%=test/%.simm) $(TESTS:%=test/%.regalloc) $(TESTS:%=test/%main.ml) $(TESTS:%=test/%main.s) $(TESTS:%=test/%main) \
+$(TESTS:%=test/%main.res) $(TESTS:%=test/%main.ans) $(TESTS:%=test/%main.cmp) $(TESTS:%=test/%main.parsed) \
+$(TESTS:%=test/%main.normalized) $(TESTS:%=test/%main.alpha) $(TESTS:%=test/%main.iterated) $(TESTS:%=test/%main.cfg) \
+$(TESTS:%=test/%main.closure) $(TESTS:%=test/%main.flatten) $(TESTS:%=test/%main.tace) $(TESTS:%=test/%main.cls_opt) \
 $(TESTS:%=test/%main.virtual) $(TESTS:%=test/%main.simm) $(TESTS:%=test/%main.regalloc) \
 minrt.* test/*.cse test/*.beta test/*.assoc test/*.inline test/*.cf test/*.elim test/*.logic \
 *.cse *.beta *.assoc *.inline *.cf *.elim *.logic
@@ -79,8 +80,8 @@ min-caml.html: main.mli main.ml id.ml m.ml s.ml \
 		syntax.ml type.ml parser.mly lexer.mll typing.mli typing.ml kNormal.mli kNormal.ml \
 		alpha.mli alpha.ml cse.mli cse.ml beta.mli beta.ml assoc.mli assoc.ml \
 		inline.mli inline.ml logicOpt.mli logicOpt.ml constFold.mli constFold.ml elim.mli elim.ml \
-		constFoldGlobals.mli constFoldGlobals.ml closure.mli closure.ml \
-		betaCls.ml betaCls.mli assocCls.ml assocCls.mli constFoldCls.ml constFoldCls.mli elimCls.ml elimCls.mli \
+		constFoldGlobals.mli constFoldGlobals.ml closure.mli closure.ml flatten.mli flatten.ml elimTuple.mli elimTuple.ml \
+		tace.mli tace.mli betaCls.ml betaCls.mli assocCls.ml assocCls.mli constFoldCls.ml constFoldCls.mli elimCls.ml elimCls.mli \
 		asm.mli asm.ml virtual.mli virtual.ml simm.mli simm.ml regAlloc.mli regAlloc.ml emit.mli emit.ml printType.ml 
 	./to_sparc
 	caml2html -o min-caml.html $^
