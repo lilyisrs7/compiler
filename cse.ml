@@ -55,77 +55,79 @@ let separate_pos e =
   | ExtArray(x, pos) -> NPExtArray(x), pos
   | ExtFunApp(x, ys, pos) -> NPExtFunApp(x, ys), pos
 
+let env_fun = ref M.empty
+
 (* let rec effect = function (* 副作用の有無 *)
   | Let(_, e1, e2, pos) | IfEq(_, _, e1, e2, pos) | IfLE(_, _, e1, e2, pos) -> effect e1 || effect e2
   | LetRec(_, e, pos) | LetTuple(_, _, e, pos) -> effect e
   | App _ | Put _ | ExtFunApp _ -> true
   | _ -> false *)
 
-let rec effect env_fun = function (* 副作用の有無 *) (* 関数ごとに副作用の有無を持っておく *)
-  | Let(_, e1, e2, pos) | IfEq(_, _, e1, e2, pos) | IfLE(_, _, e1, e2, pos) -> effect env_fun e1 || effect env_fun e2
-  | LetRec(_, e, pos) | LetTuple(_, _, e, pos) -> effect env_fun e
+let rec effect = function (* 副作用の有無 *) (* 関数ごとに副作用の有無を持っておく *)
+  | Let(_, e1, e2, pos) | IfEq(_, _, e1, e2, pos) | IfLE(_, _, e1, e2, pos) -> effect e1 || effect e2
+  | LetRec(_, e, pos) | LetTuple(_, _, e, pos) -> effect e
   | App(x, ys, pos) ->
       (try
-         M.find x env_fun
+         M.find x !env_fun
        with Not_found -> false (* 関数内で再帰的に呼ばれた場合はfalseとしておく *))
   | Put _ | ExtFunApp _ -> true
   | _ -> false
 
-let rec g env env_get env_fun e = (* 共通部分式削除ルーチン本体 *)
+let rec g env env_get e = (* 共通部分式削除ルーチン本体 *)
   try
     let e', pos = separate_pos e in
-    (Var(List.assoc e' env, pos), env_fun)
+    Var(List.assoc e' env, pos)
   with
     Not_found ->
       try
         let e', pos = separate_pos e in
-        (Var(List.assoc e' env_get, pos), env_fun)
+        Var(List.assoc e' env_get, pos)
       with
         Not_found ->
           (match e with
           | IfEq(x, y, e1, e2, pos) ->
-              let e1', env_fun' = g env env_get env_fun e1 in
-              let e2', env_fun' = g env env_get env_fun' e2 in
-              (IfEq(x, y, e1', e2', pos), env_fun')
+              let e1' = g env env_get e1 in
+              let e2' = g env env_get e2 in
+              IfEq(x, y, e1', e2', pos)
           | IfLE(x, y, e1, e2, pos) ->
-              let e1', env_fun' = g env env_get env_fun e1 in
-              let e2', env_fun' = g env env_get env_fun' e2 in
-              (IfLE(x, y, e1', e2', pos), env_fun')
+              let e1' = g env env_get e1 in
+              let e2' = g env env_get e2 in
+              IfLE(x, y, e1', e2', pos)
           | Let((x, t), e1, e2, pos) ->
-              if effect env_fun e1 then
-                let e2', env_fun' = g env [] env_fun e2 in
-                (Let((x, t), e1, e2', pos), env_fun')
+              if effect e1 then
+                let e2' = g env [] e2 in
+                Let((x, t), e1, e2', pos)
               else
-                let e1', env_fun' = g env env_get env_fun e1 in
+                let e1' = g env env_get e1 in
                 (try
                   let v = List.assoc (fst (separate_pos e1')) env in
-                  let e2', env_fun' = g env env_get env_fun' e2 in
-                  (Let((x, t), Var(v, pos), e2', pos), env_fun')
+                  let e2' = g env env_get e2 in
+                  Let((x, t), Var(v, pos), e2', pos)
                 with
                   Not_found ->
                     try
                       let v = List.assoc (fst (separate_pos e1')) env_get in
-                      let e2', env_fun' = g env env_get env_fun' e2 in
-                      (Let((x, t), Var(v, pos), e2', pos), env_fun')
+                      let e2' = g env env_get e2 in
+                      Let((x, t), Var(v, pos), e2', pos)
                     with
                       Not_found ->
                         match fst(separate_pos e1') with
                         | NPGet(x_, y_) ->
-                            let e2', env_fun' = g env ((NPGet(x_, y_), x) :: env_get) env_fun' e2 in
-                            (Let((x, t), e1', e2', pos), env_fun')
+                            let e2' = g env ((NPGet(x_, y_), x) :: env_get) e2 in
+                            Let((x, t), e1', e2', pos)
                         | e_->
-                            let e2', env_fun' = g ((e_, x) :: env) env_get env_fun' e2 in
-                            (Let((x, t), e1', e2', pos), env_fun'))
+                            let e2' = g ((e_, x) :: env) env_get e2 in
+                            Let((x, t), e1', e2', pos))
           | LetRec({ name = (x, t); args = yts; body = e1 }, e2, pos) ->
-              let e1', env_fun' = g env env_get env_fun e1 in
-              let eff = effect env_fun' e1 in
+              let e1' = g env env_get e1 in
+              let eff = effect e1 in
               Format.eprintf "%s %b\n" x eff;
-              let env_fun' = M.add x eff env_fun in
-              let e2', env_fun' = g env env_get env_fun' e2 in
-              (LetRec({ name = (x, t); args = yts; body = e1' }, e2', pos), env_fun')
+              env_fun := M.add x eff !env_fun;
+              let e2' = g env env_get e2 in
+              LetRec({ name = (x, t); args = yts; body = e1' }, e2', pos)
           | LetTuple(xts, y, e, pos) ->
-              let e', env_fun' = g env env_get env_fun e in
-              (LetTuple(xts, y, e', pos), env_fun')
-          | e -> (e, env_fun))
+              let e' = g env env_get e in
+              LetTuple(xts, y, e', pos)
+          | e -> e)
 
-let f e = fst (g [] [] M.empty e)
+let f e = g [] [] e
