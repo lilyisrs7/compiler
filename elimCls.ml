@@ -1,9 +1,23 @@
 open Closure
 
-let rec effect = function (* 副作用の有無 (caml2html: elim_effect) *)
+let env_fun = ref M.empty (* 関数ごとに副作用の有無を持っておく *)
+
+(* let rec effect = function (* 副作用の有無 (caml2html: elim_effect) *)
   | Let(_, e1, e2, _) | IfEq(_, _, e1, e2, _) | IfLE(_, _, e1, e2, _) -> effect e1 || effect e2
   | MakeCls(_, _, e, _) | LetTuple(_, _, e, _) -> effect e
   | AppCls _ | AppDir _ | Put _ -> true
+  | _ -> false *)
+
+let rec effect = function (* 副作用の有無 (caml2html: elim_effect) *)
+  | Let(_, e1, e2, _) | IfEq(_, _, e1, e2, _) | IfLE(_, _, e1, e2, _) -> effect e1 || effect e2
+  | MakeCls(_, _, e, _) | LetTuple(_, _, e, _) -> effect e
+  | AppCls(x, ys, pos) | AppDir(Id.L(x), ys, pos) ->
+      if String.starts_with ~prefix:"min_caml_" x then true
+      else
+        (try
+           M.find x !env_fun
+         with Not_found -> false (* 関数内で再帰的に呼ばれた場合はfalseとしておく *))
+  | Put _ -> true
   | _ -> false
 
 let rec g = function (* 不要定義削除ルーチン本体 (caml2html: elim_f) *)
@@ -26,8 +40,11 @@ let rec g = function (* 不要定義削除ルーチン本体 (caml2html: elim_f) *)
        e')
   | e -> e
 
-let h { name = lt; args = yts; formal_fv = zts; body = e } =
-  { name = lt; args = yts; formal_fv = zts; body = g e }
+let h { name = (Id.L(x), t); args = yts; formal_fv = zts; body = e } =
+  let e' = g e in
+  let eff = effect e' in
+  env_fun := M.add x eff !env_fun;
+  { name = (Id.L(x), t); args = yts; formal_fv = zts; body = e' }
 
 let f (Prog(fundefs, e)) =
   let fundefs' = List.map h fundefs in
