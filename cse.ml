@@ -55,12 +55,12 @@ let separate_pos e =
   | ExtArray(x, pos) -> NPExtArray(x), pos
   | ExtFunApp(x, ys, pos) -> NPExtFunApp(x, ys), pos
 
-let env_fun = ref M.empty
+let env_fun = ref M.empty (* 関数ごとに副作用の有無を持っておく *)
 
-let rec effect = function (* 副作用の有無 *) (* 関数ごとに副作用の有無を持っておく *)
-  | Let(_, e1, e2, pos) | IfEq(_, _, e1, e2, pos) | IfLE(_, _, e1, e2, pos) -> effect e1 || effect e2
-  | LetRec(_, e, pos) | LetTuple(_, _, e, pos) -> effect e
-  | App(x, ys, pos) ->
+let rec effect = function (* 副作用の有無 *)
+  | Let(_, e1, e2, _) | IfEq(_, _, e1, e2, _) | IfLE(_, _, e1, e2, _) -> effect e1 || effect e2
+  | LetRec(_, e, _) | LetTuple(_, _, e, _) -> effect e
+  | App(x, _, _) ->
       (try
          M.find x !env_fun
        with Not_found -> false (* 関数内で再帰的に呼ばれた場合はfalseとしておく *))
