@@ -1,9 +1,21 @@
 open KNormal
 
-let rec effect = function (* 副作用の有無 (caml2html: elim_effect) *)
+let env_fun = ref M.empty
+
+(* let rec effect = function (* 副作用の有無 (caml2html: elim_effect) *)
   | Let(_, e1, e2, pos) | IfEq(_, _, e1, e2, pos) | IfLE(_, _, e1, e2, pos) -> effect e1 || effect e2
   | LetRec(_, e, pos) | LetTuple(_, _, e, pos) -> effect e
   | App _ | Put _ | ExtFunApp _ -> true
+  | _ -> false *)
+
+let rec effect = function (* 副作用の有無 *) (* 関数ごとに副作用の有無を持っておく *)
+  | Let(_, e1, e2, pos) | IfEq(_, _, e1, e2, pos) | IfLE(_, _, e1, e2, pos) -> effect e1 || effect e2
+  | LetRec(_, e, pos) | LetTuple(_, _, e, pos) -> effect e
+  | App(x, ys, pos) ->
+      (try
+         M.find x !env_fun
+       with Not_found -> false (* 関数内で再帰的に呼ばれた場合はfalseとしておく *))
+  | Put _ | ExtFunApp _ -> true
   | _ -> false
 
 let rec f = function (* 不要定義削除ルーチン本体 (caml2html: elim_f) *)
@@ -16,9 +28,12 @@ let rec f = function (* 不要定義削除ルーチン本体 (caml2html: elim_f) *)
       (Format.eprintf "eliminating variable %s@." x;
        e2')
   | LetRec({ name = (x, t); args = yts; body = e1 }, e2, pos) -> (* let recの場合 (caml2html: elim_letrec) *)
+      let e1' = f e1 in
+      let eff = effect e1' in
+      env_fun := M.add x eff !env_fun;
       let e2' = f e2 in
       if S.mem x (fv e2') then
-        LetRec({ name = (x, t); args = yts; body = f e1 }, e2', pos)
+        LetRec({ name = (x, t); args = yts; body = e1' }, e2', pos)
       else
         (Format.eprintf "eliminating function %s@." x;
          e2')
