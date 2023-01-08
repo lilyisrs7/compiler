@@ -57,12 +57,6 @@ let separate_pos e =
 
 let env_fun = ref M.empty
 
-(* let rec effect = function (* 副作用の有無 *)
-  | Let(_, e1, e2, pos) | IfEq(_, _, e1, e2, pos) | IfLE(_, _, e1, e2, pos) -> effect e1 || effect e2
-  | LetRec(_, e, pos) | LetTuple(_, _, e, pos) -> effect e
-  | App _ | Put _ | ExtFunApp _ -> true
-  | _ -> false *)
-
 let rec effect = function (* 副作用の有無 *) (* 関数ごとに副作用の有無を持っておく *)
   | Let(_, e1, e2, pos) | IfEq(_, _, e1, e2, pos) | IfLE(_, _, e1, e2, pos) -> effect e1 || effect e2
   | LetRec(_, e, pos) | LetTuple(_, _, e, pos) -> effect e
@@ -94,11 +88,11 @@ let rec g env env_get e = (* 共通部分式削除ルーチン本体 *)
               let e2' = g env env_get e2 in
               IfLE(x, y, e1', e2', pos)
           | Let((x, t), e1, e2, pos) ->
-              if effect e1 then
+              let e1' = g env env_get e1 in
+              if effect e1' then
                 let e2' = g env [] e2 in
-                Let((x, t), e1, e2', pos)
+                Let((x, t), e1', e2', pos)
               else
-                let e1' = g env env_get e1 in
                 (try
                   let v = List.assoc (fst (separate_pos e1')) env in
                   let e2' = g env env_get e2 in
@@ -120,7 +114,7 @@ let rec g env env_get e = (* 共通部分式削除ルーチン本体 *)
                             Let((x, t), e1', e2', pos))
           | LetRec({ name = (x, t); args = yts; body = e1 }, e2, pos) ->
               let e1' = g env env_get e1 in
-              let eff = effect e1 in
+              let eff = effect e1' in
               Format.eprintf "%s %b\n" x eff;
               env_fun := M.add x eff !env_fun;
               let e2' = g env env_get e2 in
