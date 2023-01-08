@@ -11,7 +11,7 @@ let env_fun = ref M.empty (* 関数ごとに副作用の有無を持っておく *)
 let rec effect = function (* 副作用の有無 (caml2html: elim_effect) *)
   | Let(_, e1, e2, _) | IfEq(_, _, e1, e2, _) | IfLE(_, _, e1, e2, _) -> effect e1 || effect e2
   | MakeCls(_, _, e, _) | LetTuple(_, _, e, _) -> effect e
-  | AppCls(x, ys, pos) | AppDir(Id.L(x), ys, pos) ->
+  | AppCls(x, _, _) | AppDir(Id.L(x), _, _) ->
       if String.starts_with ~prefix:"min_caml_" x then true
       else
         (try

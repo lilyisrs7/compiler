@@ -1,9 +1,17 @@
 open Closure
 
+let env_fun = ref M.empty (* 関数ごとに副作用の有無を持っておく *)
+
 let rec effect = function
-  | Let(_, e1, e2, pos) | IfEq(_, _, e1, e2, pos) | IfLE(_, _, e1, e2, pos) -> effect e1 || effect e2
-  | MakeCls(_, _, e, pos) | LetTuple(_, _, e, pos) -> effect e
-  | AppCls _ | AppDir _ | Put _ -> true
+  | Let(_, e1, e2, _) | IfEq(_, _, e1, e2, _) | IfLE(_, _, e1, e2, _) -> effect e1 || effect e2
+  | MakeCls(_, _, e, _) | LetTuple(_, _, e, _) -> effect e
+  | AppCls(x, _, _) | AppDir(Id.L(x), _, _) ->
+      if String.starts_with ~prefix:"min_caml_" x then true
+      else
+        (try
+           M.find x !env_fun
+         with Not_found -> false (* 関数内で再帰的に呼ばれた場合はfalseとしておく *))
+  | Put _ -> true
   | _ -> false
 
 let rec f = function (* 不要タプル削除ルーチン本体 *)
