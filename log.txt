@@ -1,3 +1,5 @@
+ftoi  -1.5--0.50001 -1 -0.5-0.49999 0 0.5-1.49999 1
+
 128*128
 
 base
@@ -84,6 +86,8 @@ float_of_intの幅を1→4に変更、int_of_float, float_of_int末尾再帰化
 2,965,130,560 1/7 22:10
 cse改善（修正）、elimのeffect判定を緩く inline307
 2,899,181,466 1/8 14:58
+int_of_floatを切り捨て→四捨五入に　それに伴ってfloorも変更
+2,910,207,182 1/16 16:17
 
 256*256
 
@@ -112,6 +116,8 @@ float_of_intの幅を1→4に変更、int_of_float, float_of_int末尾再帰化
 9,634,206,931 1/7 22:10
 cse改善（修正）、elimのeffect判定を緩く inline307
 9,416,664,373 1/8 14:58
+int_of_floatを切り捨て→四捨五入に　それに伴ってfloorも変更
+9,456,652,418 1/16 16:17
 
 512*512
 
@@ -175,6 +181,8 @@ float_of_intの幅を1→4に変更、int_of_float, float_of_int末尾再帰化
 336 1/6 16:34
 cse改善（修正）、elimのeffect判定を緩く inline307
 328 1/8 14:58
+int_of_floatを切り捨て→四捨五入に　それに伴ってfloorも変更
+330 1/16 16:17
 
 charhan
 734 11/26 1:30

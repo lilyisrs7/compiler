@@ -10,13 +10,28 @@ let rec fsqr x = x *. x in
   if x >= 0.0 then
     if x >= 1.0 then int_of_float (x -. 1.0) + 1 else 0
   else - int_of_float (-.x) in *)
-let rec int_of_float_rem x acc =
+(* let rec int_of_float_rem x acc =
   if x >= 1.0 then int_of_float_rem (x -. 1.0) (acc + 1) else acc in
 let rec int_of_float_four x acc =
   if x >= 4.0 then int_of_float_four (x -. 4.0) (acc + 4) else int_of_float_rem x acc in
 let rec int_of_float x =
-  if x >= 0.0 then int_of_float_four x 0 (* if x >= 4.0 then int_of_float (x -. 4.0) + 4 else int_of_float_rem x *)
-  else - int_of_float (-.x) in
+  if x >= 0.0 then int_of_float_four (x +. 0.5) 0 (* if x >= 4.0 then int_of_float (x -. 4.0) + 4 else int_of_float_rem x *)
+  else - int_of_float (-.x) in *)
+(* let rec int_of_float x =
+  if x >= -. 0.5 then
+    if x < 0.5 then 0
+    else int_of_float (x -. 1.0) + 1
+  else int_of_float (x +. 1.0) - 1 in *)
+let rec int_of_float_rem x acc =
+  if x >= -. 0.5 then
+    if x < 0.5 then acc
+    else int_of_float_rem (x -. 1.0) (acc + 1)
+  else int_of_float_rem (x +. 1.0) (acc - 1) in
+let rec int_of_float_four x acc =
+  if x >= 4.5 then int_of_float_four (x -. 4.0) (acc + 4)
+  else if x < -. 4.5 then int_of_float_four (x +. 4.0) (acc - 4)
+  else int_of_float_rem x acc in
+let rec int_of_float x = int_of_float_four x 0 in
 (* let rec float_of_int x =
   if x >= 0 then
     if x >= 1 then float_of_int (x - 1) +. 1.0 else 0.0
@@ -29,8 +44,13 @@ let rec float_of_int x =
   if x >= 0 then float_of_int_four x 0.0
   else -. float_of_int (-x) in
 let rec floor x =
-  if x >= 0.0 then float_of_int (int_of_float x)
-  else float_of_int (int_of_float x - 1) in
+  float_of_int (int_of_float (x -. 0.5)) in
+  (* float_of_int (truncate x) in *)
+  (* if x >= 0.0 then float_of_int (truncate x)
+  else float_of_int (truncate x - 1) in *)
+  (* float_of_int (int_of_float (x -. 0.5)) in *)
+  (* if x >= 0.0 then float_of_int (int_of_float (x -. 0.5))
+  else float_of_int (int_of_float (x +. 0.5) - 1) in *)
 let pi = 3.1415927410125732421875 in
 let pi2 = pi *. 2.0 in
 let pihalf = pi *. 0.5 in
@@ -81,4 +101,7 @@ let rec atan x =
     +. 0.111111104 *. x2 *. x4 *. x3 -. 0.08976446 *. x4 *. x4 *. x3 in
 
 let rec print_newline _ = print_char 10 in
-let rec truncate x = int_of_float x in
+let rec truncate x =
+  if x >= 0.0 then
+    if x >= 1.0 then truncate (x -. 1.0) + 1 else 0
+  else - truncate (-.x) in
