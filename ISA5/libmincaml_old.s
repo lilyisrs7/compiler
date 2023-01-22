@@ -34,35 +34,3 @@ create_float_array_cont:
 	jal		x0, create_float_array_loop
 create_float_array_exit:
 	jalr	x0, x1, 0
-min_caml_float_of_int:
-	ble		x0, x4, itof_pos
-	sub		x4, x0, x4
-	sw		x1, 0(x2)
-	addi	x2, x2, -4
-	jal		x1, min_caml_float_of_int
-	addi	x2, x2, 4
-	lw		x1, 0(x2)
-	fsub	f1, f0, f1
-	jalr	x0, x1, 0
-itof_pos:
-	addi	x5, x0, 8388608
-	lui		x6, %hi(l.0)	# 8388608.0
-	ori		x6, x0, %lo(l.0)
-	flw		f2, 0(x6)
-	ble		x5, x4, itof_g
-itof_l:
-	addi	x4, x4, 1258291200
-	sw		x4, 0(x2)
-	flw		f1, 0(x2)
-	fsub	f1, f1, f2
-	jalr	x0, x1, 0
-itof_g:
-	sub		x4, x4, x5
-	fadd	f1, f1, f2
-	ble		x5, x4, itof_g
-	addi	x4, x4, 1258291200
-	sw		x4, 0(x2)
-	flw		f3, 0(x2)
-	fsub	f3, f3, f2
-	fadd	f1, f1, f3
-	jalr	x0, x1, 0

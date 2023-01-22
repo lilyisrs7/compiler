@@ -36,13 +36,13 @@ let rec int_of_float x = int_of_float_four x 0 in
   if x >= 0 then
     if x >= 1 then float_of_int (x - 1) +. 1.0 else 0.0
   else -. float_of_int (-x) in *)
-let rec float_of_int_rem x acc =
+(* let rec float_of_int_rem x acc =
   if x >= 1 then float_of_int_rem (x - 1) (acc +. 1.0) else acc in
 let rec float_of_int_four x acc =
   if x >= 4 then float_of_int_four (x - 4) (acc +. 4.0) else float_of_int_rem x acc in
 let rec float_of_int x =
   if x >= 0 then float_of_int_four x 0.0
-  else -. float_of_int (-x) in
+  else -. float_of_int (-x) in *)
 let rec floor x =
   float_of_int (int_of_float (x -. 0.5)) in
   (* float_of_int (truncate x) in *)
