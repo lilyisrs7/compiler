@@ -4,7 +4,7 @@ let rec g env = function (* Ì¿ÎáÎó¤ÎÂ¨ÃÍºÇÅ¬²½ (caml2html: simm13_g) *)
   | Ans(exp, pos) -> Ans(g' env exp, pos)
   | Let((x, t), Set(i), e, pos) ->
       (* Format.eprintf "found simm %s = %d@." x i; *)
-      let e' = g (M.add x i env) e in
+      let e' = g (if -2048 <= i && i <= 2047 then M.add x i env else env) e in
       if List.mem x (fv e') then Let((x, t), Set(i), e', pos) else
       ((* Format.eprintf "erased redundant Set to %s@." x; *)
        e')

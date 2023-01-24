@@ -65,7 +65,11 @@ let rec g oc = function (* 命令列のアセンブリ生成 (caml2html: emit_g) *) (* ここ
 and g' oc pos = function (* 各命令のアセンブリ生成 (caml2html: emit_gprime) *)
   (* 末尾でなかったら計算結果をdestにセット (caml2html: emit_nontail) *)
   | NonTail(_), Nop -> ()
-  | NonTail(x), Set(i) -> Printf.fprintf oc "\taddi\t%s, %s, %d\t# %d\n" x reg_zero i pos (* 即値をレジスタに入れる *)
+  | NonTail(x), Set(i) ->
+      if -2048 <= i && i <= 2047 then Printf.fprintf oc "\taddi\t%s, %s, %d\t# %d\n" x reg_zero i pos (* 即値をレジスタに入れる *)
+      else
+        (Printf.fprintf oc "\tlui\t\t%s, %d\t# %d\n" x i pos;
+         Printf.fprintf oc "\tori\t\t%s, %s, %d\t# %d\n" x reg_zero i pos)
   | NonTail(x), SetL(Id.L(y)) -> (* ラベルからレジスタに値を移す *)
       Printf.fprintf oc "\tlui\t\t%s, %%hi(%s)\t# %d\n" x y pos;
       Printf.fprintf oc "\tori\t\t%s, %s, %%lo(%s)\t# %d\n" x reg_zero y pos
@@ -363,7 +367,9 @@ let f oc (Prog(data, fundefs, e)) =
   Printf.fprintf oc "min_caml_start:\n";
   Printf.fprintf oc "\taddi\t%s, %s, -4\n" reg_sp reg_sp;
   Printf.fprintf oc "\taddi\t%s, %s, 4\n" reg_four reg_zero;
-  Printf.fprintf oc "\taddi\t%s, %s, 60000\n" reg_hp reg_zero;
+  (* Printf.fprintf oc "\taddi\t%s, %s, 60000\n" reg_hp reg_zero; *)
+  Printf.fprintf oc "\tlui\t\t%s, 60000\n" reg_hp;
+  Printf.fprintf oc "\tori\t\t%s, %s, 60000\n" reg_hp reg_zero;
   (* Printf.fprintf oc "\taddi\t%s, %s, 0\n" reg_read_num_soft reg_zero; *)
   Printf.fprintf oc "\tlui\t\t%s, %%hi(%s)\n" regs.(0) !label_zero;
   Printf.fprintf oc "\tori\t\t%s, %s, %%lo(%s)\n" regs.(0) reg_zero !label_zero;
