@@ -45,13 +45,16 @@ min_caml_float_of_int:
 	fsub	f1, f0, f1
 	jalr	x0, x1, 0
 itof_pos:
-	addi	x5, x0, 8388608
+	lui		x5, 8388608
+	ori		x5, x0, 8388608
 	lui		x6, %hi(l.0)	# 8388608.0
 	ori		x6, x0, %lo(l.0)
 	flw		f2, 0(x6)
 	ble		x5, x4, itof_g
 itof_l:
-	addi	x4, x4, 1258291200
+	lui		x6, 1258291200
+	ori		x6, x0, 1258291200
+	add		x4, x4, x6
 	sw		x4, 0(x2)
 	flw		f1, 0(x2)
 	fsub	f1, f1, f2
@@ -60,7 +63,9 @@ itof_g:
 	sub		x4, x4, x5
 	fadd	f1, f1, f2
 	ble		x5, x4, itof_g
-	addi	x4, x4, 1258291200
+	lui		x6, 1258291200
+	ori		x6, x0, 1258291200
+	add		x4, x4, x6
 	sw		x4, 0(x2)
 	flw		f3, 0(x2)
 	fsub	f3, f3, f2
