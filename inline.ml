@@ -16,15 +16,16 @@ let rec g env = function (* インライン展開ルーチン本体 (caml2html: inline_g) *)
   | Let(xt, e1, e2, pos) -> Let(xt, g env e1, g env e2, pos)
   | LetRec({ name = (x, t); args = yts; body = e1 }, e2, pos) -> (* 関数定義の場合 (caml2html: inline_letrec) *)
       if S.mem x (fv e1) then (* 再帰関数 *)
-        if String.starts_with ~prefix:"solve_each_element_fast" x && !inline_rec = true then
-          let size_e1 = size e1 in
-          (* let _ = Format.eprintf "%s %d\n" x size_e1 in *)
-          let env = (* if size_e1 > !threshold then env else *)M.add x (yts, e1) env in
-          LetRec({ name = (x, t); args = yts; body = g env e1}, g env e2, pos)
-        else
-          LetRec({ name = (x, t); args = yts; body = g env e1}, g env e2, pos)
-      else
         let size_e1 = size e1 in
+        let env =
+          if !inline_rec = true &&
+             (String.starts_with ~prefix:"solve_each_element_fast" x || String.starts_with ~prefix:"solve_one_or_network_fast" x
+              || size_e1 <= 20) then M.add x (yts, e1) env
+          else env in
+        let _ = Format.eprintf "%s %d\n" x size_e1 in
+        LetRec({ name = (x, t); args = yts; body = g env e1}, g env e2, pos)
+      else
+        (* let size_e1 = size e1 in *)
         (* let _ = Format.eprintf "%s %d\n" x size_e1 in *)
         let env = (* if size_e1 > !threshold then env else *)M.add x (yts, e1) env in (* 再帰関数以外はサイズに関係なく全て展開 *)
         LetRec({ name = (x, t); args = yts; body = g env e1}, g env e2, pos)
