@@ -6,8 +6,9 @@ let nologic_flag = ref false
 let nocfg_flag = ref false
 let printiter_flag = ref false
 
-let rec iter n f e = (* ºÇÅ¬²½½èÍý¤ò¤¯¤ê¤«¤¨¤¹ (caml2html: main_iter) *)
+let rec iter n f e = (* æœ€é©åŒ–å‡¦ç†ã‚’ãã‚Šã‹ãˆã™ (caml2html: main_iter) *)
   Format.eprintf "iteration %d@." n;
+  Inline.inline_rec := if n = !limit then true else false;
   if n = 0 then e else
   if !printiter_flag then
     let e_cse = if !nocse_flag then e else Cse.f e in
@@ -54,12 +55,12 @@ let rec iter n f e = (* ºÇÅ¬²½½èÍý¤ò¤¯¤ê¤«¤¨¤¹ (caml2html: main_iter) *)
     if e = e' then e else
     iter (n - 1) f e'
 
-let closure_opt e = (* ¥¿¥×¥ëÊ¿Ã³²½¡¢tace¸å¤ÎºÇÅ¬²½ *)
+let closure_opt e = (* ã‚¿ãƒ—ãƒ«å¹³å¦åŒ–ã€taceå¾Œã®æœ€é©åŒ– *)
   ElimCls.f (ConstFoldCls.f (AssocCls.f (BetaCls.f e)))
 
 let lexbuf outchan l f outchan_parsed outchan_normalized outchan_alpha outchan_iterated outchan_cfg outchan_closure outchan_flatten
                        outchan_tace outchan_cls_opt outchan_virtual outchan_simm outchan_regalloc =
-  (* ¥Ð¥Ã¥Õ¥¡¤ò¥³¥ó¥Ñ¥¤¥ë¤·¤Æ¥Á¥ã¥ó¥Í¥ë¤Ø½ÐÎÏ¤¹¤ë (caml2html: main_lexbuf) *)
+  (* ãƒãƒƒãƒ•ã‚¡ã‚’ã‚³ãƒ³ãƒ‘ã‚¤ãƒ«ã—ã¦ãƒãƒ£ãƒ³ãƒãƒ«ã¸å‡ºåŠ›ã™ã‚‹ (caml2html: main_lexbuf) *)
   Id.counter := 0;
   Typing.extenv := M.empty;
   
@@ -135,9 +136,9 @@ let lexbuf outchan l f outchan_parsed outchan_normalized outchan_alpha outchan_i
                                            (Parser.exp Lexer.token l))))))))))))))
   *)
 
-let string s = lexbuf stdout (Lexing.from_string s) (* Ê¸»úÎó¤ò¥³¥ó¥Ñ¥¤¥ë¤·¤ÆÉ¸½à½ÐÎÏ¤ËÉ½¼¨¤¹¤ë (caml2html: main_string) *)
+let string s = lexbuf stdout (Lexing.from_string s) (* æ–‡å­—åˆ—ã‚’ã‚³ãƒ³ãƒ‘ã‚¤ãƒ«ã—ã¦æ¨™æº–å‡ºåŠ›ã«è¡¨ç¤ºã™ã‚‹ (caml2html: main_string) *)
 
-let file f = (* ¥Õ¥¡¥¤¥ë¤ò¥³¥ó¥Ñ¥¤¥ë¤·¤Æ¥Õ¥¡¥¤¥ë¤Ë½ÐÎÏ¤¹¤ë (caml2html: main_file) *)
+let file f = (* ãƒ•ã‚¡ã‚¤ãƒ«ã‚’ã‚³ãƒ³ãƒ‘ã‚¤ãƒ«ã—ã¦ãƒ•ã‚¡ã‚¤ãƒ«ã«å‡ºåŠ›ã™ã‚‹ (caml2html: main_file) *)
   let inchan = open_in (f ^ ".ml") in
   let outchan = open_out (f ^ ".s") in
   let outchan_parsed = open_out (f ^ ".parsed") in
@@ -177,7 +178,7 @@ let file f = (* ¥Õ¥¡¥¤¥ë¤ò¥³¥ó¥Ñ¥¤¥ë¤·¤Æ¥Õ¥¡¥¤¥ë¤Ë½ÐÎÏ¤¹¤ë (caml2html: main_file
              raise e)
 
 (*
-let file f = (* ¥Õ¥¡¥¤¥ë¤ò¥³¥ó¥Ñ¥¤¥ë¤·¤Æ¥Õ¥¡¥¤¥ë¤Ë½ÐÎÏ¤¹¤ë (caml2html: main_file) *)
+let file f = (* ãƒ•ã‚¡ã‚¤ãƒ«ã‚’ã‚³ãƒ³ãƒ‘ã‚¤ãƒ«ã—ã¦ãƒ•ã‚¡ã‚¤ãƒ«ã«å‡ºåŠ›ã™ã‚‹ (caml2html: main_file) *)
   let inchan = open_in (f ^ ".ml") in
   let outchan = open_out (f ^ ".s") in
   try
@@ -187,10 +188,10 @@ let file f = (* ¥Õ¥¡¥¤¥ë¤ò¥³¥ó¥Ñ¥¤¥ë¤·¤Æ¥Õ¥¡¥¤¥ë¤Ë½ÐÎÏ¤¹¤ë (caml2html: main_file
   with e -> (close_in inchan; close_out outchan; raise e)
 *)
 
-let () = (* ¤³¤³¤«¤é¥³¥ó¥Ñ¥¤¥é¤Î¼Â¹Ô¤¬³«»Ï¤µ¤ì¤ë (caml2html: main_entry) *)
+let () = (* ã“ã“ã‹ã‚‰ã‚³ãƒ³ãƒ‘ã‚¤ãƒ©ã®å®Ÿè¡ŒãŒé–‹å§‹ã•ã‚Œã‚‹ (caml2html: main_entry) *)
   let files = ref [] in
   Arg.parse
-    [("-inline", Arg.Int(fun i -> Inline.threshold := i)(* fun i j -> Inline.thr_size := i; Inline.thr_num := j *), "maximum size and num of functions inlined");
+    [("-inline", Arg.Int(fun i -> Inline.threshold := i), "maximum size of functions inlined");
      ("-iter", Arg.Int(fun i -> limit := i), "maximum number of optimizations iterated");
      ("-printiter", Arg.Unit(fun () -> printiter_flag := true), "printiter flag");
      ("-nocse", Arg.Unit(fun () -> nocse_flag := true), "nocse flag");
@@ -198,7 +199,7 @@ let () = (* ¤³¤³¤«¤é¥³¥ó¥Ñ¥¤¥é¤Î¼Â¹Ô¤¬³«»Ï¤µ¤ì¤ë (caml2html: main_entry) *)
      ("-nocfg", Arg.Unit(fun () -> nocfg_flag := true), "nocfg flag")]
     (fun s -> files := !files @ [s])
     ("Mitou Min-Caml Compiler (C) Eijiro Sumii\n" ^
-     Printf.sprintf "usage: %s [-inline m] [-iter n] ...filenames without \".ml\"..." Sys.argv.(0));
+     Printf.sprintf "usage: %s [-inline m] [-iter n] [-printiter] [-nocse] [-nologic] [-nocfg] ...filenames without \".ml\"..." Sys.argv.(0));
   List.iter
     (fun f -> ignore (file f))
     !files
