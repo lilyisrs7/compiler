@@ -368,8 +368,8 @@ let f oc (Prog(data, fundefs, e)) =
   Printf.fprintf oc "\taddi\t%s, %s, -4\n" reg_sp reg_sp;
   Printf.fprintf oc "\taddi\t%s, %s, 4\n" reg_four reg_zero;
   (* Printf.fprintf oc "\taddi\t%s, %s, 60000\n" reg_hp reg_zero; *)
-  Printf.fprintf oc "\tlui\t\t%s, 60000\n" reg_hp;
-  Printf.fprintf oc "\tori\t\t%s, %s, 60000\n" reg_hp reg_zero;
+  Printf.fprintf oc "\tlui\t\t%s, %d\n" reg_hp ConstFoldGlobals.addr_init;
+  Printf.fprintf oc "\tori\t\t%s, %s, %d\n" reg_hp reg_zero ConstFoldGlobals.addr_init;
   (* Printf.fprintf oc "\taddi\t%s, %s, 0\n" reg_read_num_soft reg_zero; *)
   Printf.fprintf oc "\tlui\t\t%s, %%hi(%s)\n" regs.(0) !label_zero;
   Printf.fprintf oc "\tori\t\t%s, %s, %%lo(%s)\n" regs.(0) reg_zero !label_zero;

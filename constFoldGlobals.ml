@@ -1,7 +1,8 @@
 open KNormal
 
 let globals = ref M.empty
-let addr = ref 60000 (* emit.mlと合わせる *)
+let addr_init = 70000
+let addr = ref addr_init
 let last = ref false
 
 let rec h = function (* fundef中のグローバル配列のアドレスを書き換え *)
