@@ -23,6 +23,7 @@ let rec make_cfg e id = (* いまidのノードを見ていて、そのノード
       else
         let cur_cnt = !cnt in
         let id_join = (string_of_int pos) ^ "_join_" ^ (string_of_int cur_cnt) in
+        let _ = List.iter (fun id -> (M.find id !graph).dst <- [id_join]) ids in
         (graph := M.add id_join { src = ids; dst = [] } !graph;
          cnt := cur_cnt + 1;
          make_cfg e2 id_join)
@@ -34,6 +35,7 @@ let g { name = (Id.L(x), t); args = xts; formal_fv = yts; body = e } =
   graph := M.add id_entry { src = []; dst = [] } !graph;
   let ids = make_cfg e id_entry in
   let id_exit = x ^ "_exit" in
+  let _ = List.iter (fun id -> (M.find id !graph).dst <- [id_exit]) ids in
   graph := M.add id_exit { src = ids; dst = [] } !graph
 
 let f (Prog(fundefs, e)) =
@@ -42,4 +44,5 @@ let f (Prog(fundefs, e)) =
   graph := M.add id_entry { src = []; dst = [] } !graph;
   let ids = make_cfg e id_entry in
   let id_exit = "0_exit" in
+  let _ = List.iter (fun id -> (M.find id !graph).dst <- [id_exit]) ids in
   graph := M.add id_exit { src = ids; dst = [] } !graph
