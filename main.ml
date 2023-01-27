@@ -1,12 +1,13 @@
 open PrintType
 
 let limit = ref 1000
+let limit_cls = ref 1000
 let nocse_flag = ref false
 let nologic_flag = ref false
 let nocfg_flag = ref false
 let printiter_flag = ref false
 
-let rec iter n f e = (* 最適化処理をくりかえす (caml2html: main_iter) *)
+let rec iter n f e = (* ��Ŭ�������򤯤꤫���� (caml2html: main_iter) *)
   Format.eprintf "iteration %d@." n;
   Inline.inline_rec := if n = !limit then true else false;
   if n = 0 then e else
@@ -55,12 +56,18 @@ let rec iter n f e = (* 最適化処理をくりかえす (caml2html: main_iter)
     if e = e' then e else
     iter (n - 1) f e'
 
-let closure_opt e = (* タプル平坦化、tace後の最適化 *)
-  ElimCls.f (ConstFoldCls.f (AssocCls.f (BetaCls.f e)))
+let rec closure_opt n e = (* ���ץ�ʿó����tace��κ�Ŭ�� *)
+  Format.eprintf "iteration %d@." n;
+  if n = 0 then e
+  else
+    let e' = ElimCls.f (ConstFoldCls.f (AssocCls.f (BetaCls.f e))) in
+    if e = e' then e
+    else
+      closure_opt (n - 1) e'
 
-let lexbuf outchan l f outchan_parsed outchan_normalized outchan_alpha outchan_iterated outchan_cfg outchan_closure outchan_flatten
-                       outchan_tace outchan_cls_opt outchan_virtual outchan_simm outchan_regalloc =
-  (* バッファをコンパイルしてチャンネルへ出力する (caml2html: main_lexbuf) *)
+let lexbuf outchan l f outchan_parsed outchan_normalized outchan_alpha outchan_iterated outchan_cfg outchan_closure
+                       outchan_flatten outchan_tace outchan_cls_opt outchan_block outchan_virtual outchan_simm outchan_regalloc =
+  (* �Хåե��򥳥�ѥ��뤷�ƥ����ͥ�ؽ��Ϥ��� (caml2html: main_lexbuf) *)
   Id.counter := 0;
   Typing.extenv := M.empty;
   
@@ -94,10 +101,13 @@ let lexbuf outchan l f outchan_parsed outchan_normalized outchan_alpha outchan_i
   List.iter (print_closure_fundef outchan_tace 0) fundefs;
   print_closure_t outchan_tace 0 e;
 
-  let cls_opt = closure_opt closure in
+  let cls_opt = closure_opt !limit_cls closure in
   let Closure.Prog(fundefs, e) = cls_opt in
   List.iter (print_closure_fundef outchan_cls_opt 0) fundefs;
   print_closure_t outchan_cls_opt 0 e;
+
+  Cfg.f closure;
+  print_block outchan_block !Cfg.graph;
 
   let vt = Virtual.f cls_opt in
   let Asm.Prog(data, fundefs, e) = vt in
@@ -136,9 +146,9 @@ let lexbuf outchan l f outchan_parsed outchan_normalized outchan_alpha outchan_i
                                            (Parser.exp Lexer.token l))))))))))))))
   *)
 
-let string s = lexbuf stdout (Lexing.from_string s) (* 文字列をコンパイルして標準出力に表示する (caml2html: main_string) *)
+let string s = lexbuf stdout (Lexing.from_string s) (* ʸ����򥳥�ѥ��뤷��ɸ����Ϥ�ɽ������ (caml2html: main_string) *)
 
-let file f = (* ファイルをコンパイルしてファイルに出力する (caml2html: main_file) *)
+let file f = (* �ե�����򥳥�ѥ��뤷�ƥե�����˽��Ϥ��� (caml2html: main_file) *)
   let inchan = open_in (f ^ ".ml") in
   let outchan = open_out (f ^ ".s") in
   let outchan_parsed = open_out (f ^ ".parsed") in
@@ -150,13 +160,14 @@ let file f = (* ファイルをコンパイルしてファイルに出力する 
   let outchan_flatten = open_out (f ^ ".flatten") in
   let outchan_tace = open_out (f ^ ".tace") in
   let outchan_cls_opt = open_out (f ^ ".cls_opt") in
+  let outchan_block = open_out (f ^ ".block") in
   let outchan_virtual = open_out (f ^ ".virtual") in
   let outchan_simm = open_out (f ^ ".simm") in
   let outchan_regalloc = open_out (f ^ ".regalloc") in
   try
     lexbuf outchan (Lexing.from_channel inchan) f outchan_parsed outchan_normalized outchan_alpha outchan_iterated outchan_cfg
-                                                  outchan_closure outchan_flatten outchan_tace outchan_cls_opt outchan_virtual
-                                                  outchan_simm outchan_regalloc;
+                                                  outchan_closure outchan_flatten outchan_tace outchan_cls_opt outchan_block
+                                                  outchan_virtual outchan_simm outchan_regalloc;
     close_in inchan;
     close_out outchan;
     close_out outchan_parsed;
@@ -168,17 +179,18 @@ let file f = (* ファイルをコンパイルしてファイルに出力する 
     close_out outchan_flatten;
     close_out outchan_tace;
     close_out outchan_cls_opt;
+    close_out outchan_block;
     close_out outchan_virtual;
     close_out outchan_simm;
     close_out outchan_regalloc
   with e -> (close_in inchan; close_out outchan; close_out outchan_parsed; close_out outchan_normalized; close_out outchan_alpha;
-             close_out outchan_iterated; close_out outchan_cfg; close_out outchan_closure; close_out outchan_flatten;
-             close_out outchan_tace; close_out outchan_cls_opt; close_out outchan_virtual; close_out outchan_simm;
-             close_out outchan_regalloc;
+             close_out outchan_iterated; close_out outchan_cfg; close_out outchan_closure;
+             close_out outchan_flatten; close_out outchan_tace; close_out outchan_cls_opt; close_out outchan_block;
+             close_out outchan_virtual; close_out outchan_simm; close_out outchan_regalloc;
              raise e)
 
 (*
-let file f = (* ファイルをコンパイルしてファイルに出力する (caml2html: main_file) *)
+let file f = (* �ե�����򥳥�ѥ��뤷�ƥե�����˽��Ϥ��� (caml2html: main_file) *)
   let inchan = open_in (f ^ ".ml") in
   let outchan = open_out (f ^ ".s") in
   try
@@ -188,11 +200,12 @@ let file f = (* ファイルをコンパイルしてファイルに出力する 
   with e -> (close_in inchan; close_out outchan; raise e)
 *)
 
-let () = (* ここからコンパイラの実行が開始される (caml2html: main_entry) *)
+let () = (* �������饳��ѥ���μ¹Ԥ����Ϥ���� (caml2html: main_entry) *)
   let files = ref [] in
   Arg.parse
     [("-inline", Arg.Int(fun i -> Inline.threshold := i), "maximum size of functions inlined");
      ("-iter", Arg.Int(fun i -> limit := i), "maximum number of optimizations iterated");
+     ("-itercls", Arg.Int(fun i -> limit_cls := i), "maximum number of optimizations iterated (closure_opt)");
      ("-printiter", Arg.Unit(fun () -> printiter_flag := true), "printiter flag");
      ("-nocse", Arg.Unit(fun () -> nocse_flag := true), "nocse flag");
      ("-nologic", Arg.Unit(fun () -> nologic_flag := true), "nologic flag");

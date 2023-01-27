@@ -320,3 +320,10 @@ let print_asm_fundef oc tab_num ({ Asm.name = Id.L(l); Asm.args = xs; Asm.fargs 
   print_tab oc (tab_num + 1); Printf.fprintf oc "fargs: "; List.iter (Printf.fprintf oc "%s, ") ys; Printf.fprintf oc "\n";
   print_tab oc (tab_num + 1); Printf.fprintf oc "body:\n"; print_asm_t oc (tab_num + 1) e; Printf.fprintf oc "\n";
   print_tab oc tab_num; Printf.fprintf oc ")\n"
+
+let print_block oc graph =
+  let node_list = M.bindings graph in
+  List.iter
+  (fun (id, { Cfg.src = src_lst; Cfg.dst = dst_lst }) -> Printf.fprintf oc "%s" id; Printf.fprintf oc "\n["; print_list oc src_lst;
+                                                         Printf.fprintf oc "]\n["; print_list oc dst_lst; Printf.fprintf oc "]\n\n")
+  node_list
