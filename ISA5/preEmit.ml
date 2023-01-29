@@ -69,8 +69,14 @@ and g' pos = function (* 各命令のアセンブリ生成 (caml2html: emit_gprime) *)
   | NonTail(x), Sub(y, z) -> content := !content @ [RiscV.Sub(x, y, z, pos)]
   | NonTail(x), Mul(y, z) -> content := !content @ [RiscV.Mul(x, y, z, pos)]
   | NonTail(x), Div(y, z) -> content := !content @ [RiscV.Div(x, y, z, pos)]
-  | NonTail(x), Ld(y, z') -> let C(z) = z' in content := !content @ [RiscV.Lw(x, z, y, pos)]
-  | NonTail(_), St(x, y, z') -> let C(z) = z' in content := !content @ [RiscV.Sw(x, z, y, pos)]
+  | NonTail(x), Ld(y, z') ->
+      (match z' with
+       | C(z) -> content := !content @ [RiscV.Lw(x, z, y, pos)]
+       | _ -> failwith "second arg of Ld is not int")
+  | NonTail(_), St(x, y, z') ->
+      (match z' with
+       | C(z) -> content := !content @ [RiscV.Sw(x, z, y, pos)]
+       | _ -> failwith "second arg of St is not int")
   | NonTail(x), FMovD(y) -> if x <> y then content := !content @ [RiscV.FAdd(x, reg_fzero, y, pos)]
   | NonTail(x), FNegD(y) -> content := !content @ [RiscV.FSub(x, reg_fzero, y, pos)] (* 符号反転 *)
   | NonTail(x), FAddD(y, z) -> content := !content @ [RiscV.FAdd(x, y, z, pos)]
@@ -78,8 +84,14 @@ and g' pos = function (* 各命令のアセンブリ生成 (caml2html: emit_gprime) *)
   | NonTail(x), FMulD(y, z) -> content := !content @ [RiscV.FMul(x, y, z, pos)]
   | NonTail(x), FDivD(y, z) -> content := !content @ [RiscV.FDiv(x, y, z, pos)]
   | NonTail(x), Sqrt(y) -> content := !content @ [RiscV.FSqrt(x, y, pos)]
-  | NonTail(x), LdDF(y, z') -> let C(z) = z' in content := !content @ [RiscV.FLw(x, z, y, pos)]
-  | NonTail(_), StDF(x, y, z') -> let C(z) = z' in content := !content @ [RiscV.FSw(x, z, y, pos)]
+  | NonTail(x), LdDF(y, z') ->
+      (match z' with
+       | C(z) -> content := !content @ [RiscV.FLw(x, z, y, pos)]
+       | _ -> failwith "second arg of LdDF is not int")
+  | NonTail(_), StDF(x, y, z') ->
+      (match z' with
+       | C(z) -> content := !content @ [RiscV.FSw(x, z, y, pos)]
+       | _ -> failwith "second arg of StDF is not int")
   | NonTail(_), Comment(s) -> content := !content @ [RiscV.Comment(s, pos)]
   (* 退避の仮想命令の実装 (caml2html: emit_save) *)
   | NonTail(_), Save(x, y) when List.mem x allregs && not (S.mem y !stackset) ->
@@ -109,25 +121,25 @@ and g' pos = function (* 各命令のアセンブリ生成 (caml2html: emit_gprime) *)
       | _ -> assert false);
       content := !content @ [RiscV.Jalr(reg_zero, reg_ra, 0, pos)]
   | Tail, IfEq(x, y, e1, e2) ->
-      g'_tail_if x (V(y)) e1 e2 "beq" pos
+      g'_tail_if x y e1 e2 "beq" pos
   | Tail, IfLE(x, y, e1, e2) ->
-      g'_tail_if x (V(y)) e1 e2 "ble" pos
+      g'_tail_if x y e1 e2 "ble" pos
   | Tail, IfGE(x, y, e1, e2) ->
-      g'_tail_if x (V(y)) e1 e2 "bge" pos
+      g'_tail_if x y e1 e2 "bge" pos
   | Tail, IfFEq(x, y, e1, e2) ->
-      g'_tail_if x (V(y)) e1 e2 "feq" pos
+      g'_tail_if x y e1 e2 "feq" pos
   | Tail, IfFLE(x, y, e1, e2) ->
-      g'_tail_if x (V(y)) e1 e2 "fle" pos
+      g'_tail_if x y e1 e2 "fle" pos
   | NonTail(z), IfEq(x, y, e1, e2) ->
-      g'_non_tail_if (NonTail(z)) x (V(y)) e1 e2 "beq" pos
+      g'_non_tail_if (NonTail(z)) x y e1 e2 "beq" pos
   | NonTail(z), IfLE(x, y, e1, e2) ->
-      g'_non_tail_if (NonTail(z)) x (V(y)) e1 e2 "ble" pos
+      g'_non_tail_if (NonTail(z)) x y e1 e2 "ble" pos
   | NonTail(z), IfGE(x, y, e1, e2) ->
-      g'_non_tail_if (NonTail(z)) x (V(y)) e1 e2 "bge" pos
+      g'_non_tail_if (NonTail(z)) x y e1 e2 "bge" pos
   | NonTail(z), IfFEq(x, y, e1, e2) ->
-      g'_non_tail_if (NonTail(z)) x (V(y)) e1 e2 "feq" pos
+      g'_non_tail_if (NonTail(z)) x y e1 e2 "feq" pos
   | NonTail(z), IfFLE(x, y, e1, e2) ->
-      g'_non_tail_if (NonTail(z)) x (V(y)) e1 e2 "fle" pos
+      g'_non_tail_if (NonTail(z)) x y e1 e2 "fle" pos
   (* 関数呼び出しの仮想命令の実装 (caml2html: emit_call) *)
   | Tail, CallCls(x, ys, zs) -> (* 末尾呼び出し (caml2html: emit_tailcall) *)
       g'_args [(x, reg_cl)] ys zs pos;
@@ -158,7 +170,6 @@ and g' pos = function (* 各命令のアセンブリ生成 (caml2html: emit_gprime) *)
 and g'_tail_if x y e1 e2 b pos =
   if b = "fle" || b = "feq" then
     (let b_else = Id.genid (b ^ "_else") in
-     let V(y) = y in
      content := !content @ [if b = "fle" then RiscV.Fle(reg_sw, x, y, pos) else RiscV.Feq(reg_sw, x, y, pos);
                             RiscV.Beq(reg_sw, reg_zero, b_else, pos)];
      let stackset_back = !stackset in
@@ -168,7 +179,6 @@ and g'_tail_if x y e1 e2 b pos =
      g (Tail, e2))
   else
     (let b_id = Id.genid b in
-     let V(y) = y in
      content := !content @ [if b = "beq" then RiscV.Beq(x, y, b_id, pos)
                             else if b = "ble" then RiscV.Ble(x, y, b_id, pos)
                             else RiscV.Bge(x, y, b_id, pos)];
@@ -180,34 +190,32 @@ and g'_tail_if x y e1 e2 b pos =
 and g'_non_tail_if dest x y e1 e2 b pos =
   let b_cont = Id.genid (b ^ "_cont") in
   if b = "fle" || b = "feq" then
-    let b_else = Id.genid (b ^ "_else") in
-    let V(y) = y in
-    content := !content @ [if b = "fle" then RiscV.Fle(reg_sw, x, y, pos) else RiscV.Feq(reg_sw, x, y, pos);
-                           RiscV.Beq(reg_sw, reg_zero, b_else, pos)];
-    let stackset_back = !stackset in
-    g (dest, e1);
-    let stackset1 = !stackset in
-    content := !content @ [RiscV.Jal(reg_zero, b_cont, pos); RiscV.Label(b_else)];
-    stackset := stackset_back;
-    g (dest, e2);
-    content := !content @ [RiscV.Label(b_cont)];
-    let stackset2 = !stackset in
-    stackset := S.inter stackset1 stackset2
+    (let b_else = Id.genid (b ^ "_else") in
+     content := !content @ [if b = "fle" then RiscV.Fle(reg_sw, x, y, pos) else RiscV.Feq(reg_sw, x, y, pos);
+                            RiscV.Beq(reg_sw, reg_zero, b_else, pos)];
+     let stackset_back = !stackset in
+     g (dest, e1);
+     let stackset1 = !stackset in
+     content := !content @ [RiscV.Jal(reg_zero, b_cont, pos); RiscV.Label(b_else)];
+     stackset := stackset_back;
+     g (dest, e2);
+     content := !content @ [RiscV.Label(b_cont)];
+     let stackset2 = !stackset in
+     stackset := S.inter stackset1 stackset2)
   else
-    let b_id = Id.genid b in
-    let V(y) = y in
-    content := !content @ [if b = "beq" then RiscV.Beq(x, y, b_id, pos)
-                           else if b = "ble" then RiscV.Ble(x, y, b_id, pos)
-                           else RiscV.Bge(x, y, b_id, pos)];
-    let stackset_back = !stackset in
-    g (dest, e2);
-    let stackset1 = !stackset in
-    content := !content @ [RiscV.Jal(reg_zero, b_cont, pos); RiscV.Label(b_id)];
-    stackset := stackset_back;
-    g (dest, e1);
-    content := !content @ [RiscV.Label(b_cont)];
-    let stackset2 = !stackset in
-    stackset := S.inter stackset1 stackset2
+    (let b_id = Id.genid b in
+     content := !content @ [if b = "beq" then RiscV.Beq(x, y, b_id, pos)
+                            else if b = "ble" then RiscV.Ble(x, y, b_id, pos)
+                            else RiscV.Bge(x, y, b_id, pos)];
+     let stackset_back = !stackset in
+     g (dest, e2);
+     let stackset1 = !stackset in
+     content := !content @ [RiscV.Jal(reg_zero, b_cont, pos); RiscV.Label(b_id)];
+     stackset := stackset_back;
+     g (dest, e1);
+     content := !content @ [RiscV.Label(b_cont)];
+     let stackset2 = !stackset in
+     stackset := S.inter stackset1 stackset2)
 and g'_args x_reg_cl ys zs pos =
   let (i, yrs) =
     List.fold_left
