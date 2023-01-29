@@ -1,7 +1,7 @@
 open KNormal
 
 let globals = ref M.empty
-let addr_init = 75000
+let addr_init = 63796
 let addr = ref addr_init
 let last = ref false
 

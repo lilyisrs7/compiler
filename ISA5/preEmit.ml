@@ -57,7 +57,7 @@ and g' pos = function (* 各命令のアセンブリ生成 (caml2html: emit_gprime) *)
   (* 末尾でなかったら計算結果をdestにセット (caml2html: emit_nontail) *)
   | NonTail(_), Nop -> ()
   | NonTail(x), Set(i) ->
-      if -2048 <= i && i <= 2047 then content := !content @ [RiscV.Addi(x, reg_zero, i, pos)] (* 即値をレジスタに入れる *)
+      if -65536 <= i && i <= 65535 then content := !content @ [RiscV.Addi(x, reg_zero, i, pos)] (* 即値をレジスタに入れる *)
       else
         content := !content @ [RiscV.Lui(x, i, pos); RiscV.Ori(x, reg_zero, i, pos)]
   | NonTail(x), SetL(Id.L(y)) -> (* ラベルからレジスタに値を移す *)
@@ -274,8 +274,7 @@ let f (Prog(data, fundefs, e)) =
   List.iter h fundefs;
   content := !content @ [RiscV.Label("min_caml_start");
                          RiscV.Addi(reg_sp, reg_sp, -4, 0); RiscV.Addi(reg_four, reg_zero, 4, 0);
-                         RiscV.Lui(reg_hp, ConstFoldGlobals.addr_init, 0);
-                         RiscV.Ori(reg_hp, reg_zero, ConstFoldGlobals.addr_init, 0);
+                         RiscV.Addi(reg_hp, reg_zero, ConstFoldGlobals.addr_init, 0);
                          RiscV.LuiLb(regs.(0), !label_zero, 0); RiscV.OriLb(regs.(0), reg_zero, !label_zero, 0);
                          RiscV.FLw(reg_fzero, 0, regs.(0), 0)];
   let rec ld_label reg_for_label data =
