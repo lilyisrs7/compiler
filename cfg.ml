@@ -10,7 +10,7 @@ let rec make_cfg e id = (* いまidのノードを見ていて、そのノード
   | IfEq(_, _, e1, e2, pos) | IfLE(_, _, e1, e2, pos) ->
       let cur_cnt = !cnt in
       let id_then = (string_of_int pos) ^ "_then_" ^ (string_of_int cur_cnt) in
-      let id_else = (string_of_int pos) ^ "_else_" ^ (string_of_int cur_cnt) in
+      let id_else = (string_of_int pos) ^ "_else_" ^ (string_of_int (cur_cnt + 1)) in
       ((M.find id !graph).dst <- [id_then; id_else];
        graph := M.add id_then { src = [id]; dst = [] } (M.add id_else { src = [id]; dst = [] } !graph);
        cnt := cur_cnt + 2;
