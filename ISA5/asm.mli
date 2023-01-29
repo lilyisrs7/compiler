@@ -10,7 +10,7 @@ and exp =
   | Neg of Id.t
   | Add of Id.t * id_or_imm
   | Sub of Id.t * Id.t
-  | Mul of Id.t * id_or_imm (*最終的にはレジスタに*)
+  | Mul of Id.t * Id.t
   | Div of Id.t * Id.t
   | Ld of Id.t * id_or_imm (*最終的には即値に*)
   | St of Id.t * Id.t * id_or_imm (*最終的には即値に*)

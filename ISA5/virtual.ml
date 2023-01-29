@@ -60,7 +60,7 @@ let rec g env = function (* 式の仮想マシンコード生成 (caml2html: virtual_g) *)
   (* | Closure.Add("reg_hp_init", y, pos) -> Ans(Add(reg_hp_init, V(y)), pos) *)
   | Closure.Add(x, y, pos) -> Ans(Add(x, V(y)), pos)
   | Closure.Sub(x, y, pos) -> Ans(Sub(x, y), pos)
-  | Closure.Mul(x, y, pos) -> Ans(Mul(x, V(y)), pos)
+  | Closure.Mul(x, y, pos) -> Ans(Mul(x, y), pos)
   | Closure.Div(x, y, pos) -> Ans(Div(x, y), pos)
   | Closure.FNeg(x, pos) -> Ans(FNegD(x), pos)
   | Closure.FAdd(x, y, pos) -> Ans(FAddD(x, y), pos)
@@ -158,7 +158,7 @@ let rec g env = function (* 式の仮想マシンコード生成 (caml2html: virtual_g) *)
               Let((offset, Type.Int), Mul(y, V(z)),
                   Let((x', Type.Int), Add(x, V(offset)),
                       Ans(LdDF(x', C(0)), pos), pos), pos), pos) *)
-          Let((offset, Type.Int), Mul(reg_four, V(y)),
+          Let((offset, Type.Int), Mul(reg_four, y),
               Let((x', Type.Int), Add(x, V(offset)),
                   Ans(LdDF(x', C(0)), pos), pos), pos)
           (*offsetをxに足してからロード*)
@@ -169,7 +169,7 @@ let rec g env = function (* 式の仮想マシンコード生成 (caml2html: virtual_g) *)
               Let((offset, Type.Int), Mul(y, V(z)),
                   Let((x', Type.Int), Add(x, V(offset)),
                       Ans(Ld(x', C(0)), pos), pos), pos), pos) *)
-          Let((offset, Type.Int), Mul(reg_four, V(y)),
+          Let((offset, Type.Int), Mul(reg_four, y),
               Let((x', Type.Int), Add(x, V(offset)),
                   Ans(Ld(x', C(0)), pos), pos), pos)
       | _ -> assert false)
@@ -182,13 +182,13 @@ let rec g env = function (* 式の仮想マシンコード生成 (caml2html: virtual_g) *)
       | Type.Array(Type.Float) -> (*Ans(StDF(z, x, V(y)), pos)*)
           (*Let((offset, Type.Int), Mul(y, C(8)),
               Ans(StDF(z, x, V(offset)), pos), pos)*)
-          Let((offset, Type.Int), Mul(reg_four, V(y)),
+          Let((offset, Type.Int), Mul(reg_four, y),
               Let((x', Type.Int), Add(x, V(offset)),
                   Ans(StDF(z, x', C(0)), pos), pos), pos)
       | Type.Array(_) -> (*Ans(St(z, x, V(y)), pos)*)
           (*Let((offset, Type.Int), Mul(y, C(4)),
               Ans(St(z, x, V(offset)), pos), pos)*)
-          Let((offset, Type.Int), Mul(reg_four, V(y)),
+          Let((offset, Type.Int), Mul(reg_four, y),
               Let((x', Type.Int), Add(x, V(offset)),
                   Ans(St(z, x', C(0)), pos), pos), pos)
       | _ -> assert false)

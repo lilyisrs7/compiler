@@ -247,8 +247,7 @@ let rec print_asm_exp oc tab_num e =
   | Asm.Add(x, V(y)) -> Printf.fprintf oc "Add (%s, %s)" x y
   | Asm.Add(x, C(y)) -> Printf.fprintf oc "Add (%s, %d)" x y
   | Asm.Sub(x, y) -> Printf.fprintf oc "Sub (%s, %s)" x y
-  | Asm.Mul(x, V(y)) -> Printf.fprintf oc "Mul (%s, %s)" x y
-  | Asm.Mul(x, C(y)) -> Printf.fprintf oc "Mul (%s, %d)" x y
+  | Asm.Mul(x, y) -> Printf.fprintf oc "Mul (%s, %s)" x y
   | Asm.Div(x, y) -> Printf.fprintf oc "Div (%s, %s)" x y
   | Asm.Ld(x, V(y)) -> Printf.fprintf oc "Ld (%s, %s)" x y
   | Asm.Ld(x, C(y)) -> Printf.fprintf oc "Ld (%s, %d)" x y
