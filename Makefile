@@ -31,7 +31,7 @@ alpha.mli alpha.ml cse.mli cse.ml beta.mli beta.ml assoc.mli assoc.ml \
 inline.mli inline.ml logicOpt.mli logicOpt.ml constFold.mli constFold.ml elim.mli elim.ml constFoldGlobals.mli constFoldGlobals.ml \
 closure.mli closure.ml flatten.mli flatten.ml elimTuple.mli elimTuple.ml tace.mli tace.ml betaCls.ml betaCls.mli \
 assocCls.ml assocCls.mli constFoldCls.ml constFoldCls.mli elimCls.ml elimCls.mli cfg.mli cfg.ml asm.mli asm.ml virtual.mli virtual.ml \
-simm.mli simm.ml regAlloc.mli regAlloc.ml emit.mli emit.ml printType.ml main.mli main.ml
+simm.mli simm.ml regAlloc.mli regAlloc.ml riscV.ml preEmit.mli preEmit.ml emit.mli emit.ml printType.ml main.mli main.ml
 
 # ↓テストプログラムが増えたら、これも増やす
 TESTS = print sum-tail gcd sum fib ack even-odd \
@@ -83,7 +83,8 @@ min-caml.html: main.mli main.ml id.ml m.ml s.ml \
 		inline.mli inline.ml logicOpt.mli logicOpt.ml constFold.mli constFold.ml elim.mli elim.ml \
 		constFoldGlobals.mli constFoldGlobals.ml closure.mli closure.ml flatten.mli flatten.ml elimTuple.mli elimTuple.ml \
 		tace.mli tace.mli betaCls.ml betaCls.mli assocCls.ml assocCls.mli constFoldCls.ml constFoldCls.mli elimCls.ml elimCls.mli \
-		cfg.mli cfg.ml asm.mli asm.ml virtual.mli virtual.ml simm.mli simm.ml regAlloc.mli regAlloc.ml emit.mli emit.ml printType.ml 
+		cfg.mli cfg.ml asm.mli asm.ml virtual.mli virtual.ml simm.mli simm.ml regAlloc.mli regAlloc.ml \
+		riscV.ml preEmit.mli preEmit.ml emit.mli emit.ml printType.ml 
 	./to_sparc
 	caml2html -o min-caml.html $^
 	sed 's/.*<\/title>/MinCaml Source Code<\/title>/g' < min-caml.html > min-caml.tmp.html

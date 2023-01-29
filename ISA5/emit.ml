@@ -1,391 +1,102 @@
-open Asm
+open RiscV
 
-(* external gethi : float -> int32 = "gethi"
-external getlo : float -> int32 = "getlo" *)
+let print oc = function
+| Label(s) -> Printf.fprintf oc "%s:\n" s
+| Addi(x, y, i, p) -> Printf.fprintf oc "\taddi\t%s, %s, %d\t# %d\n" x y i p
+| Add(x, y, z, p) -> Printf.fprintf oc "\tadd\t\t%s, %s, %s\t# %d\n" x y z p
+| Sub(x, y, z, p) -> Printf.fprintf oc "\tsub\t\t%s, %s, %s\t# %d\n" x y z p
+| Mul(x, y, z, p) -> Printf.fprintf oc "\tmul\t\t%s, %s, %s\t# %d\n" x y z p
+| Div(x, y, z, p) -> Printf.fprintf oc "\tdiv\t\t%s, %s, %s\t# %d\n" x y z p
+| Lui(x, i, p) ->    Printf.fprintf oc "\tlui\t\t%s, %d\t# %d\n" x i p
+| Ori(x, y, i, p) -> Printf.fprintf oc "\tori\t\t%s, %s, %d\t# %d\n" x y i p
+| LuiLb(x, l, p) ->  Printf.fprintf oc "\tlui\t\t%s, %%hi(%s)\t# %d\n" x l p
+| OriLb(x, y, l, p) -> Printf.fprintf oc "\tori\t\t%s, %s, %%lo(%s)\t# %d\n" x y l p
+| Lw(x, i, y, p) ->   Printf.fprintf oc "\tlw\t\t%s, %d(%s)\t# %d\n" x i y p
+| Sw(x, i, y, p) ->   Printf.fprintf oc "\tsw\t\t%s, %d(%s)\t# %d\n" x i y p
+| FAdd(x, y, z, p) -> Printf.fprintf oc "\tfadd\t%s, %s, %s\t# %d\n" x y z p
+| FSub(x, y, z, p) -> Printf.fprintf oc "\tfsub\t%s, %s, %s\t# %d\n" x y z p
+| FMul(x, y, z, p) -> Printf.fprintf oc "\tfmul\t%s, %s, %s\t# %d\n" x y z p
+| FDiv(x, y, z, p) -> Printf.fprintf oc "\tfdiv\t%s, %s, %s\t# %d\n" x y z p
+| FSqrt(x, y, p) ->   Printf.fprintf oc "\tfsqrt\t%s, %s\t# %d\n" x y p
+| FLw(x, i, y, p) -> Printf.fprintf oc "\tflw\t\t%s, %d(%s)\t# %d\n" x i y p
+| FSw(x, i, y, p) -> Printf.fprintf oc "\tfsw\t\t%s, %d(%s)\t# %d\n" x i y p
+| Comment(s, p) ->   Printf.fprintf oc "\t# %s\t# %d\n" s p
+| Jal(x, l, p) ->    Printf.fprintf oc "\tjal\t\t%s, %s\t# %d\n" x l p
+| Jalr(x, y, i, p) -> Printf.fprintf oc "\tjalr\t%s, %s, %d\t# %d\n" x y i p
+| Beq(x, y, l, p) -> Printf.fprintf oc "\tbeq\t\t%s, %s, %s\t# %d\n" x y l p
+| Ble(x, y, l, p) -> Printf.fprintf oc "\tble\t\t%s, %s, %s\t# %d\n" x y l p
+| Bge(x, y, l, p) -> Printf.fprintf oc "\tbge\t\t%s, %s, %s\t# %d\n" x y l p
+| Feq(x, y, z, p) -> Printf.fprintf oc "\tfeq\t\t%s, %s, %s\t# %d\n" x y z p
+| Fle(x, y, z, p) -> Printf.fprintf oc "\tfle\t\t%s, %s, %s\t# %d\n" x y z p
 
-let stackset = ref S.empty (* §π§«§ÀSave§µ§Ï§ø —øÙ§ŒΩ∏πÁ (caml2html: emit_stackset) *)
-let stackmap = ref [] (* Save§µ§Ï§ø —øÙ§Œ°¢•π•ø•√•Ø§À§™§±§Î∞Ã√÷ (caml2html: emit_stackmap) *)
-let save x =
-  stackset := S.add x !stackset;
-  if not (List.mem x !stackmap) then
-    stackmap := !stackmap @ [x]
-(* let savef x =
-  stackset := S.add x !stackset;
-  if not (List.mem x !stackmap) then
-    (let pad =
-      if List.length !stackmap mod 2 = 0 then [] else [Id.gentmp Type.Int] in
-    stackmap := !stackmap @ pad @ [x; x]) *)
-let locate x =
-  let rec loc = function
-    | [] -> []
-    | y :: zs when x = y -> 0 :: List.map succ (loc zs)
-    | y :: zs -> List.map succ (loc zs) in
-  loc !stackmap
-let offset x = 4 * List.hd (locate x)
-let stacksize () = (List.length !stackmap + 1) * 4
-(* let stacksize () = align((List.length !stackmap + 1) * 4) *)
-let loaded_labels = ref M.empty
-
-let pp_id_or_imm = function
-  | V(x) -> x
-  | C(i) -> string_of_int i
-
-(* ¥ÿøÙ∏∆§”Ω–§∑§Œ§ø§·§À∞˙øÙ§Ú ¬§Ÿ¬ÿ§®§Î(register shuffling) (caml2html: emit_shuffle) *)
-let rec shuffle sw xys =
-  (* remove identical moves *)
-  let _, xys = List.partition (fun (x, y) -> x = y) xys in
-  (* find acyclic moves *)
-  match List.partition (fun (_, y) -> List.mem_assoc y xys) xys with
-  | [], [] -> []
-  | (x, y) :: xys, [] -> (* no acyclic moves; resolve a cyclic move *)
-      (y, sw) :: (x, y) :: shuffle sw (List.map
-                                         (function
-                                           | (y', z) when y = y' -> (sw, z)
-                                           | yz -> yz)
-                                         xys)
-  | xys, acyc -> acyc @ shuffle sw xys
-
-type dest = Tail | NonTail of Id.t (* Àˆ»¯§´§…§¶§´§Ú…Ω§π•«°º•ø∑ø (caml2html: emit_dest) *)
-let rec g oc = function (* ÃøŒ·ŒÛ§Œ•¢•ª•Û•÷•Í¿∏¿Æ (caml2html: emit_g) *) (* §≥§≥§ÚISA5§À¬–±˛ PowerPC§À¥Û§ª§Î§´§‚ *)
-  | dest, Ans(exp, pos) -> g' oc pos (dest, exp)
-  | NonTail(w), Let((x, Type.Int), SetL(Id.L(y)), Ans(LdDF(z, C(0)), pos1), pos2) when x = z && M.mem y !loaded_labels ->
-      Printf.fprintf oc "\tfadd\t%s, %s, %s\t# %d\n" w reg_fzero (M.find y !loaded_labels) pos2
-  | NonTail(w), Let((x, Type.Int), SetL(Id.L(y)), Let((x_, _), LdDF(z, C(0)), e, pos1), pos2) when x = z && M.mem y !loaded_labels ->
-      Printf.fprintf oc "\tfadd\t%s, %s, %s\t# %d\n" x_ reg_fzero (M.find y !loaded_labels) pos2;
-      g oc (NonTail(w), e)
-  | Tail, Let((x, Type.Int), SetL(Id.L(y)), Ans(LdDF(z, C(0)), pos1), pos2) when x = z && M.mem y !loaded_labels ->
-      Printf.fprintf oc "\tfadd\t%s, %s, %s\t# %d\n" fregs.(0) reg_fzero (M.find y !loaded_labels) pos2;
-      Printf.fprintf oc "\tjalr\t%s, %s, 0\t# %d\n" reg_zero reg_ra pos2
-  | Tail, Let((x, Type.Int), SetL(Id.L(y)), Let((x_, _), LdDF(z, C(0)), e, pos1), pos2) when x = z && M.mem y !loaded_labels ->
-      Printf.fprintf oc "\tfadd\t%s, %s, %s\t# %d\n" x_ reg_fzero (M.find y !loaded_labels) pos2;
-      g oc (Tail, e)
-  | dest, Let((x, t), exp, e, pos) ->
-      g' oc pos (NonTail(x), exp);
-      g oc (dest, e)
-and g' oc pos = function (* ≥∆ÃøŒ·§Œ•¢•ª•Û•÷•Í¿∏¿Æ (caml2html: emit_gprime) *)
-  (* Àˆ»¯§«§ §´§√§ø§È∑◊ªª∑Î≤Ã§Údest§À•ª•√•» (caml2html: emit_nontail) *)
-  | NonTail(_), Nop -> ()
-  | NonTail(x), Set(i) ->
-      if -2048 <= i && i <= 2047 then Printf.fprintf oc "\taddi\t%s, %s, %d\t# %d\n" x reg_zero i pos (* ¬®√Õ§Ú•Ï•∏•π•ø§À∆˛§Ï§Î *)
+let rec elim_jump remove repl content acc remove_flg = (* „Ç∏„É£„É≥„ÉóÈÄ£ÈéñÈô§Âéª *)
+  match content with
+  | Label(s) :: tl ->
+      if List.mem s remove then elim_jump remove repl tl acc false
+      else elim_jump remove repl tl (Label(s) :: acc) false
+  | Jal(x, l, p) :: tl when x = Asm.reg_zero ->
+      if remove_flg then elim_jump remove repl tl acc true
       else
-        (Printf.fprintf oc "\tlui\t\t%s, %d\t# %d\n" x i pos;
-         Printf.fprintf oc "\tori\t\t%s, %s, %d\t# %d\n" x reg_zero i pos)
-  | NonTail(x), SetL(Id.L(y)) -> (* •È•Ÿ•Î§´§È•Ï•∏•π•ø§À√Õ§Ú∞‹§π *)
-      Printf.fprintf oc "\tlui\t\t%s, %%hi(%s)\t# %d\n" x y pos;
-      Printf.fprintf oc "\tori\t\t%s, %s, %%lo(%s)\t# %d\n" x reg_zero y pos
-  | NonTail(x), Mov(y) ->
-      if x <> y then Printf.fprintf oc "\taddi\t%s, %s, 0\t# %d\n" x y pos
-  | NonTail(x), Neg(y) -> Printf.fprintf oc "\tsub\t\t%s, %s, %s\t# %d\n" x reg_zero y pos (* …‰πÊ»ø≈æ  *)
-  | NonTail(x), Add(y, V(z)) -> Printf.fprintf oc "\tadd\t\t%s, %s, %s\t# %d\n" x y z pos
-  | NonTail(x), Add(y, C(z)) -> Printf.fprintf oc "\taddi\t%s, %s, %d\t# %d\n" x y z pos
-  | NonTail(x), Sub(y, z) -> Printf.fprintf oc "\tsub\t\t%s, %s, %s\t# %d\n" x y z pos
-  | NonTail(x), Mul(y, z') -> Printf.fprintf oc "\tmul\t\t%s, %s, %s\t# %d\n" x y (pp_id_or_imm z') pos
-  | NonTail(x), Div(y, z) -> Printf.fprintf oc "\tdiv\t\t%s, %s, %s\t# %d\n" x y z pos
-  | NonTail(x), Ld(y, z') -> Printf.fprintf oc "\tlw\t\t%s, %s(%s)\t# %d\n" x (pp_id_or_imm z') y pos
-  | NonTail(_), St(x, y, z') -> Printf.fprintf oc "\tsw\t\t%s, %s(%s)\t# %d\n" x (pp_id_or_imm z') y pos
-  | NonTail(x), FMovD(y) ->
-      if x <> y then Printf.fprintf oc "\tfadd\t%s, %s, %s\t# %d\n" x reg_fzero y pos
-        (* (Printf.fprintf oc "\tfsub\t%s, %s, %s\t# %d\n" x x x pos;
-                      Printf.fprintf oc "\tfadd\t%s, %s, %s\t# %d\n" x x y pos) *)
-  | NonTail(x), FNegD(y) -> (* …‰πÊ»ø≈æ *)
-      (* if x <> y then (Printf.fprintf oc "\tfsub\t%s, %s, %s\t# %d\n" x x x pos;
-                      Printf.fprintf oc "\tfsub\t%s, %s, %s\t# %d\n" x x y pos)
-      else (Printf.fprintf oc "\tfsub\t%s, %s, %s\t# %d\n" reg_sw reg_sw reg_sw pos;
-            Printf.fprintf oc "\tfsub\t%s, %s, %s\t# %d\n" x reg_sw y pos) *)
-      Printf.fprintf oc "\tfsub\t%s, %s, %s\t# %d\n" x reg_fzero y pos
-  | NonTail(x), FAddD(y, z) -> Printf.fprintf oc "\tfadd\t%s, %s, %s\t# %d\n" x y z pos
-  | NonTail(x), FSubD(y, z) -> Printf.fprintf oc "\tfsub\t%s, %s, %s\t# %d\n" x y z pos
-  | NonTail(x), FMulD(y, z) -> Printf.fprintf oc "\tfmul\t%s, %s, %s\t# %d\n" x y z pos
-  | NonTail(x), FDivD(y, z) -> Printf.fprintf oc "\tfdiv\t%s, %s, %s\t# %d\n" x y z pos
-  | NonTail(x), Sqrt(y) -> Printf.fprintf oc "\tfsqrt\t%s, %s\t# %d\n" x y pos
-  | NonTail(x), LdDF(y, z') -> Printf.fprintf oc "\tflw\t\t%s, %s(%s)\t# %d\n" x (pp_id_or_imm z') y pos
-  | NonTail(_), StDF(x, y, z') -> Printf.fprintf oc "\tfsw\t\t%s, %s(%s)\t# %d\n" x (pp_id_or_imm z') y pos
-  | NonTail(_), Comment(s) -> Printf.fprintf oc "\t# %s\t# %d\n" s pos
-  (* ¬‡»Ú§Œ≤æ¡€ÃøŒ·§Œº¬¡ı (caml2html: emit_save) *)
-  | NonTail(_), Save(x, y) when List.mem x allregs && not (S.mem y !stackset) ->
-      save y;
-      Printf.fprintf oc "\tsw\t\t%s, %d(%s)\t# %d\n" x (- (offset y)) reg_sp pos (**)
-  | NonTail(_), Save(x, y) when List.mem x allfregs && not (S.mem y !stackset) ->
-      save y;
-      Printf.fprintf oc "\tfsw\t\t%s, %d(%s)\t# %d\n" x (- (offset y)) reg_sp pos (**)
-  | NonTail(_), Save(x, y) -> assert (S.mem y !stackset); ()
-  (* …¸µ¢§Œ≤æ¡€ÃøŒ·§Œº¬¡ı (caml2html: emit_restore) *)
-  | NonTail(x), Restore(y) when List.mem x allregs ->
-      Printf.fprintf oc "\tlw\t\t%s, %d(%s)\t# %d\n" x (- (offset y)) reg_sp pos (**)
-  | NonTail(x), Restore(y) ->
-      assert (List.mem x allfregs);
-      Printf.fprintf oc "\tflw\t\t%s, %d(%s)\t# %d\n" x (- (offset y)) reg_sp pos (**)
-  (* Àˆ»¯§¿§√§ø§È∑◊ªª∑Î≤Ã§Ú¬Ë∞Ï•Ï•∏•π•ø§À•ª•√•»§∑§∆ret (caml2html: emit_tailret) *)
-  | Tail, (Nop | St _ | StDF _ | Comment _ | Save _ as exp) ->
-      g' oc pos (NonTail(Id.gentmp Type.Unit), exp);
-      Printf.fprintf oc "\tjalr\t%s, %s, 0\t# %d\n" reg_zero reg_ra pos;
-  | Tail, (Set _ | SetL _ | Mov _ | Neg _ | Add _ | Sub _ | Mul _ | Div _ | Ld _ as exp) ->
-      g' oc pos (NonTail(regs.(0)), exp);
-      Printf.fprintf oc "\tjalr\t%s, %s, 0\t# %d\n" reg_zero reg_ra pos;
-  | Tail, (FMovD _ | FNegD _ | FAddD _ | FSubD _ | FMulD _ | FDivD _ | Sqrt _ | LdDF _  as exp) ->
-      g' oc pos (NonTail(fregs.(0)), exp);
-      Printf.fprintf oc "\tjalr\t%s, %s, 0\t# %d\n" reg_zero reg_ra pos;
-  | Tail, (Restore(x) as exp) ->
-      (match locate x with
-      | [i] -> g' oc pos (NonTail(regs.(0)), exp)
-      | [i; j] when i + 1 = j -> g' oc pos (NonTail(fregs.(0)), exp)
-      | _ -> assert false);
-      Printf.fprintf oc "\tjalr\t%s, %s, 0\t# %d\n" reg_zero reg_ra pos;
-  | Tail, IfEq(x, y, e1, e2) ->
-      g'_tail_if oc x (V(y)) e1 e2 "beq" pos
-  | Tail, IfLE(x, y, e1, e2) ->
-      g'_tail_if oc x (V(y)) e1 e2 "ble" pos
-  | Tail, IfGE(x, y, e1, e2) ->
-      g'_tail_if oc x (V(y)) e1 e2 "bge" pos
-  | Tail, IfFEq(x, y, e1, e2) ->
-      g'_tail_if oc x (V(y)) e1 e2 "feq" pos
-  | Tail, IfFLE(x, y, e1, e2) ->
-      g'_tail_if oc x (V(y)) e1 e2 "fle" pos
-  | NonTail(z), IfEq(x, y, e1, e2) ->
-      g'_non_tail_if oc (NonTail(z)) x (V(y)) e1 e2 "beq" pos
-  | NonTail(z), IfLE(x, y, e1, e2) ->
-      g'_non_tail_if oc (NonTail(z)) x (V(y)) e1 e2 "ble" pos
-  | NonTail(z), IfGE(x, y, e1, e2) ->
-      g'_non_tail_if oc (NonTail(z)) x (V(y)) e1 e2 "bge" pos
-  | NonTail(z), IfFEq(x, y, e1, e2) ->
-      g'_non_tail_if oc (NonTail(z)) x (V(y)) e1 e2 "feq" pos
-  | NonTail(z), IfFLE(x, y, e1, e2) ->
-      g'_non_tail_if oc (NonTail(z)) x (V(y)) e1 e2 "fle" pos
-  (* ¥ÿøÙ∏∆§”Ω–§∑§Œ≤æ¡€ÃøŒ·§Œº¬¡ı (caml2html: emit_call) *)
-  | Tail, CallCls(x, ys, zs) -> (* Àˆ»¯∏∆§”Ω–§∑ (caml2html: emit_tailcall) *)
-      g'_args oc [(x, reg_cl)] ys zs;
-      Printf.fprintf oc "\tlw\t\t%s, 0(%s)\t# %d\n" reg_sw reg_cl pos;
-      Printf.fprintf oc "\tjalr\t%s, %s, 0\t# %d\n" reg_zero reg_sw pos
-  | Tail, CallDir(Id.L(x), ys, zs) -> (* Àˆ»¯∏∆§”Ω–§∑ *)
-      g'_args oc [] ys zs;
-      Printf.fprintf oc "\tjal\t\t%s, %s\t# %d\n" reg_zero x pos
-  | NonTail(a), CallCls(x, ys, zs) ->
-      g'_args oc [(x, reg_cl)] ys zs;
-      let ss = stacksize () in
-      (*Printf.fprintf oc "\tst\t%s, [%s + %d]\n" reg_ra reg_sp (ss - 4);
-      Printf.fprintf oc "\tld\t[%s + 0], %s\n" reg_cl reg_sw;
-      Printf.fprintf oc "\tcall\t%s\n" reg_sw;
-      Printf.fprintf oc "\tadd\t%s, %d, %s\t! delay slot\n" reg_sp ss reg_sp;
-      Printf.fprintf oc "\tsub\t%s, %d, %s\n" reg_sp ss reg_sp;
-      Printf.fprintf oc "\tld\t[%s + %d], %s\n" reg_sp (ss - 4) reg_ra;
-      if List.mem a allregs && a <> regs.(0) then
-        Printf.fprintf oc "\tmov\t%s, %s\n" regs.(0) a
-      else if List.mem a allfregs && a <> fregs.(0) then
-        (Printf.fprintf oc "\tfmovs\t%s, %s\n" fregs.(0) a;
-         Printf.fprintf oc "\tfmovs\t%s, %s\n" (co_freg fregs.(0)) (co_freg a))*)
-      Printf.fprintf oc "\tsw\t\t%s, %d(%s)\t# %d\n" reg_ra (4 - ss) reg_sp pos;
-      Printf.fprintf oc "\taddi\t%s, %s, %d\t# %d\n" reg_sp reg_sp (-ss) pos;
-      Printf.fprintf oc "\tlw\t\t%s, 0(%s)\t# %d\n" reg_sw reg_cl pos;
-      Printf.fprintf oc "\tjalr\t%s, %s, 0\t# %d\n" reg_ra reg_sw pos;
-      Printf.fprintf oc "\taddi\t%s, %s, %d\t# %d\n" reg_sp reg_sp ss pos;
-      Printf.fprintf oc "\tlw\t\t%s, %d(%s)\t# %d\n" reg_ra (4 - ss) reg_sp pos;
-      if List.mem a allregs && a <> regs.(0) then
-        Printf.fprintf oc "\taddi\t%s, %s, 0\t# %d\n" a regs.(0) pos
-      else if List.mem a allfregs && a <> fregs.(0) then
-        (* (Printf.fprintf oc "\tfsub\t%s, %s, %s\t# %d\n" a a a pos;
-        Printf.fprintf oc "\tfadd\t%s, %s, %s\t# %d\n" a a fregs.(0) pos) *)
-        Printf.fprintf oc "\tfadd\t%s, %s, %s\t# %d\n" a reg_fzero fregs.(0) pos
-  | NonTail(a), CallDir(Id.L(x), ys, zs) ->
-      g'_args oc [] ys zs;
-      let ss = stacksize () in
-      (*Printf.fprintf oc "\tst\t%s, [%s + %d]\n" reg_ra reg_sp (ss - 4);
-      Printf.fprintf oc "\tcall\t%s\n" x;
-      Printf.fprintf oc "\tadd\t%s, %d, %s\t! delay slot\n" reg_sp ss reg_sp;
-      Printf.fprintf oc "\tsub\t%s, %d, %s\n" reg_sp ss reg_sp;
-      Printf.fprintf oc "\tld\t[%s + %d], %s\n" reg_sp (ss - 4) reg_ra;
-      if List.mem a allregs && a <> regs.(0) then
-        Printf.fprintf oc "\tmov\t%s, %s\n" regs.(0) a
-      else if List.mem a allfregs && a <> fregs.(0) then
-        (Printf.fprintf oc "\tfmovs\t%s, %s\n" fregs.(0) a;
-         Printf.fprintf oc "\tfmovs\t%s, %s\n" (co_freg fregs.(0)) (co_freg a))*)
-      Printf.fprintf oc "\tsw\t\t%s, %d(%s)\t# %d\n" reg_ra (4 - ss) reg_sp pos; (**)
-      Printf.fprintf oc "\taddi\t%s, %s, %d\t# %d\n" reg_sp reg_sp (-ss) pos;
-      Printf.fprintf oc "\tjal\t\t%s, %s\t# %d\n" reg_ra x pos;
-      Printf.fprintf oc "\taddi\t%s, %s, %d\t# %d\n" reg_sp reg_sp ss pos;
-      Printf.fprintf oc "\tlw\t\t%s, %d(%s)\t# %d\n" reg_ra (4 - ss) reg_sp pos; (**)
-      if List.mem a allregs && a <> regs.(0) then
-        Printf.fprintf oc "\taddi\t%s, %s, 0\t# %d\n" a regs.(0) pos
-      else if List.mem a allfregs && a <> fregs.(0) then
-        (* (Printf.fprintf oc "\tfsub\t%s, %s, %s\t# %d\n" a a a pos;
-        Printf.fprintf oc "\tfadd\t%s, %s, %s\t# %d\n" a a fregs.(0) pos) *)
-        Printf.fprintf oc "\tfadd\t%s, %s, %s\t# %d\n" a reg_fzero fregs.(0) pos
-and g'_tail_if oc x y e1 e2 b pos =
-  (*let b_else = Id.genid (b ^ "_else") in
-  Printf.fprintf oc "\t%s\t%s\n" bn b_else;
-  let stackset_back = !stackset in
-  g oc (Tail, e1);
-  Printf.fprintf oc "%s:\n" b_else;
-  stackset := stackset_back;
-  g oc (Tail, e2)*)
-  if b = "fle" || b = "feq" then
-    (let b_else = Id.genid (b ^ "_else") in
-     Printf.fprintf oc "\t%s\t\t%s, %s, %s\t# %d\n" b reg_sw x (pp_id_or_imm y) pos;
-     Printf.fprintf oc "\tbeq\t\t%s, %s, %s\t# %d\n" reg_sw reg_zero b_else pos;
-     let stackset_back = !stackset in
-     g oc (Tail, e1);
-     Printf.fprintf oc "%s:\n" b_else;
-     stackset := stackset_back;
-     g oc (Tail, e2))
-  else
-    (let b_id = Id.genid b in
-     Printf.fprintf oc "\t%s\t\t%s, %s, %s\t# %d\n" b x (pp_id_or_imm y) b_id pos;
-     let stackset_back = !stackset in
-     g oc (Tail, e2);
-     Printf.fprintf oc "%s:\n" b_id;
-     stackset := stackset_back;
-     g oc (Tail, e1))
-and g'_non_tail_if oc dest x y e1 e2 b pos =
-  (*let b_else = Id.genid (b ^ "_else") in
-  let b_cont = Id.genid (b ^ "_cont") in
-  Printf.fprintf oc "\t%s\t%s\n" bn b_else;
-  let stackset_back = !stackset in
-  g oc (dest, e1);
-  let stackset1 = !stackset in
-  Printf.fprintf oc "\tb\t%s\n" b_cont;
-  Printf.fprintf oc "%s:\n" b_else;
-  stackset := stackset_back;
-  g oc (dest, e2);
-  Printf.fprintf oc "%s:\n" b_cont;
-  let stackset2 = !stackset in
-  stackset := S.inter stackset1 stackset2*)
-  let b_cont = Id.genid (b ^ "_cont") in
-  if b = "fle" || b = "feq" then
-    (match dest, e2 with
-     | NonTail(_), Ans(Nop, _) -> (Printf.fprintf oc "\t%s\t\t%s, %s, %s\t# %d\n" b reg_sw x (pp_id_or_imm y) pos;
-                                   Printf.fprintf oc "\tbeq\t\t%s, %s, %s\t# %d\n" reg_sw reg_zero b_cont pos;
-                                   g oc (dest, e1);
-                                   Printf.fprintf oc "%s:\n" b_cont)
-     | NonTail(x_), Ans(Mov(y_), _) | NonTail(x_), Ans(FMovD(y_), _) when x_ = y_ ->
-        (Printf.fprintf oc "\t%s\t\t%s, %s, %s\t# %d\n" b reg_sw x (pp_id_or_imm y) pos;
-         Printf.fprintf oc "\tbeq\t\t%s, %s, %s\t# %d\n" reg_sw reg_zero b_cont pos;
-         g oc (dest, e1);
-         Printf.fprintf oc "%s:\n" b_cont)
-     | _, _ -> (let b_else = Id.genid (b ^ "_else") in
-                Printf.fprintf oc "\t%s\t\t%s, %s, %s\t# %d\n" b reg_sw x (pp_id_or_imm y) pos;
-                Printf.fprintf oc "\tbeq\t\t%s, %s, %s\t# %d\n" reg_sw reg_zero b_else pos;
-                let stackset_back = !stackset in
-                g oc (dest, e1);
-                let stackset1 = !stackset in
-                Printf.fprintf oc "\tjal\t\t%s, %s\t# %d\n" reg_zero b_cont pos;
-                Printf.fprintf oc "%s:\n" b_else;
-                stackset := stackset_back;
-                g oc (dest, e2);
-                Printf.fprintf oc "%s:\n" b_cont;
-                let stackset2 = !stackset in
-                stackset := S.inter stackset1 stackset2))
-  else
-    (match dest, e1 with
-     | NonTail(_), Ans(Nop, _) -> (Printf.fprintf oc "\t%s\t\t%s, %s, %s\t# %d\n" b x (pp_id_or_imm y) b_cont pos;
-                                   g oc (dest, e2);
-                                   Printf.fprintf oc "%s:\n" b_cont)
-     | NonTail(x_), Ans(Mov(y_), _) | NonTail(x_), Ans(FMovD(y_), _) when x_ = y_ ->
-        (Printf.fprintf oc "\t%s\t\t%s, %s, %s\t# %d\n" b x (pp_id_or_imm y) b_cont pos;
-         g oc (dest, e2);
-         Printf.fprintf oc "%s:\n" b_cont)
-     | _, _ -> (let b_id = Id.genid b in
-                Printf.fprintf oc "\t%s\t\t%s, %s, %s\t# %d\n" b x (pp_id_or_imm y) b_id pos;
-                let stackset_back = !stackset in
-                g oc (dest, e2);
-                let stackset1 = !stackset in
-                Printf.fprintf oc "\tjal\t\t%s, %s\t# %d\n" reg_zero b_cont pos;
-                Printf.fprintf oc "%s:\n" b_id;
-                stackset := stackset_back;
-                g oc (dest, e1);
-                Printf.fprintf oc "%s:\n" b_cont;
-                let stackset2 = !stackset in
-                stackset := S.inter stackset1 stackset2))
-and g'_args oc x_reg_cl ys zs =
-  let (i, yrs) =
-    List.fold_left
-      (fun (i, yrs) y -> (i + 1, (y, regs.(i)) :: yrs))
-      (0, x_reg_cl)
-      ys in
-  List.iter
-    (fun (y, r) -> Printf.fprintf oc "\taddi\t%s, %s, 0\n" r y)
-    (shuffle reg_sw yrs);
-  let (d, zfrs) =
-    List.fold_left
-      (fun (d, zfrs) z -> (d + 1, (z, fregs.(d)) :: zfrs))
-      (0, [])
-      zs in
-  List.iter
-    (fun (z, fr) -> (*Printf.fprintf oc "\tfsub\t%s, %s, %s\n" fr fr fr;
-                    Printf.fprintf oc "\tfadd\t%s, %s, %s\n" fr fr z*)
-                    Printf.fprintf oc "\tfadd\t%s, %s, %s\n" fr reg_fzero z)
-    (shuffle reg_fsw zfrs)
+        let e = if M.mem l repl then Jal(x, M.find l repl, p) else Jal(x, l, p) in
+        elim_jump remove repl tl (e :: acc) false
+  | Beq(x, y, l, p) :: tl ->
+      if remove_flg then elim_jump remove repl tl acc true
+      else
+        let e = if M.mem l repl then Beq(x, y, M.find l repl, p) else Beq(x, y, l, p) in
+        elim_jump remove repl tl (e :: acc) false
+  | Ble(x, y, l, p) :: tl ->
+      if remove_flg then elim_jump remove repl tl acc true
+      else
+        let e = if M.mem l repl then Ble(x, y, M.find l repl, p) else Ble(x, y, l, p) in
+        elim_jump remove repl tl (e :: acc) false
+  | Bge(x, y, l, p) :: tl ->
+      if remove_flg then elim_jump remove repl tl acc true
+      else
+        let e = if M.mem l repl then Bge(x, y, M.find l repl, p) else Bge(x, y, l, p) in
+        elim_jump remove repl tl (e :: acc) false
+  | [] -> List.rev acc
+  | hd :: tl ->
+      if remove_flg then elim_jump remove repl tl acc true
+      else
+        elim_jump remove repl tl (hd :: acc) false
 
-let h oc { name = Id.L(x); args = _; fargs = _; body = e; ret = _ } =
-  Printf.fprintf oc "%s:\n" x;
-  stackset := S.empty;
-  stackmap := [];
-  g oc (Tail, e)
+let rec separate_label e remove lb ct repl =
+  match e with
+  | Label(s) :: tl ->
+      (match ct with
+       | [] ->
+          (Format.eprintf "remove label %s\n" lb; Format.eprintf "replace label %s with %s\n" lb s;
+           separate_label tl (lb :: remove) s [] (M.add lb s repl))
+       | [Jal(x, l, p)] ->
+          (Format.eprintf "remove label %s\n" lb; Format.eprintf "replace label %s with %s\n" lb s;
+           separate_label tl (lb :: remove) s [] (M.add lb l repl))
+       | _ -> separate_label tl remove s [] repl)
+  | [] -> remove, repl
+  | hd :: tl -> separate_label tl remove lb (hd :: ct) repl
 
-let f oc (Prog(data, fundefs, e)) =
+let rec repl_assoc repl key =
+  if M.mem key repl then repl_assoc repl (M.find key repl)
+  else key
+
+let f oc (data, content) =
+  let remove, repl =
+    match content with
+    | Label(s) :: tl -> separate_label tl [] s [] M.empty
+    | _ -> failwith "no label in the first line\n" in
+  let repl = M.map (repl_assoc repl) repl in
+  let asm = elim_jump remove repl content [] false in
+
   Format.eprintf "generating assembly...@.";
-  (*Printf.fprintf oc ".section\t\".data\"\n";
-  Printf.fprintf oc ".align\t4\n";*)
   Printf.fprintf oc "l.0:\t# 8388608.000000\n";
   Printf.fprintf oc "\t.word\t8388608.000000\n";
   (* Printf.fprintf oc "l.1:\t# 0.000000\n";
   Printf.fprintf oc "\t.word\t0.000000\n";
   Printf.fprintf oc "l.2:\t# 1.000000\n";
   Printf.fprintf oc "\t.word\t1.000000\n"; *)
-  let label_zero = ref "" in
-  let cmp_dict = [(1.0, 1); (4.0, 2); (4.5, 3); (0.01, 4); (-0.2, 5); (-0.1, 6); (100000000.0, 7); (-0.5, 8); (150.0, 9); (-150.0, 10);
-                  (0.5, 11); (-4.5, 12)] in (* lui/ori§À§Ë§Í•Ì°º•…§µ§Ï§Î≤ÛøÙ§Œ¬ø§§ΩÁ *)
-  let cmp (Id.L(_), d1, _) (Id.L(_), d2, _) =
-    compare (try List.assoc d1 cmp_dict with Not_found -> 40) (try List.assoc d2 cmp_dict with Not_found -> 40) in
-  let data = List.sort cmp data in
   List.iter
     (fun (Id.L(x), d, _) ->
-      if d = 0.0 then label_zero := x;
       Printf.fprintf oc "%s:\t# %f\n" x d;
       Printf.fprintf oc "\t.word\t%f\n" d)
     data;
-  if !label_zero = "" then
-    (let x = Id.genid "l" in
-     label_zero := x;
-     Printf.fprintf oc "%s:\t# %f\n" x 0.0;
-     Printf.fprintf oc "\t.word\t%f\n" 0.0);
-  loaded_labels := M.add !label_zero reg_fzero !loaded_labels;
-  let reg_for_label = S.elements (S.diff (S.diff (S.of_list allfregs) (S.singleton reg_fsw)) !RegAlloc.used_regs) in
-  Format.eprintf "reg_for_label : ";
-  List.iter (Format.eprintf "%s ") reg_for_label;
-  Format.eprintf "\n";
-  let rec ld_label_noprint reg_for_label data =
-    match reg_for_label, data with
-    | [], [] -> ()
-    | [], hd :: tl | hd :: tl, [] -> ()
-    | reg :: tl1, label :: tl2 -> if label <> !label_zero then
-                                    (loaded_labels := M.add label reg !loaded_labels;
-                                     ld_label_noprint tl1 tl2)
-                                  else ld_label_noprint reg_for_label tl2 in
-  ld_label_noprint reg_for_label (List.map (fun (Id.L(x), _, _) -> x) data);
-  (*Printf.fprintf oc ".section\t\".text\"\n";*)
-  List.iter (fun fundef -> h oc fundef) fundefs;
-  (*Printf.fprintf oc ".globl\tmin_caml_start\n";*)
-  Printf.fprintf oc "min_caml_start:\n";
-  Printf.fprintf oc "\taddi\t%s, %s, -4\n" reg_sp reg_sp;
-  Printf.fprintf oc "\taddi\t%s, %s, 4\n" reg_four reg_zero;
-  (* Printf.fprintf oc "\taddi\t%s, %s, 60000\n" reg_hp reg_zero; *)
-  Printf.fprintf oc "\tlui\t\t%s, %d\n" reg_hp ConstFoldGlobals.addr_init;
-  Printf.fprintf oc "\tori\t\t%s, %s, %d\n" reg_hp reg_zero ConstFoldGlobals.addr_init;
-  (* Printf.fprintf oc "\taddi\t%s, %s, 0\n" reg_read_num_soft reg_zero; *)
-  Printf.fprintf oc "\tlui\t\t%s, %%hi(%s)\n" regs.(0) !label_zero;
-  Printf.fprintf oc "\tori\t\t%s, %s, %%lo(%s)\n" regs.(0) reg_zero !label_zero;
-  Printf.fprintf oc "\tflw\t\t%s, 0(%s)\n" reg_fzero regs.(0);
-  let rec ld_label reg_for_label data =
-    match reg_for_label, data with
-    | [], [] -> ()
-    | [], hd :: tl | hd :: tl, [] -> ()
-    | reg :: tl1, label :: tl2 -> if label <> !label_zero then
-                                    (Printf.fprintf oc "\tlui\t\t%s, %%hi(%s)\n" regs.(0) label;
-                                     Printf.fprintf oc "\tori\t\t%s, %s, %%lo(%s)\n" regs.(0) reg_zero label;
-                                     Printf.fprintf oc "\tflw\t\t%s, 0(%s)\n" reg regs.(0);
-                                     ld_label tl1 tl2)
-                                  else ld_label reg_for_label tl2 in
-  ld_label reg_for_label (List.map (fun (Id.L(x), _, _) -> x) data);
-  stackset := S.empty;
-  stackmap := [];
-  g oc (NonTail(regs.(0)), e);
+  List.iter (print oc) asm;
   Printf.fprintf oc "\tEXIT\t\n"

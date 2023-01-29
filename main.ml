@@ -127,7 +127,9 @@ let lexbuf outchan l f outchan_parsed outchan_normalized outchan_alpha outchan_i
   List.iter (print_asm_fundef outchan_regalloc 0) fundefs;
   print_asm_t outchan_regalloc 0 e;
 
-  Emit.f outchan regalloc
+  let preemit = PreEmit.f regalloc in
+
+  Emit.f outchan preemit
   (*
   Emit.f outchan
     (RegAlloc.f
