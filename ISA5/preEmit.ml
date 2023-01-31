@@ -38,7 +38,7 @@ let rec shuffle sw xys =
 let content = ref []
 
 type dest = Tail | NonTail of Id.t (* 末尾かどうかを表すデータ型 (caml2html: emit_dest) *)
-let rec g = function (* 命令列のアセンブリ生成 (caml2html: emit_g) *) (* ここをISA5に対応 PowerPCに寄せるかも *)
+let rec g = function (* 命令列のアセンブリ生成 (caml2html: emit_g) *)
   | dest, Ans(exp, pos) -> g' pos (dest, exp)
   | NonTail(w), Let((x, Type.Int), SetL(Id.L(y)), Ans(LdDF(z, C(0)), pos1), pos2) when x = z && M.mem y !loaded_labels ->
       content := !content @ [RiscV.FAdd(w, reg_fzero, M.find y !loaded_labels, pos2)]
@@ -168,54 +168,34 @@ and g' pos = function (* 各命令のアセンブリ生成 (caml2html: emit_gprime) *)
       if List.mem a allregs && a <> regs.(0) then content := !content @ [RiscV.Addi(a, regs.(0), 0, pos)]
       else if List.mem a allfregs && a <> fregs.(0) then content := !content @ [RiscV.FAdd(a, reg_fzero, fregs.(0), pos)]
 and g'_tail_if x y e1 e2 b pos =
-  if b = "fle" || b = "feq" then
-    (let b_else = Id.genid (b ^ "_else") in
-     content := !content @ [if b = "fle" then RiscV.Fle(reg_sw, x, y, pos) else RiscV.Feq(reg_sw, x, y, pos);
-                            RiscV.Beq(reg_sw, reg_zero, b_else, pos)];
-     let stackset_back = !stackset in
-     g (Tail, e1);
-     content := !content @ [RiscV.Label(b_else)];
-     stackset := stackset_back;
-     g (Tail, e2))
-  else
-    (let b_id = Id.genid b in
-     content := !content @ [if b = "beq" then RiscV.Beq(x, y, b_id, pos)
-                            else if b = "ble" then RiscV.Ble(x, y, b_id, pos)
-                            else RiscV.Bge(x, y, b_id, pos)];
-     let stackset_back = !stackset in
-     g (Tail, e2);
-     content := !content @ [RiscV.Label(b_id)];
-     stackset := stackset_back;
-     g (Tail, e1))
+  let b_id = Id.genid b in
+  content := !content @ [if b = "beq" then RiscV.Beq(x, y, b_id, pos)
+                         else if b = "ble" then RiscV.Ble(x, y, b_id, pos)
+                         else if b = "bge" then RiscV.Bge(x, y, b_id, pos)
+                         else if b = "feq" then RiscV.Feq(x, y, b_id, pos)
+                         else RiscV.Fle(x, y, b_id, pos)];
+  let stackset_back = !stackset in
+  g (Tail, e2);
+  content := !content @ [RiscV.Label(b_id)];
+  stackset := stackset_back;
+  g (Tail, e1)
 and g'_non_tail_if dest x y e1 e2 b pos =
   let b_cont = Id.genid (b ^ "_cont") in
-  if b = "fle" || b = "feq" then
-    (let b_else = Id.genid (b ^ "_else") in
-     content := !content @ [if b = "fle" then RiscV.Fle(reg_sw, x, y, pos) else RiscV.Feq(reg_sw, x, y, pos);
-                            RiscV.Beq(reg_sw, reg_zero, b_else, pos)];
-     let stackset_back = !stackset in
-     g (dest, e1);
-     let stackset1 = !stackset in
-     content := !content @ [RiscV.Jal(reg_zero, b_cont, pos); RiscV.Label(b_else)];
-     stackset := stackset_back;
-     g (dest, e2);
-     content := !content @ [RiscV.Label(b_cont)];
-     let stackset2 = !stackset in
-     stackset := S.inter stackset1 stackset2)
-  else
-    (let b_id = Id.genid b in
-     content := !content @ [if b = "beq" then RiscV.Beq(x, y, b_id, pos)
-                            else if b = "ble" then RiscV.Ble(x, y, b_id, pos)
-                            else RiscV.Bge(x, y, b_id, pos)];
-     let stackset_back = !stackset in
-     g (dest, e2);
-     let stackset1 = !stackset in
-     content := !content @ [RiscV.Jal(reg_zero, b_cont, pos); RiscV.Label(b_id)];
-     stackset := stackset_back;
-     g (dest, e1);
-     content := !content @ [RiscV.Label(b_cont)];
-     let stackset2 = !stackset in
-     stackset := S.inter stackset1 stackset2)
+  let b_id = Id.genid b in
+  content := !content @ [if b = "beq" then RiscV.Beq(x, y, b_id, pos)
+                         else if b = "ble" then RiscV.Ble(x, y, b_id, pos)
+                         else if b = "bge" then RiscV.Bge(x, y, b_id, pos)
+                         else if b = "feq" then RiscV.Feq(x, y, b_id, pos)
+                         else RiscV.Fle(x, y, b_id, pos)];
+  let stackset_back = !stackset in
+  g (dest, e2);
+  let stackset1 = !stackset in
+  content := !content @ [RiscV.Jal(reg_zero, b_cont, pos); RiscV.Label(b_id)];
+  stackset := stackset_back;
+  g (dest, e1);
+  content := !content @ [RiscV.Label(b_cont)];
+  let stackset2 = !stackset in
+  stackset := S.inter stackset1 stackset2
 and g'_args x_reg_cl ys zs pos =
   let (i, yrs) =
     List.fold_left
@@ -283,7 +263,7 @@ let f (Prog(data, fundefs, e)) =
     | [], hd :: tl | hd :: tl, [] -> ()
     | reg :: tl1, label :: tl2 -> if label <> !label_zero then
                                     (content := !content @ [RiscV.LuiLb(regs.(0), label, 0); RiscV.OriLb(regs.(0), reg_zero, label, 0);
-                                                           RiscV.FLw(reg, 0, regs.(0), 0)];
+                                                            RiscV.FLw(reg, 0, regs.(0), 0)];
                                      ld_label tl1 tl2)
                                   else ld_label reg_for_label tl2 in
   ld_label reg_for_label (List.map (fun (Id.L(x), _, _) -> x) data);

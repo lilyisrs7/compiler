@@ -26,5 +26,5 @@ type t =
   | Beq of Id.t * Id.t * label * pos
   | Ble of Id.t * Id.t * label * pos
   | Bge of Id.t * Id.t * label * pos
-  | Feq of Id.t * Id.t * Id.t * pos
-  | Fle of Id.t * Id.t * Id.t * pos
+  | Feq of Id.t * Id.t * label * pos
+  | Fle of Id.t * Id.t * label * pos

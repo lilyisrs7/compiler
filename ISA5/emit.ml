@@ -26,8 +26,8 @@ let print oc = function
 | Beq(x, y, l, p) -> Printf.fprintf oc "\tbeq\t\t%s, %s, %s\t# %d\n" x y l p
 | Ble(x, y, l, p) -> Printf.fprintf oc "\tble\t\t%s, %s, %s\t# %d\n" x y l p
 | Bge(x, y, l, p) -> Printf.fprintf oc "\tbge\t\t%s, %s, %s\t# %d\n" x y l p
-| Feq(x, y, z, p) -> Printf.fprintf oc "\tfeq\t\t%s, %s, %s\t# %d\n" x y z p
-| Fle(x, y, z, p) -> Printf.fprintf oc "\tfle\t\t%s, %s, %s\t# %d\n" x y z p
+| Feq(x, y, l, p) -> Printf.fprintf oc "\tfeq\t\t%s, %s, %s\t# %d\n" x y l p
+| Fle(x, y, l, p) -> Printf.fprintf oc "\tfle\t\t%s, %s, %s\t# %d\n" x y l p
 
 let rec elim_jump remove repl content acc remove_flg = (* ジャンプ連鎖除去 *)
   match content with
@@ -54,6 +54,16 @@ let rec elim_jump remove repl content acc remove_flg = (* ジャンプ連鎖除�
       else
         let e = if M.mem l repl then Bge(x, y, M.find l repl, p) else Bge(x, y, l, p) in
         elim_jump remove repl tl (e :: acc) false
+  | Feq(x, y, l, p) :: tl ->
+      if remove_flg then elim_jump remove repl tl acc true
+      else
+        let e = if M.mem l repl then Feq(x, y, M.find l repl, p) else Feq(x, y, l, p) in
+        elim_jump remove repl tl (e :: acc) false
+  | Fle(x, y, l, p) :: tl ->
+      if remove_flg then elim_jump remove repl tl acc true
+      else
+        let e = if M.mem l repl then Fle(x, y, M.find l repl, p) else Fle(x, y, l, p) in
+        elim_jump remove repl tl (e :: acc) false
   | [] -> List.rev acc
   | hd :: tl ->
       if remove_flg then elim_jump remove repl tl acc true
@@ -65,10 +75,10 @@ let rec separate_label e remove lb ct repl =
   | Label(s) :: tl ->
       (match ct with
        | [] ->
-          (Format.eprintf "remove label %s\n" lb; Format.eprintf "replace label %s with %s\n" lb s;
+          ((* Format.eprintf "remove label %s\n" lb; Format.eprintf "replace label %s with %s\n" lb s; *)
            separate_label tl (lb :: remove) s [] (M.add lb s repl))
        | [Jal(x, l, p)] ->
-          (Format.eprintf "remove label %s\n" lb; Format.eprintf "replace label %s with %s\n" lb s;
+          ((* Format.eprintf "remove label %s\n" lb; Format.eprintf "replace label %s with %s\n" lb s; *)
            separate_label tl (lb :: remove) s [] (M.add lb l repl))
        | _ -> separate_label tl remove s [] repl)
   | [] -> remove, repl
