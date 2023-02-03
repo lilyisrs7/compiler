@@ -57,8 +57,8 @@ val reg_fzero : Id.t
 val reg_four : Id.t
 (* val reg_rv : Id.t
 val reg_frv : Id.t *)
-val reg_size_program_section : Id.t
-(* val reg_read_num_hard : Id.t
+(* val reg_size_program_section : Id.t
+val reg_read_num_hard : Id.t
 val reg_read_num_soft : Id.t *)
 val is_reg : Id.t -> bool
 (*val co_freg : Id.t -> Id.t*)
