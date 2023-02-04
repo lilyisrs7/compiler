@@ -1,42 +1,40 @@
-(* 2オペランドではなく3オペランドのx86アセンブリもどき *)
-
 type id_or_imm = V of Id.t | C of int
 type t = (* 命令の列 (caml2html: sparcasm_t) *)
   | Ans of exp * int
   | Let of (Id.t * Type.t) * exp * t * int
 and exp = (* 一つ一つの命令に対応する式 (caml2html: sparcasm_exp) *)
-  | Nop
-  | Set of int
-  | SetL of Id.l
-  | Mov of Id.t
-  | Neg of Id.t
-  | Add of Id.t * id_or_imm
-  | Sub of Id.t * Id.t
-  | Mul of Id.t * Id.t
-  | Div of Id.t * Id.t
-  | Ld of Id.t * id_or_imm (*最終的には即値に*)
-  | St of Id.t * Id.t * id_or_imm (*最終的には即値に*)
-  | FMovD of Id.t
-  | FNegD of Id.t
-  | FAddD of Id.t * Id.t
-  | FSubD of Id.t * Id.t
-  | FMulD of Id.t * Id.t
-  | FDivD of Id.t * Id.t
-  | Sqrt of Id.t
-  | LdDF of Id.t * id_or_imm (*最終的には即値に*)
-  | StDF of Id.t * Id.t * id_or_imm (*最終的には即値に*)
-  | Comment of string
+  | Nop of int
+  | Set of int * int
+  | SetL of Id.l * int
+  | Mov of Id.t * int
+  | Neg of Id.t * int
+  | Add of Id.t * id_or_imm * int
+  | Sub of Id.t * Id.t * int
+  | Mul of Id.t * Id.t * int
+  | Div of Id.t * Id.t * int
+  | Ld of Id.t * id_or_imm * int (*最終的には即値に*)
+  | St of Id.t * Id.t * id_or_imm * int (*最終的には即値に*)
+  | FMovD of Id.t * int
+  | FNegD of Id.t * int
+  | FAddD of Id.t * Id.t * int
+  | FSubD of Id.t * Id.t * int
+  | FMulD of Id.t * Id.t * int
+  | FDivD of Id.t * Id.t * int
+  | Sqrt of Id.t * int
+  | LdDF of Id.t * id_or_imm * int (*最終的には即値に*)
+  | StDF of Id.t * Id.t * id_or_imm * int (*最終的には即値に*)
+  | Comment of string * int
   (* virtual instructions *)
-  | IfEq of Id.t * Id.t * t * t
-  | IfLE of Id.t * Id.t * t * t
-  | IfGE of Id.t * Id.t * t * t (* 左右対称ではないので必要 *)
-  | IfFEq of Id.t * Id.t * t * t
-  | IfFLE of Id.t * Id.t * t * t
+  | IfEq of Id.t * Id.t * t * t * int
+  | IfLE of Id.t * Id.t * t * t * int
+  | IfGE of Id.t * Id.t * t * t * int (* 左右対称ではないので必要 *)
+  | IfFEq of Id.t * Id.t * t * t * int
+  | IfFLE of Id.t * Id.t * t * t * int
   (* closure address, integer arguments, and float arguments *)
-  | CallCls of Id.t * Id.t list * Id.t list
-  | CallDir of Id.l * Id.t list * Id.t list
-  | Save of Id.t * Id.t (* レジスタ変数の値をスタック変数へ保存 (caml2html: sparcasm_save) *)
-  | Restore of Id.t (* スタック変数から値を復元 (caml2html: sparcasm_restore) *)
+  | CallCls of Id.t * Id.t list * Id.t list * int
+  | CallDir of Id.l * Id.t list * Id.t list * int
+  | Save of Id.t * Id.t * int (* レジスタ変数の値をスタック変数へ保存 (caml2html: sparcasm_save) *)
+  | Restore of Id.t * int (* スタック変数から値を復元 (caml2html: sparcasm_restore) *)
 type fundef = { name : Id.l; args : Id.t list; fargs : Id.t list; body : t; ret : Type.t }
 (* プログラム全体 = 浮動小数点数テーブル + トップレベル関数 + メインの式 (caml2html: sparcasm_prog) *)
 type prog = Prog of (Id.l * float * int) list * fundef list * t
@@ -94,14 +92,15 @@ let rec remove_and_uniq xs = function
 (* free variables in the order of use (for spilling) (caml2html: sparcasm_fv) *)
 let fv_id_or_imm = function V(x) -> [x] | _ -> []
 let rec fv_exp = function
-  | Nop | Set(_) | SetL(_) | Comment(_) | Restore(_) -> []
-  | Mov(x) | Neg(x) | FMovD(x) | FNegD(x) | Sqrt(x) | Save(x, _) -> [x]
-  | Add(x, y') | Ld(x, y') | LdDF(x, y') -> x :: fv_id_or_imm y'
-  | St(x, y, _) | StDF(x, y, _) | Sub(x, y) | Mul(x, y) | Div(x, y) | FAddD(x, y) | FSubD(x, y) | FMulD(x, y) | FDivD(x, y) -> [x; y]
-  | IfEq(x, y, e1, e2) | IfLE(x, y, e1, e2) | IfGE(x, y, e1, e2) -> x :: y :: remove_and_uniq S.empty (fv e1 @ fv e2) (* uniq here just for efficiency *)
-  | IfFEq(x, y, e1, e2) | IfFLE(x, y, e1, e2) -> x :: y :: remove_and_uniq S.empty (fv e1 @ fv e2) (* uniq here just for efficiency *)
-  | CallCls(x, ys, zs) -> x :: ys @ zs
-  | CallDir(_, ys, zs) -> ys @ zs
+  | Nop(_) | Set(_) | SetL(_) | Comment(_) | Restore(_) -> []
+  | Mov(x, _) | Neg(x, _) | FMovD(x, _) | FNegD(x, _) | Sqrt(x, _) | Save(x, _, _) -> [x]
+  | Add(x, y', _) | Ld(x, y', _) | LdDF(x, y', _) -> x :: fv_id_or_imm y'
+  | St(x, y, _, _) | StDF(x, y, _, _) | Sub(x, y, _) | Mul(x, y, _) | Div(x, y, _)
+  | FAddD(x, y, _) | FSubD(x, y, _) | FMulD(x, y, _) | FDivD(x, y, _) -> [x; y]
+  | IfEq(x, y, e1, e2, _) | IfLE(x, y, e1, e2, _) | IfGE(x, y, e1, e2, _)
+  | IfFEq(x, y, e1, e2, _) | IfFLE(x, y, e1, e2, _) -> x :: y :: remove_and_uniq S.empty (fv e1 @ fv e2) (* uniq here just for efficiency *)
+  | CallCls(x, ys, zs, _) -> x :: ys @ zs
+  | CallDir(_, ys, zs, _) -> ys @ zs
 and fv = function
   | Ans(exp, pos) -> fv_exp exp
   | Let((x, t), exp, e, pos) ->

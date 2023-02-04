@@ -66,7 +66,8 @@ let rec closure_opt n e = (* タプル平坦化、tace後の最適化 *)
       closure_opt (n - 1) e'
 
 let lexbuf outchan l f outchan_parsed outchan_normalized outchan_alpha outchan_iterated outchan_cfg outchan_closure
-                       outchan_flatten outchan_tace outchan_cls_opt outchan_block outchan_virtual outchan_simm outchan_regalloc =
+                       outchan_flatten outchan_tace outchan_cls_opt outchan_block outchan_virtual outchan_simm outchan_addid
+                       outchan_regalloc outchan_preemit =
   (* バッファをコンパイルしてチャンネルへ出力する (caml2html: main_lexbuf) *)
   Id.counter := 0;
   Typing.extenv := M.empty;
@@ -106,8 +107,8 @@ let lexbuf outchan l f outchan_parsed outchan_normalized outchan_alpha outchan_i
   List.iter (print_closure_fundef outchan_cls_opt 0) fundefs;
   print_closure_t outchan_cls_opt 0 e;
 
-  Cfg.f closure;
-  print_block outchan_block !Cfg.graph;
+  (* Cfg_closure.f closure;
+  print_block outchan_block !Cfg_closure.graph; *)
 
   let vt = Virtual.f cls_opt in
   let Asm.Prog(data, fundefs, e) = vt in
@@ -121,31 +122,40 @@ let lexbuf outchan l f outchan_parsed outchan_normalized outchan_alpha outchan_i
   List.iter (print_asm_fundef outchan_simm 0) fundefs;
   print_asm_t outchan_simm 0 e;
 
-  let regalloc = RegAlloc.f simm in
+  let addid = AddId.f simm in
+  let Asm.Prog(data, fundefs, e) = addid in
+  List.iter (print_asm_data outchan_addid 0) data;
+  List.iter (print_asm_fundef outchan_addid 0) fundefs;
+  print_asm_t outchan_addid 0 e;
+
+  let regalloc = RegAlloc.f addid in
   let Asm.Prog(data, fundefs, e) = regalloc in
   List.iter (print_asm_data outchan_regalloc 0) data;
   List.iter (print_asm_fundef outchan_regalloc 0) fundefs;
   print_asm_t outchan_regalloc 0 e;
 
   let preemit = PreEmit.f regalloc in
+  List.iter (print_riscv_t outchan_preemit) (snd preemit);
 
   Emit.f outchan preemit
   (*
   Emit.f outchan
-    (RegAlloc.f
-       (Simm.f
-          (Virtual.f
-             (closure_opt
-                (Tace.f
-                   (Flatten.f
-                      (Closure.f
-                         (Alpha.f
-                            (ConstFoldGlobals.f
-                               (iter !limit
-                                  (Alpha.f
-                                     (KNormal.f
-                                        (Typing.f
-                                           (Parser.exp Lexer.token l))))))))))))))
+    (PreEmit.f
+       (RegAlloc.f
+          (Simm.f
+             (AddId.f
+                (Virtual.f
+                   (closure_opt
+                      (Tace.f
+                         (Flatten.f
+                            (Closure.f
+                               (Alpha.f
+                                  (ConstFoldGlobals.f
+                                     (iter !limit
+                                        (Alpha.f
+                                           (KNormal.f
+                                              (Typing.f
+                                                 (Parser.exp Lexer.token l))))))))))))))))
   *)
 
 let string s = lexbuf stdout (Lexing.from_string s) (* 文字列をコンパイルして標準出力に表示する (caml2html: main_string) *)
@@ -165,11 +175,13 @@ let file f = (* ファイルをコンパイルしてファイルに出力する (caml2html: main_file
   let outchan_block = open_out (f ^ ".block") in
   let outchan_virtual = open_out (f ^ ".virtual") in
   let outchan_simm = open_out (f ^ ".simm") in
+  let outchan_addid = open_out (f ^ ".addid") in
   let outchan_regalloc = open_out (f ^ ".regalloc") in
+  let outchan_preemit = open_out (f ^ ".preemit") in
   try
     lexbuf outchan (Lexing.from_channel inchan) f outchan_parsed outchan_normalized outchan_alpha outchan_iterated outchan_cfg
                                                   outchan_closure outchan_flatten outchan_tace outchan_cls_opt outchan_block
-                                                  outchan_virtual outchan_simm outchan_regalloc;
+                                                  outchan_virtual outchan_simm outchan_addid outchan_regalloc outchan_preemit;
     close_in inchan;
     close_out outchan;
     close_out outchan_parsed;
@@ -184,11 +196,14 @@ let file f = (* ファイルをコンパイルしてファイルに出力する (caml2html: main_file
     close_out outchan_block;
     close_out outchan_virtual;
     close_out outchan_simm;
-    close_out outchan_regalloc
+    close_out outchan_addid;
+    close_out outchan_regalloc;
+    close_out outchan_preemit
   with e -> (close_in inchan; close_out outchan; close_out outchan_parsed; close_out outchan_normalized; close_out outchan_alpha;
              close_out outchan_iterated; close_out outchan_cfg; close_out outchan_closure;
              close_out outchan_flatten; close_out outchan_tace; close_out outchan_cls_opt; close_out outchan_block;
-             close_out outchan_virtual; close_out outchan_simm; close_out outchan_regalloc;
+             close_out outchan_virtual; close_out outchan_simm; close_out outchan_addid; close_out outchan_regalloc;
+             close_out outchan_preemit;
              raise e)
 
 (*

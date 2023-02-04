@@ -239,73 +239,73 @@ let print_closure_fundef oc tab_num ({ Closure.name = (Id.L(x), t); Closure.args
 let rec print_asm_exp oc tab_num e =
   print_tab oc tab_num;
   match e with
-  | Asm.Nop -> Printf.fprintf oc "Nop"
-  | Asm.Set(i) -> Printf.fprintf oc "Set (%d)" i
-  | Asm.SetL(L(x)) -> Printf.fprintf oc "SetL (%s)" x
-  | Asm.Mov(x) -> Printf.fprintf oc "Mov (%s)" x
-  | Asm.Neg(x) -> Printf.fprintf oc "Neg (%s)" x
-  | Asm.Add(x, V(y)) -> Printf.fprintf oc "Add (%s, %s)" x y
-  | Asm.Add(x, C(y)) -> Printf.fprintf oc "Add (%s, %d)" x y
-  | Asm.Sub(x, y) -> Printf.fprintf oc "Sub (%s, %s)" x y
-  | Asm.Mul(x, y) -> Printf.fprintf oc "Mul (%s, %s)" x y
-  | Asm.Div(x, y) -> Printf.fprintf oc "Div (%s, %s)" x y
-  | Asm.Ld(x, V(y)) -> Printf.fprintf oc "Ld (%s, %s)" x y
-  | Asm.Ld(x, C(y)) -> Printf.fprintf oc "Ld (%s, %d)" x y
-  | Asm.St(x, y, V(z)) -> Printf.fprintf oc "St (%s, %s, %s)" x y z
-  | Asm.St(x, y, C(z)) -> Printf.fprintf oc "St (%s, %s, %d)" x y z
-  | Asm.FMovD(x) -> Printf.fprintf oc "FMovD (%s)" x
-  | Asm.FNegD(x) -> Printf.fprintf oc "FNegD (%s)" x
-  | Asm.FAddD(x, y) -> Printf.fprintf oc "FAddD (%s, %s)" x y
-  | Asm.FSubD(x, y) -> Printf.fprintf oc "FSubD (%s, %s)" x y
-  | Asm.FMulD(x, y) -> Printf.fprintf oc "FMulD (%s, %s)" x y
-  | Asm.FDivD(x, y) -> Printf.fprintf oc "FDivD (%s, %s)" x y
-  | Asm.Sqrt(x) -> Printf.fprintf oc "Sqrt (%s)" x
-  | Asm.LdDF(x, V(y)) -> Printf.fprintf oc "LdDF (%s, %s)" x y
-  | Asm.LdDF(x, C(y)) -> Printf.fprintf oc "LdDF (%s, %d)" x y
-  | Asm.StDF(x, y, V(z)) -> Printf.fprintf oc "StDF (%s, %s, %s)" x y z
-  | Asm.StDF(x, y, C(z)) -> Printf.fprintf oc "StDF (%s, %s, %d)" x y z
-  | Asm.Comment(x) -> Printf.fprintf oc "Comment (%s)" x
-  | Asm.IfEq(x, y, e1, e2) -> Printf.fprintf oc "IfEq (\n"; print_tab oc (tab_num + 1); Printf.fprintf oc "%s,\n" x;
-                              print_tab oc (tab_num + 1); Printf.fprintf oc "%s,\n" y; print_asm_t oc (tab_num + 1) e1;
-                              Printf.fprintf oc ",\n"; print_asm_t oc (tab_num + 1) e2; Printf.fprintf oc "\n"; print_tab oc tab_num;
-                              Printf.fprintf oc ")"
-  | Asm.IfLE(x, y, e1, e2) -> Printf.fprintf oc "IfLE (\n"; print_tab oc (tab_num + 1); Printf.fprintf oc "%s,\n" x;
-                              print_tab oc (tab_num + 1); Printf.fprintf oc "%s,\n" y; print_asm_t oc (tab_num + 1) e1;
-                              Printf.fprintf oc ",\n"; print_asm_t oc (tab_num + 1) e2; Printf.fprintf oc "\n"; print_tab oc tab_num;
-                              Printf.fprintf oc ")"
-  | Asm.IfGE(x, y, e1, e2) -> Printf.fprintf oc "IfGE (\n"; print_tab oc (tab_num + 1); Printf.fprintf oc "%s,\n" x;
-                              print_tab oc (tab_num + 1); Printf.fprintf oc "%s,\n" y; print_asm_t oc (tab_num + 1) e1;
-                              Printf.fprintf oc ",\n"; print_asm_t oc (tab_num + 1) e2; Printf.fprintf oc "\n"; print_tab oc tab_num;
-                              Printf.fprintf oc ")"
-  | Asm.IfFEq(x, y, e1, e2) -> Printf.fprintf oc "IfFEq (\n"; print_tab oc (tab_num + 1); Printf.fprintf oc "%s,\n" x;
-                               print_tab oc (tab_num + 1); Printf.fprintf oc "%s,\n" y; print_asm_t oc (tab_num + 1) e1;
-                               Printf.fprintf oc ",\n"; print_asm_t oc (tab_num + 1) e2; Printf.fprintf oc "\n"; print_tab oc tab_num;
-                               Printf.fprintf oc ")"
-  | Asm.IfFLE(x, y, e1, e2) -> Printf.fprintf oc "IfFLE (\n"; print_tab oc (tab_num + 1); Printf.fprintf oc "%s,\n" x;
-                               print_tab oc (tab_num + 1); Printf.fprintf oc "%s,\n" y; print_asm_t oc (tab_num + 1) e1;
-                               Printf.fprintf oc ",\n"; print_asm_t oc (tab_num + 1) e2; Printf.fprintf oc "\n"; print_tab oc tab_num;
-                               Printf.fprintf oc ")"
-  | Asm.CallCls(x, ys, zs) -> Printf.fprintf oc "CallCls (\n"; print_tab oc (tab_num + 1); Printf.fprintf oc "%s,\n" x;
-                              print_tab oc (tab_num + 1); Printf.fprintf oc "["; print_list oc ys;
-                              Printf.fprintf oc "]\n"; print_tab oc (tab_num + 1); Printf.fprintf oc "["; print_list oc zs;
-                              Printf.fprintf oc "]\n"; print_tab oc tab_num; Printf.fprintf oc ")"
-  | Asm.CallDir(Id.L(x), ys, zs) -> Printf.fprintf oc "CallDir (\n"; print_tab oc (tab_num + 1); Printf.fprintf oc "Id.L (%s),\n" x;
-                                    print_tab oc (tab_num + 1); Printf.fprintf oc "["; print_list oc ys;
-                                    Printf.fprintf oc "]\n"; print_tab oc (tab_num + 1); Printf.fprintf oc "["; print_list oc zs;
-                                    Printf.fprintf oc "]\n"; print_tab oc tab_num;
-                                    Printf.fprintf oc ")"
-  | Asm.Save(x, y) -> Printf.fprintf oc "Save (%s, %s)" x y
-  | Asm.Restore(x) -> Printf.fprintf oc "Restore (%s)" x
+  | Asm.Nop(id) -> Printf.fprintf oc "%d Nop" id
+  | Asm.Set(i, id) -> Printf.fprintf oc "%d Set (%d)" id i
+  | Asm.SetL(L(x), id) -> Printf.fprintf oc "%d SetL (%s)" id x
+  | Asm.Mov(x, id) -> Printf.fprintf oc "%d Mov (%s)" id x
+  | Asm.Neg(x, id) -> Printf.fprintf oc "%d Neg (%s)" id x
+  | Asm.Add(x, V(y), id) -> Printf.fprintf oc "%d Add (%s, %s)" id x y
+  | Asm.Add(x, C(y), id) -> Printf.fprintf oc "%d Add (%s, %d)" id x y
+  | Asm.Sub(x, y, id) -> Printf.fprintf oc "%d Sub (%s, %s)" id x y
+  | Asm.Mul(x, y, id) -> Printf.fprintf oc "%d Mul (%s, %s)" id x y
+  | Asm.Div(x, y, id) -> Printf.fprintf oc "%d Div (%s, %s)" id x y
+  | Asm.Ld(x, V(y), id) -> Printf.fprintf oc "%d Ld (%s, %s)" id x y
+  | Asm.Ld(x, C(y), id) -> Printf.fprintf oc "%d Ld (%s, %d)" id x y
+  | Asm.St(x, y, V(z), id) -> Printf.fprintf oc "%d St (%s, %s, %s)" id x y z
+  | Asm.St(x, y, C(z), id) -> Printf.fprintf oc "%d St (%s, %s, %d)" id x y z
+  | Asm.FMovD(x, id) -> Printf.fprintf oc "%d FMovD (%s)" id x
+  | Asm.FNegD(x, id) -> Printf.fprintf oc "%d FNegD (%s)" id x
+  | Asm.FAddD(x, y, id) -> Printf.fprintf oc "%d FAddD (%s, %s)" id x y
+  | Asm.FSubD(x, y, id) -> Printf.fprintf oc "%d FSubD (%s, %s)" id x y
+  | Asm.FMulD(x, y, id) -> Printf.fprintf oc "%d FMulD (%s, %s)" id x y
+  | Asm.FDivD(x, y, id) -> Printf.fprintf oc "%d FDivD (%s, %s)" id x y
+  | Asm.Sqrt(x, id) -> Printf.fprintf oc "%d Sqrt (%s)" id x
+  | Asm.LdDF(x, V(y), id) -> Printf.fprintf oc "%d LdDF (%s, %s)" id x y
+  | Asm.LdDF(x, C(y), id) -> Printf.fprintf oc "%d LdDF (%s, %d)" id x y
+  | Asm.StDF(x, y, V(z), id) -> Printf.fprintf oc "%d StDF (%s, %s, %s)" id x y z
+  | Asm.StDF(x, y, C(z), id) -> Printf.fprintf oc "%d StDF (%s, %s, %d)" id x y z
+  | Asm.Comment(x, id) -> Printf.fprintf oc "%d Comment (%s)" id x
+  | Asm.IfEq(x, y, e1, e2, id) -> Printf.fprintf oc "%d IfEq (\n" id; print_tab oc (tab_num + 1); Printf.fprintf oc "%s,\n" x;
+                                  print_tab oc (tab_num + 1); Printf.fprintf oc "%s,\n" y; print_asm_t oc (tab_num + 1) e1;
+                                  Printf.fprintf oc ",\n"; print_asm_t oc (tab_num + 1) e2; Printf.fprintf oc "\n"; print_tab oc tab_num;
+                                  Printf.fprintf oc ")"
+  | Asm.IfLE(x, y, e1, e2, id) -> Printf.fprintf oc "%d IfLE (\n" id; print_tab oc (tab_num + 1); Printf.fprintf oc "%s,\n" x;
+                                  print_tab oc (tab_num + 1); Printf.fprintf oc "%s,\n" y; print_asm_t oc (tab_num + 1) e1;
+                                  Printf.fprintf oc ",\n"; print_asm_t oc (tab_num + 1) e2; Printf.fprintf oc "\n"; print_tab oc tab_num;
+                                  Printf.fprintf oc ")"
+  | Asm.IfGE(x, y, e1, e2, id) -> Printf.fprintf oc "%d IfGE (\n" id; print_tab oc (tab_num + 1); Printf.fprintf oc "%s,\n" x;
+                                  print_tab oc (tab_num + 1); Printf.fprintf oc "%s,\n" y; print_asm_t oc (tab_num + 1) e1;
+                                  Printf.fprintf oc ",\n"; print_asm_t oc (tab_num + 1) e2; Printf.fprintf oc "\n"; print_tab oc tab_num;
+                                  Printf.fprintf oc ")"
+  | Asm.IfFEq(x, y, e1, e2, id) -> Printf.fprintf oc "%d IfFEq (\n" id; print_tab oc (tab_num + 1); Printf.fprintf oc "%s,\n" x;
+                                  print_tab oc (tab_num + 1); Printf.fprintf oc "%s,\n" y; print_asm_t oc (tab_num + 1) e1;
+                                  Printf.fprintf oc ",\n"; print_asm_t oc (tab_num + 1) e2; Printf.fprintf oc "\n"; print_tab oc tab_num;
+                                  Printf.fprintf oc ")"
+  | Asm.IfFLE(x, y, e1, e2, id) -> Printf.fprintf oc "%d IfFLE (\n" id; print_tab oc (tab_num + 1); Printf.fprintf oc "%s,\n" x;
+                                  print_tab oc (tab_num + 1); Printf.fprintf oc "%s,\n" y; print_asm_t oc (tab_num + 1) e1;
+                                  Printf.fprintf oc ",\n"; print_asm_t oc (tab_num + 1) e2; Printf.fprintf oc "\n"; print_tab oc tab_num;
+                                  Printf.fprintf oc ")"
+  | Asm.CallCls(x, ys, zs, id) -> Printf.fprintf oc "%d CallCls (\n" id; print_tab oc (tab_num + 1); Printf.fprintf oc "%s,\n" x;
+                                  print_tab oc (tab_num + 1); Printf.fprintf oc "["; print_list oc ys;
+                                  Printf.fprintf oc "]\n"; print_tab oc (tab_num + 1); Printf.fprintf oc "["; print_list oc zs;
+                                  Printf.fprintf oc "]\n"; print_tab oc tab_num; Printf.fprintf oc ")"
+  | Asm.CallDir(Id.L(x), ys, zs, id) -> Printf.fprintf oc "%d CallDir (\n" id; print_tab oc (tab_num + 1); Printf.fprintf oc "Id.L (%s),\n" x;
+                                        print_tab oc (tab_num + 1); Printf.fprintf oc "["; print_list oc ys;
+                                        Printf.fprintf oc "]\n"; print_tab oc (tab_num + 1); Printf.fprintf oc "["; print_list oc zs;
+                                        Printf.fprintf oc "]\n"; print_tab oc tab_num;
+                                        Printf.fprintf oc ")"
+  | Asm.Save(x, y, id) -> Printf.fprintf oc "%d Save (%s, %s)" id x y
+  | Asm.Restore(x, id) -> Printf.fprintf oc "%d Restore (%s)" id x
 
 and print_asm_t oc tab_num e =
   print_tab oc tab_num;
   match e with
-  | Ans(exp, pos) -> Printf.fprintf oc "%d Ans (\n" pos; print_asm_exp oc (tab_num + 1) exp; Printf.fprintf oc "\n";
-                     print_tab oc tab_num; Printf.fprintf oc ")"
-  | Let((x, t), exp, e1, pos) -> Printf.fprintf oc "%d Let (\n" pos; print_tab oc (tab_num + 1); Printf.fprintf oc "(%s, " x;
-                                 print_type_t oc t; Printf.fprintf oc "),\n";
-                                 print_asm_exp oc (tab_num + 1) exp; Printf.fprintf oc ",\n"; print_asm_t oc (tab_num + 1) e1;
-                                 Printf.fprintf oc "\n"; print_tab oc tab_num; Printf.fprintf oc ")"
+  | Asm.Ans(exp, pos) -> Printf.fprintf oc "%d Ans (\n" pos; print_asm_exp oc (tab_num + 1) exp; Printf.fprintf oc "\n";
+                         print_tab oc tab_num; Printf.fprintf oc ")"
+  | Asm.Let((x, t), exp, e1, pos) -> Printf.fprintf oc "%d Let (\n" pos; print_tab oc (tab_num + 1); Printf.fprintf oc "(%s, " x;
+                                     print_type_t oc t; Printf.fprintf oc "),\n";
+                                     print_asm_exp oc (tab_num + 1) exp; Printf.fprintf oc ",\n"; print_asm_t oc (tab_num + 1) e1;
+                                     Printf.fprintf oc "\n"; print_tab oc tab_num; Printf.fprintf oc ")"
 
 let print_asm_data oc tab_num (Id.L(x), f, num) =
   print_tab oc tab_num;
@@ -319,6 +319,36 @@ let print_asm_fundef oc tab_num ({ Asm.name = Id.L(l); Asm.args = xs; Asm.fargs 
   print_tab oc (tab_num + 1); Printf.fprintf oc "fargs: "; List.iter (Printf.fprintf oc "%s, ") ys; Printf.fprintf oc "\n";
   print_tab oc (tab_num + 1); Printf.fprintf oc "body:\n"; print_asm_t oc (tab_num + 1) e; Printf.fprintf oc "\n";
   print_tab oc tab_num; Printf.fprintf oc ")\n"
+
+let print_riscv_t oc e =
+  match e with
+  | RiscV.Label(s) -> Printf.fprintf oc "%s:\n" s
+  | RiscV.Addi(x, y, i, p) -> Printf.fprintf oc "\taddi\t%s, %s, %d\t# %d\n" x y i p
+  | RiscV.Add(x, y, z, p) -> Printf.fprintf oc "\tadd\t\t%s, %s, %s\t# %d\n" x y z p
+  | RiscV.Sub(x, y, z, p) -> Printf.fprintf oc "\tsub\t\t%s, %s, %s\t# %d\n" x y z p
+  | RiscV.Mul(x, y, z, p) -> Printf.fprintf oc "\tmul\t\t%s, %s, %s\t# %d\n" x y z p
+  | RiscV.Div(x, y, z, p) -> Printf.fprintf oc "\tdiv\t\t%s, %s, %s\t# %d\n" x y z p
+  | RiscV.Lui(x, i, p) ->    Printf.fprintf oc "\tlui\t\t%s, %d\t# %d\n" x i p
+  | RiscV.Ori(x, y, i, p) -> Printf.fprintf oc "\tori\t\t%s, %s, %d\t# %d\n" x y i p
+  | RiscV.LuiLb(x, l, p) ->  Printf.fprintf oc "\tlui\t\t%s, %%hi(%s)\t# %d\n" x l p
+  | RiscV.OriLb(x, y, l, p) -> Printf.fprintf oc "\tori\t\t%s, %s, %%lo(%s)\t# %d\n" x y l p
+  | RiscV.Lw(x, i, y, p) ->   Printf.fprintf oc "\tlw\t\t%s, %d(%s)\t# %d\n" x i y p
+  | RiscV.Sw(x, i, y, p) ->   Printf.fprintf oc "\tsw\t\t%s, %d(%s)\t# %d\n" x i y p
+  | RiscV.FAdd(x, y, z, p) -> Printf.fprintf oc "\tfadd\t%s, %s, %s\t# %d\n" x y z p
+  | RiscV.FSub(x, y, z, p) -> Printf.fprintf oc "\tfsub\t%s, %s, %s\t# %d\n" x y z p
+  | RiscV.FMul(x, y, z, p) -> Printf.fprintf oc "\tfmul\t%s, %s, %s\t# %d\n" x y z p
+  | RiscV.FDiv(x, y, z, p) -> Printf.fprintf oc "\tfdiv\t%s, %s, %s\t# %d\n" x y z p
+  | RiscV.FSqrt(x, y, p) ->   Printf.fprintf oc "\tfsqrt\t%s, %s\t# %d\n" x y p
+  | RiscV.FLw(x, i, y, p) -> Printf.fprintf oc "\tflw\t\t%s, %d(%s)\t# %d\n" x i y p
+  | RiscV.FSw(x, i, y, p) -> Printf.fprintf oc "\tfsw\t\t%s, %d(%s)\t# %d\n" x i y p
+  | RiscV.Comment(s, p) ->   Printf.fprintf oc "\t# %s\t# %d\n" s p
+  | RiscV.Jal(x, l, p) ->    Printf.fprintf oc "\tjal\t\t%s, %s\t# %d\n" x l p
+  | RiscV.Jalr(x, y, i, p) -> Printf.fprintf oc "\tjalr\t%s, %s, %d\t# %d\n" x y i p
+  | RiscV.Beq(x, y, l, p) -> Printf.fprintf oc "\tbeq\t\t%s, %s, %s\t# %d\n" x y l p
+  | RiscV.Ble(x, y, l, p) -> Printf.fprintf oc "\tble\t\t%s, %s, %s\t# %d\n" x y l p
+  | RiscV.Bge(x, y, l, p) -> Printf.fprintf oc "\tbge\t\t%s, %s, %s\t# %d\n" x y l p
+  | RiscV.Feq(x, y, l, p) -> Printf.fprintf oc "\tfeq\t\t%s, %s, %s\t# %d\n" x y l p
+  | RiscV.Fle(x, y, l, p) -> Printf.fprintf oc "\tfle\t\t%s, %s, %s\t# %d\n" x y l p
 
 let print_block oc graph =
   let node_list = M.bindings graph in
