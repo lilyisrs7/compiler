@@ -33,11 +33,36 @@ and g' env = function
   | StDF(x, y, V(z), _) -> id := !id + 1; (StDF(x, y, V(z), !id), !id)
   | StDF(x, y, C(z), _) -> id := !id + 1; (StDF(x, y, C(z), !id), !id)
   | Comment(x, _) -> id := !id + 1; (Comment(x, !id), !id)
-  | IfEq(x, y, e1, e2, _) -> id := !id + 1; (IfEq(x, y, g env e1, g env e2, !id), !id)
-  | IfLE(x, y, e1, e2, _) -> id := !id + 1; (IfLE(x, y, g env e1, g env e2, !id), !id)
-  | IfGE(x, y, e1, e2, _) -> id := !id + 1; (IfGE(x, y, g env e1, g env e2, !id), !id)
-  | IfFEq(x, y, e1, e2, _) -> id := !id + 1; (IfFEq(x, y, g env e1, g env e2, !id), !id)
-  | IfFLE(x, y, e1, e2, _) -> id := !id + 1; (IfFLE(x, y, g env e1, g env e2, !id), !id)
+  | IfEq(x, y, e1, e2, _) ->
+      let id' = !id + 1 in
+      id := id';
+      let e1' = g env e1 in
+      let e2' = g env e2 in
+      (IfEq(x, y, e1', e2', id'), id')
+  | IfLE(x, y, e1, e2, _) ->
+      let id' = !id + 1 in
+      id := id';
+      let e1' = g env e1 in
+      let e2' = g env e2 in
+      (IfLE(x, y, e1', e2', id'), id')
+  | IfGE(x, y, e1, e2, _) ->
+      let id' = !id + 1 in
+      id := id';
+      let e1' = g env e1 in
+      let e2' = g env e2 in
+      (IfGE(x, y, e1', e2', id'), id')
+  | IfFEq(x, y, e1, e2, _) ->
+      let id' = !id + 1 in
+      id := id';
+      let e1' = g env e1 in
+      let e2' = g env e2 in
+      (IfFEq(x, y, e1', e2', id'), id')
+  | IfFLE(x, y, e1, e2, _) ->
+      let id' = !id + 1 in
+      id := id';
+      let e1' = g env e1 in
+      let e2' = g env e2 in
+      (IfFLE(x, y, e1', e2', id'), id')
   | CallCls(x, ys, zs, _) ->
       List.iter (fun y -> if M.mem y env then func_arg_id := M.find y env :: !func_arg_id) ys;
       List.iter (fun z -> if M.mem z env then func_arg_id := M.find z env :: !func_arg_id) zs;
