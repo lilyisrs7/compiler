@@ -311,12 +311,13 @@ let print_asm_data oc tab_num (Id.L(x), f, num) =
   print_tab oc tab_num;
   Printf.fprintf oc "data (Id.L (%s), %f, %d)\n" x f num
 
-let print_asm_fundef oc tab_num ({ Asm.name = Id.L(l); Asm.args = xs; Asm.fargs = ys; Asm.body = e; Asm.ret = _ }) =
+let print_asm_fundef oc tab_num ({ Asm.name = Id.L(l); Asm.args = xs; Asm.fargs = ys; Asm.body = e; Asm.ret = t }) =
   print_tab oc tab_num;
   Printf.fprintf oc "fundef (\n";
   print_tab oc (tab_num + 1); Printf.fprintf oc "name: Id.L(%s)\n" l;
   print_tab oc (tab_num + 1); Printf.fprintf oc "args: "; List.iter (Printf.fprintf oc "%s, ") xs; Printf.fprintf oc "\n";
   print_tab oc (tab_num + 1); Printf.fprintf oc "fargs: "; List.iter (Printf.fprintf oc "%s, ") ys; Printf.fprintf oc "\n";
+  print_tab oc (tab_num + 1); Printf.fprintf oc "ret: "; print_type_t oc t; Printf.fprintf oc "\n";
   print_tab oc (tab_num + 1); Printf.fprintf oc "body:\n"; print_asm_t oc (tab_num + 1) e; Printf.fprintf oc "\n";
   print_tab oc tab_num; Printf.fprintf oc ")\n"
 
