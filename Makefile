@@ -70,7 +70,7 @@ test/%main.ml: library.ml test/%.ml
 	cat library.ml >> $@
 	cat test/$*.ml >> $@
 test/%.s: $(RESULT) test/%main.ml
-	./$(RESULT) -inline 40 -printiter test/$*main
+	./$(RESULT) -inline 10 -nocfg -printiter test/$*main
 test/%: test/%.s libmincaml.S stub.c
 	$(CC) $(CFLAGS) -m32 $^ -lm -o $@
 test/%.res: test/%
