@@ -2,8 +2,8 @@ open Asm
 open RegAlloc
 open AddId
 
-let stackset = ref S.empty (* ã™ã§ã«Saveã•ã‚ŒãŸå¤‰æ•°ã®é›†åˆ (caml2html: emit_stackset) *)
-let stackmap = ref [] (* Saveã•ã‚ŒãŸå¤‰æ•°ã®ã€ã‚¹ã‚¿ãƒƒã‚¯ã«ãŠã‘ã‚‹ä½ç½® (caml2html: emit_stackmap) *)
+let stackset = ref S.empty (* ¤¹¤Ç¤ËSave¤µ¤ì¤¿ÊÑ¿ô¤Î½¸¹ç (caml2html: emit_stackset) *)
+let stackmap = ref [] (* Save¤µ¤ì¤¿ÊÑ¿ô¤Î¡¢¥¹¥¿¥Ã¥¯¤Ë¤ª¤±¤ë°ÌÃÖ (caml2html: emit_stackmap) *)
 let save x =
   stackset := S.add x !stackset;
   if not (List.mem x !stackmap) then
@@ -22,7 +22,7 @@ let pp_id_or_imm = function
   | V(x) -> x
   | C(i) -> string_of_int i
 
-(* é–¢æ•°å‘¼ã³å‡ºã—ã®ãŸã‚ã«å¼•æ•°ã‚’ä¸¦ã¹æ›¿ãˆã‚‹(register shuffling) (caml2html: emit_shuffle) *)
+(* ´Ø¿ô¸Æ¤Ó½Ð¤·¤Î¤¿¤á¤Ë°ú¿ô¤òÊÂ¤ÙÂØ¤¨¤ë(register shuffling) (caml2html: emit_shuffle) *)
 let rec shuffle sw xys =
   (* remove identical moves *)
   let _, xys = List.partition (fun (x, y) -> x = y) xys in
@@ -41,10 +41,10 @@ let content = ref []
 
 let find x map = if M.mem x map then M.find x map else x
 
-type dest = Tail | NonTail of Id.t (* æœ«å°¾ã‹ã©ã†ã‹ã‚’è¡¨ã™ãƒ‡ãƒ¼ã‚¿åž‹ (caml2html: emit_dest) *)
-let rec g repl = function (* å‘½ä»¤åˆ—ã®ã‚¢ã‚»ãƒ³ãƒ–ãƒªç”Ÿæˆ (caml2html: emit_g) *)
+type dest = Tail | NonTail of Id.t (* ËöÈø¤«¤É¤¦¤«¤òÉ½¤¹¥Ç¡¼¥¿·¿ (caml2html: emit_dest) *)
+let rec g repl = function (* Ì¿ÎáÎó¤Î¥¢¥»¥ó¥Ö¥êÀ¸À® (caml2html: emit_g) *)
   | dest, Ans(exp, pos) -> g' repl pos (dest, exp)
-  (* æ—¢ã«å®šæ•°ãƒ¬ã‚¸ã‚¹ã‚¿ã«ãƒ­ãƒ¼ãƒ‰ã•ã‚ŒãŸfloatã®å‡¦ç† *)
+  (* ´û¤ËÄê¿ô¥ì¥¸¥¹¥¿¤Ë¥í¡¼¥É¤µ¤ì¤¿float¤Î½èÍý *)
   | NonTail(w), Let((x, Type.Int), SetL(Id.L(y), _), Ans(LdDF(z, C(0), _), pos1), pos2) when x = z && M.mem y !loaded_labels ->
       content := !content @ [RiscV.FAdd(w, reg_fzero, M.find y !loaded_labels, pos2)]
   | Tail, Let((x, Type.Int), SetL(Id.L(y), _), Ans(LdDF(z, C(0), _), pos1), pos2) when x = z && M.mem y !loaded_labels ->
@@ -54,7 +54,7 @@ let rec g repl = function (* å‘½ä»¤åˆ—ã®ã‚¢ã‚»ãƒ³ãƒ–ãƒªç”Ÿæˆ (caml2html: emit_
       if List.mem id !func_arg_id then content := !content @ [RiscV.FAdd(x_, reg_fzero, yreg, pos2)]
       else Format.eprintf "deleted fadd %s %s %s %d\n" x_ reg_fzero yreg pos2;
       g (M.add x_ yreg (M.remove x repl)) (dest, e)
-  (* set(0)ã®å‡¦ç† *)
+  (* set(0)¤Î½èÍý *)
   | dest, Let((x, Type.Int), Set(0, id), e, pos) ->
       if List.mem id !func_arg_id then content := !content @ [RiscV.Addi(x, reg_zero, 0, pos)]
       else Format.eprintf "deleted addi %s %s 0 %d\n" x reg_zero pos;
@@ -62,17 +62,17 @@ let rec g repl = function (* å‘½ä»¤åˆ—ã®ã‚¢ã‚»ãƒ³ãƒ–ãƒªç”Ÿæˆ (caml2html: emit_
   | dest, Let((x, t), exp, e, pos) ->
       g' repl pos (NonTail(x), exp);
       g (M.remove x repl) (dest, e)
-and g' repl pos = function (* å„å‘½ä»¤ã®ã‚¢ã‚»ãƒ³ãƒ–ãƒªç”Ÿæˆ (caml2html: emit_gprime) *)
-  (* æœ«å°¾ã§ãªã‹ã£ãŸã‚‰è¨ˆç®—çµæžœã‚’destã«ã‚»ãƒƒãƒˆ (caml2html: emit_nontail) *)
+and g' repl pos = function (* ³ÆÌ¿Îá¤Î¥¢¥»¥ó¥Ö¥êÀ¸À® (caml2html: emit_gprime) *)
+  (* ËöÈø¤Ç¤Ê¤«¤Ã¤¿¤é·×»»·ë²Ì¤òdest¤Ë¥»¥Ã¥È (caml2html: emit_nontail) *)
   | NonTail(_), Nop(_) -> ()
   | NonTail(x), Set(i, _) ->
-      if -65536 <= i && i <= 65535 then content := !content @ [RiscV.Addi(x, reg_zero, i, pos)] (* å³å€¤ã‚’ãƒ¬ã‚¸ã‚¹ã‚¿ã«å…¥ã‚Œã‚‹ *)
+      if -65536 <= i && i <= 65535 then content := !content @ [RiscV.Addi(x, reg_zero, i, pos)] (* Â¨ÃÍ¤ò¥ì¥¸¥¹¥¿¤ËÆþ¤ì¤ë *)
       else
         content := !content @ [RiscV.Lui(x, i, pos); RiscV.Ori(x, reg_zero, i, pos)]
-  | NonTail(x), SetL(Id.L(y), _) -> (* ãƒ©ãƒ™ãƒ«ã‹ã‚‰ãƒ¬ã‚¸ã‚¹ã‚¿ã«å€¤ã‚’ç§»ã™ *)
+  | NonTail(x), SetL(Id.L(y), _) -> (* ¥é¥Ù¥ë¤«¤é¥ì¥¸¥¹¥¿¤ËÃÍ¤ò°Ü¤¹ *)
       content := !content @ [RiscV.LuiLb(x, y, pos); RiscV.OriLb(x, reg_zero, y, pos)]
   | NonTail(x), Mov(y, _) -> if x <> y then content := !content @ [RiscV.Addi(x, find y repl, 0, pos)]
-  | NonTail(x), Neg(y, _) -> content := !content @ [RiscV.Sub(x, reg_zero, find y repl, pos)] (* ç¬¦å·åè»¢ *)
+  | NonTail(x), Neg(y, _) -> content := !content @ [RiscV.Sub(x, reg_zero, find y repl, pos)] (* Éä¹æÈ¿Å¾ *)
   | NonTail(x), Add(y, V(z), _) -> content := !content @ [RiscV.Add(x, find y repl, find z repl, pos)]
   | NonTail(x), Add(y, C(z), _) -> content := !content @ [RiscV.Addi(x, find y repl, z, pos)]
   | NonTail(x), Sub(y, z, _) -> content := !content @ [RiscV.Sub(x, find y repl, find z repl, pos)]
@@ -87,7 +87,7 @@ and g' repl pos = function (* å„å‘½ä»¤ã®ã‚¢ã‚»ãƒ³ãƒ–ãƒªç”Ÿæˆ (caml2html: emit
        | C(z) -> content := !content @ [RiscV.Sw(find x repl, z, find y repl, pos)]
        | _ -> failwith "second arg of St is not int")
   | NonTail(x), FMovD(y, _) -> if x <> y then content := !content @ [RiscV.FAdd(x, reg_fzero, find y repl, pos)]
-  | NonTail(x), FNegD(y, _) -> content := !content @ [RiscV.FSub(x, reg_fzero, find y repl, pos)] (* ç¬¦å·åè»¢ *)
+  | NonTail(x), FNegD(y, _) -> content := !content @ [RiscV.FSub(x, reg_fzero, find y repl, pos)] (* Éä¹æÈ¿Å¾ *)
   | NonTail(x), FAddD(y, z, _) -> content := !content @ [RiscV.FAdd(x, find y repl, find z repl, pos)]
   | NonTail(x), FSubD(y, z, _) -> content := !content @ [RiscV.FSub(x, find y repl, find z repl, pos)]
   | NonTail(x), FMulD(y, z, _) -> content := !content @ [RiscV.FMul(x, find y repl, find z repl, pos)]
@@ -102,18 +102,18 @@ and g' repl pos = function (* å„å‘½ä»¤ã®ã‚¢ã‚»ãƒ³ãƒ–ãƒªç”Ÿæˆ (caml2html: emit
        | C(z) -> content := !content @ [RiscV.FSw(find x repl, z, find y repl, pos)]
        | _ -> failwith "second arg of StDF is not int")
   | NonTail(_), Comment(s, _) -> content := !content @ [RiscV.Comment(s, pos)]
-  (* é€€é¿ã®ä»®æƒ³å‘½ä»¤ã®å®Ÿè£… (caml2html: emit_save) *)
+  (* ÂàÈò¤Î²¾ÁÛÌ¿Îá¤Î¼ÂÁõ (caml2html: emit_save) *)
   | NonTail(_), Save(x, y, _) when List.mem x allregs && not (S.mem y !stackset) ->
       save y; content := !content @ [RiscV.Sw(find x repl, - (offset y), reg_sp, pos)]
   | NonTail(_), Save(x, y, _) when List.mem x allfregs && not (S.mem y !stackset) ->
       save y; content := !content @ [RiscV.FSw(find x repl, - (offset y), reg_sp, pos)]
   | NonTail(_), Save(x, y, _) -> assert (S.mem y !stackset); ()
-  (* å¾©å¸°ã®ä»®æƒ³å‘½ä»¤ã®å®Ÿè£… (caml2html: emit_restore) *)
+  (* Éüµ¢¤Î²¾ÁÛÌ¿Îá¤Î¼ÂÁõ (caml2html: emit_restore) *)
   | NonTail(x), Restore(y, _) when List.mem x allregs -> content := !content @ [RiscV.Lw(x, - (offset y), reg_sp, pos)]
   | NonTail(x), Restore(y, _) ->
       assert (List.mem x allfregs);
       content := !content @ [RiscV.FLw(x, - (offset y), reg_sp, pos)]
-  (* æœ«å°¾ã ã£ãŸã‚‰è¨ˆç®—çµæžœã‚’ç¬¬ä¸€ãƒ¬ã‚¸ã‚¹ã‚¿ã«ã‚»ãƒƒãƒˆã—ã¦ret (caml2html: emit_tailret) *)
+  (* ËöÈø¤À¤Ã¤¿¤é·×»»·ë²Ì¤òÂè°ì¥ì¥¸¥¹¥¿¤Ë¥»¥Ã¥È¤·¤Æret (caml2html: emit_tailret) *)
   | Tail, (Nop _ | St _ | StDF _ | Comment _ | Save _ as exp) ->
       g' repl pos (NonTail(Id.gentmp Type.Unit), exp);
       content := !content @ [RiscV.Jalr(reg_zero, reg_ra, 0, pos)]
@@ -149,11 +149,11 @@ and g' repl pos = function (* å„å‘½ä»¤ã®ã‚¢ã‚»ãƒ³ãƒ–ãƒªç”Ÿæˆ (caml2html: emit
       g'_non_tail_if (NonTail(z)) x y e1 e2 "feq" repl pos
   | NonTail(z), IfFLE(x, y, e1, e2, _) ->
       g'_non_tail_if (NonTail(z)) x y e1 e2 "fle" repl pos
-  (* é–¢æ•°å‘¼ã³å‡ºã—ã®ä»®æƒ³å‘½ä»¤ã®å®Ÿè£… (caml2html: emit_call) *)
-  | Tail, CallCls(x, ys, zs, _) -> (* æœ«å°¾å‘¼ã³å‡ºã— (caml2html: emit_tailcall) *)
+  (* ´Ø¿ô¸Æ¤Ó½Ð¤·¤Î²¾ÁÛÌ¿Îá¤Î¼ÂÁõ (caml2html: emit_call) *)
+  | Tail, CallCls(x, ys, zs, _) -> (* ËöÈø¸Æ¤Ó½Ð¤· (caml2html: emit_tailcall) *)
       g'_args [(x, reg_cl)] ys zs repl pos;
       content := !content @ [RiscV.Lw(reg_sw, 0, reg_cl, pos); RiscV.Jalr(reg_zero, reg_sw, 0, pos)]
-  | Tail, CallDir(Id.L(x), ys, zs, _) -> (* æœ«å°¾å‘¼ã³å‡ºã— *)
+  | Tail, CallDir(Id.L(x), ys, zs, _) -> (* ËöÈø¸Æ¤Ó½Ð¤· *)
       g'_args [] ys zs repl pos; content := !content @ [RiscV.Jal(reg_zero, x, pos)]
   | NonTail(a), CallCls(x, ys, zs, _) ->
       g'_args [(x, reg_cl)] ys zs repl pos;
@@ -235,7 +235,7 @@ let f (Prog(data, fundefs, e)) =
   Format.eprintf "\n"; *)
   let label_zero = ref "" in
   let cmp_dict = [(1.0, 1); (4.0, 2); (4.5, 3); (0.01, 4); (-0.2, 5); (-0.1, 6); (100000000.0, 7); (-0.5, 8); (150.0, 9); (-150.0, 10);
-                  (0.5, 11); (-4.5, 12)] in (* lui/oriã«ã‚ˆã‚Šãƒ­ãƒ¼ãƒ‰ã•ã‚Œã‚‹å›žæ•°ã®å¤šã„é † *)
+                  (0.5, 11); (-4.5, 12)] in (* lui/ori¤Ë¤è¤ê¥í¡¼¥É¤µ¤ì¤ë²ó¿ô¤ÎÂ¿¤¤½ç *)
   let cmp (Id.L(_), d1, _) (Id.L(_), d2, _) =
     compare (try List.assoc d1 cmp_dict with Not_found -> 40) (try List.assoc d2 cmp_dict with Not_found -> 40) in
   let data = List.sort cmp data in
