@@ -2,6 +2,8 @@ open Asm
 open RegAlloc
 open AddId
 
+let cfg_flag = ref true
+
 let stackset = ref S.empty (* すでにSaveされた変数の集合 (caml2html: emit_stackset) *)
 let stackmap = ref [] (* Saveされた変数の、スタックにおける位置 (caml2html: emit_stackmap) *)
 let save x =
@@ -264,11 +266,17 @@ let f (Prog(data, fundefs, e)) =
                                   else ld_label_noprint reg_for_label tl2 in
   ld_label_noprint reg_for_label (List.map (fun (Id.L(x), _, _) -> x) data);
   List.iter h fundefs;
-  content := !content @ [RiscV.Label("min_caml_start");
-                         RiscV.Addi(reg_sp, reg_sp, -4, 0); RiscV.Addi(reg_four, reg_zero, 4, 0);
-                         RiscV.Addi(reg_hp, reg_zero, ConstFoldGlobals.addr_init, 0);
-                         RiscV.LuiLb(regs.(0), !label_zero, 0); RiscV.OriLb(regs.(0), reg_zero, !label_zero, 0);
-                         RiscV.FLw(reg_fzero, 0, regs.(0), 0)];
+  if !cfg_flag then
+    content := !content @ [RiscV.Label("min_caml_start");
+                           RiscV.Addi(reg_sp, reg_sp, -4, 0); RiscV.Addi(reg_four, reg_zero, 4, 0);
+                           RiscV.Addi(reg_hp, reg_zero, ConstFoldGlobals.addr_init, 0);
+                           RiscV.LuiLb(regs.(0), !label_zero, 0); RiscV.OriLb(regs.(0), reg_zero, !label_zero, 0);
+                           RiscV.FLw(reg_fzero, 0, regs.(0), 0)]
+  else
+    content := !content @ [RiscV.Label("min_caml_start");
+                           RiscV.Addi(reg_sp, reg_sp, -4, 0); RiscV.Addi(reg_four, reg_zero, 4, 0);
+                           RiscV.LuiLb(regs.(0), !label_zero, 0); RiscV.OriLb(regs.(0), reg_zero, !label_zero, 0);
+                           RiscV.FLw(reg_fzero, 0, regs.(0), 0)];
   let rec ld_label reg_for_label data =
     match reg_for_label, data with
     | [], [] -> ()
