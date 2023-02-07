@@ -238,18 +238,26 @@ and g'_if dest cont regenv exp constr e1 e2 pos = (* ifのレジスタ割り当て (caml2
 				with Not_found -> regenv')
 			M.empty
 			(fv cont) in
-	(List.fold_left
+	(* (List.fold_left
 		 (fun e x ->
 			 if x = fst dest || not (M.mem x regenv) || M.mem x regenv' then e else
 			 seq(Save(M.find x regenv, x, -1), e)) (* そうでない変数は分岐直前にセーブ *)
 		 (Ans(constr e1' e2', pos))
 		 (fv cont),
-	 regenv', S.union use_reg1 use_reg2)
+	 regenv', S.union use_reg1 use_reg2) *)
+	List.fold_left
+	 	(fun (e, regenv', use_reg) x ->
+		 	if x = fst dest || not (M.mem x regenv) || M.mem x regenv' then (e, regenv', use_reg) else
+			if not (S.mem (M.find x regenv) use_reg) then (e, M.add x (M.find x regenv) regenv', use_reg) else
+		 	seq(Save(M.find x regenv, x, -1), e), regenv', use_reg) (* そうでない変数は分岐直前にセーブ *)
+	 	(Ans(constr e1' e2', pos), regenv', S.union (S.of_list [reg_cl; reg_sw; reg_fsw]) (S.union use_reg1 use_reg2))
+	 	(fv cont)
 and g'_call dest cont regenv constr x ys zs id pos = (* 関数呼び出しのレジスタ割り当て (caml2html: regalloc_call) *)
 	let yrs = List.map (fun y -> find y Type.Int regenv) ys in
 	let zrs = List.map (fun z -> find z Type.Float regenv) zs in
+	let use_reg = S.union (S.of_list [reg_cl; reg_sw; reg_fsw]) (S.of_list (yrs @ zrs)) in
 	if M.mem x !func_use_reg then
-		let use_reg = S.union (S.of_list (yrs @ zrs)) (M.find x !func_use_reg) in
+		let use_reg = S.union use_reg (M.find x !func_use_reg) in
 		List.fold_left
 	 		(fun (e, regenv', use_reg) y ->
 				 if y = fst dest || not (M.mem y regenv) then (e, regenv', use_reg) else
@@ -258,7 +266,6 @@ and g'_call dest cont regenv constr x ys zs id pos = (* 関数呼び出しのレジスタ割
 	 		(Ans(constr yrs zrs, pos), M.empty, use_reg)
 	 		(fv cont)
 	else (* 再帰関数の中身の場合 *)
-		let use_reg = S.of_list (yrs @ zrs) in
 		List.fold_left
 	 		(fun (e, regenv', use_reg) y ->
 				 if y = fst dest || not (M.mem y regenv) then (e, regenv', use_reg) else
