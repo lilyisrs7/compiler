@@ -1,7 +1,6 @@
 open Asm
 
 let used_regs = ref S.empty
-let func_use_reg = ref M.empty (* 各関数内で使用されるレジスタ *)
 
 (* for register coalescing *)
 (* [XXX] Callがあったら、そこから先は無意味というか逆効果なので追わない。
@@ -134,7 +133,7 @@ let rec g dest cont regenv = function (* 命令列のレジスタ割り当て (caml2html: re
 			(* Format.eprintf "%s\n" x; *)
 			assert (not (M.mem x regenv));
 			let cont' = concat e dest cont in
-			let (e1', regenv1, use_reg1) = g'_and_restore xt cont' regenv exp pos in
+			let (e1', regenv1) = g'_and_restore xt cont' regenv exp pos in
 			(*let (_call, targets) = target x dest cont' in
 			let sources = source t e1' in*)
 			(* レジスタ間のmovよりメモリを介するswapのほうが問題なので、sourcesよりtargetsを優先 *)
@@ -142,71 +141,38 @@ let rec g dest cont regenv = function (* 命令列のレジスタ割り当て (caml2html: re
 			(match alloc dest cont' regenv1 x t with
 			| Spill(y) ->
 					let r = M.find y regenv1 in
-					let (e2', regenv2, use_reg2) = g dest cont (add x r (M.remove y regenv1)) e in
+					let (e2', regenv2) = g dest cont (add x r (M.remove y regenv1)) e in
 					let save =
 						try Save(M.find y regenv, y, -1)
 						with Not_found -> Nop(-1) in            
-					(seq(save, concat e1' (r, t) e2'), regenv2, S.union use_reg1 use_reg2)
+					(seq(save, concat e1' (r, t) e2'), regenv2)
 			| Alloc(r) ->
-					let (e2', regenv2, use_reg2) = g dest cont (add x r regenv1) e in
-					(concat e1' (r, t) e2', regenv2, S.add r (S.union use_reg1 use_reg2)))
+					let (e2', regenv2) = g dest cont (add x r regenv1) e in
+					(concat e1' (r, t) e2', regenv2))
 and g'_and_restore dest cont regenv exp pos = (* 使用される変数をスタックからレジスタへRestore (caml2html: regalloc_unspill) *)
 	try g' dest cont regenv pos exp
 	with NoReg(x, t) ->
 		((* Format.eprintf "restoring %s@." x; *)
 		 g dest cont regenv (Let((x, t), Restore(x, -1), Ans(exp, pos), pos)))
 and g' dest cont regenv pos = function (* 各命令のレジスタ割り当て (caml2html: regalloc_gprime) *)
-	| Nop _ | Set _ | SetL _ | Comment _ | Restore _ as exp -> (Ans(exp, pos), regenv, S.empty)
-	| Mov(x, id) -> let xr = find x Type.Int regenv in (Ans(Mov(xr, id), pos), regenv, S.singleton xr)
-	| Neg(x, id) -> let xr = find x Type.Int regenv in (Ans(Neg(xr, id), pos), regenv, S.singleton xr)
-	| Add(x, V(y), id) ->
-			let xr = find x Type.Int regenv in
-			let yr = find y Type.Int regenv in
-			(Ans(Add(xr, V(yr), id), pos), regenv, S.of_list [xr; yr])
-	| Add(x, C(y), id) ->
-			let xr = find x Type.Int regenv in
-			(Ans(Add(xr, C(y), id), pos), regenv, S.singleton xr)
-	| Sub(x, y, id) ->
-			let xr = find x Type.Int regenv in
-			let yr = find y Type.Int regenv in
-			(Ans(Sub(xr, yr, id), pos), regenv, S.of_list [xr; yr])
-	| Mul(x, y, id) ->
-			let xr = find x Type.Int regenv in
-			let yr = find y Type.Int regenv in
-			(Ans(Mul(xr, yr, id), pos), regenv, S.of_list [xr; yr])
-	| Div(x, y, id) ->
-			let xr = find x Type.Int regenv in
-			let yr = find y Type.Int regenv in
-			(Ans(Div(xr, yr, id), pos), regenv, S.of_list [xr; yr])
-	| Ld(x, y', id) -> let xr = find x Type.Int regenv in (Ans(Ld(xr, find' y' regenv, id), pos), regenv, S.singleton xr)
-	| St(x, y, z', id) ->
-			let xr = find x Type.Int regenv in
-			let yr = find y Type.Int regenv in
-			(Ans(St(xr, yr, find' z' regenv, id), pos), regenv, S.of_list [xr; yr])
-	| FMovD(x, id) -> let xr = find x Type.Float regenv in (Ans(FMovD(xr, id), pos), regenv, S.singleton xr)
-	| FNegD(x, id) -> let xr = find x Type.Float regenv in (Ans(FNegD(xr, id), pos), regenv, S.singleton xr)
-	| FAddD(x, y, id) ->
-			let xr = find x Type.Float regenv in
-			let yr = find y Type.Float regenv in
-			(Ans(FAddD(xr, yr, id), pos), regenv, S.of_list [xr; yr])
-	| FSubD(x, y, id) ->
-			let xr = find x Type.Float regenv in
-			let yr = find y Type.Float regenv in
-			(Ans(FSubD(xr, yr, id), pos), regenv, S.of_list [xr; yr])
-	| FMulD(x, y, id) ->
-			let xr = find x Type.Float regenv in
-			let yr = find y Type.Float regenv in
-			(Ans(FMulD(xr, yr, id), pos), regenv, S.of_list [xr; yr])
-	| FDivD(x, y, id) ->
-			let xr = find x Type.Float regenv in
-			let yr = find y Type.Float regenv in
-			(Ans(FDivD(xr, yr, id), pos), regenv, S.of_list [xr; yr])
-	| Sqrt(x, id) -> let xr = find x Type.Float regenv in (Ans(Sqrt(xr, id), pos), regenv, S.singleton xr)
-	| LdDF(x, y', id) -> let xr = find x Type.Int regenv in (Ans(LdDF(xr, find' y' regenv, id), pos), regenv, S.singleton xr)
-	| StDF(x, y, z', id) ->
-			let xr = find x Type.Float regenv in
-			let yr = find y Type.Int regenv in
-			(Ans(StDF(xr, yr, find' z' regenv, id), pos), regenv, S.of_list [xr; yr])
+	| Nop _ | Set _ | SetL _ | Comment _ | Restore _ as exp -> (Ans(exp, pos), regenv)
+	| Mov(x, id) -> (Ans(Mov(find x Type.Int regenv, id), pos), regenv)
+	| Neg(x, id) -> (Ans(Neg(find x Type.Int regenv, id), pos), regenv)
+	| Add(x, y', id) -> (Ans(Add(find x Type.Int regenv, find' y' regenv, id), pos), regenv)
+	| Sub(x, y, id) -> (Ans(Sub(find x Type.Int regenv, find y Type.Int regenv, id), pos), regenv)
+	| Mul(x, y, id) -> (Ans(Mul(find x Type.Int regenv, find y Type.Int regenv, id), pos), regenv)
+	| Div(x, y, id) -> (Ans(Div(find x Type.Int regenv, find y Type.Int regenv, id), pos), regenv)
+	| Ld(x, y', id) -> (Ans(Ld(find x Type.Int regenv, find' y' regenv, id), pos), regenv)
+	| St(x, y, z', id) -> (Ans(St(find x Type.Int regenv, find y Type.Int regenv, find' z' regenv, id), pos), regenv)
+	| FMovD(x, id) -> (Ans(FMovD(find x Type.Float regenv, id), pos), regenv)
+	| FNegD(x, id) -> (Ans(FNegD(find x Type.Float regenv, id), pos), regenv)
+	| FAddD(x, y, id) -> (Ans(FAddD(find x Type.Float regenv, find y Type.Float regenv, id), pos), regenv)
+	| FSubD(x, y, id) -> (Ans(FSubD(find x Type.Float regenv, find y Type.Float regenv, id), pos), regenv)
+	| FMulD(x, y, id) -> (Ans(FMulD(find x Type.Float regenv, find y Type.Float regenv, id), pos), regenv)
+	| FDivD(x, y, id) -> (Ans(FDivD(find x Type.Float regenv, find y Type.Float regenv, id), pos), regenv)
+	| Sqrt(x, id) -> (Ans(Sqrt(find x Type.Float regenv, id), pos), regenv)
+	| LdDF(x, y', id) -> (Ans(LdDF(find x Type.Int regenv, find' y' regenv, id), pos), regenv)
+	| StDF(x, y, z', id) -> (Ans(StDF(find x Type.Float regenv, find y Type.Int regenv, find' z' regenv, id), pos), regenv)
 	| IfEq(x, y, e1, e2, id) as exp -> g'_if dest cont regenv exp (fun e1' e2' -> IfEq(find x Type.Int regenv, find y Type.Int regenv, e1', e2', id)) e1 e2 pos
 	| IfLE(x, y, e1, e2, id) as exp -> g'_if dest cont regenv exp (fun e1' e2' -> IfLE(find x Type.Int regenv, find y Type.Int regenv, e1', e2', id)) e1 e2 pos
 	| IfGE(x, y, e1, e2, id) as exp -> g'_if dest cont regenv exp (fun e1' e2' -> IfGE(find x Type.Int regenv, find y Type.Int regenv, e1', e2', id)) e1 e2 pos
@@ -216,16 +182,16 @@ and g' dest cont regenv pos = function (* 各命令のレジスタ割り当て (caml2html: r
 			if List.length ys > Array.length regs - 2 || List.length zs > Array.length fregs - 1 then
 				failwith (Format.sprintf "cannot allocate registers for arguments to %s" x)
 			else
-				g'_call dest cont regenv (fun ys zs -> CallCls(find x Type.Int regenv, ys, zs, id)) x ys zs id pos
+				g'_call dest cont regenv (fun ys zs -> CallCls(find x Type.Int regenv, ys, zs, id)) x ys zs pos
 	| CallDir(Id.L(x), ys, zs, id) ->
 			if List.length ys > Array.length regs - 1 || List.length zs > Array.length fregs - 1 then
 				failwith (Format.sprintf "cannot allocate registers for arguments to %s" x)
 			else
-				g'_call dest cont regenv (fun ys zs -> CallDir(Id.L(x), ys, zs, id)) x ys zs id pos
+				g'_call dest cont regenv (fun ys zs -> CallDir(Id.L(x), ys, zs, id)) x ys zs pos
 	| Save(x, y, id) -> assert false
 and g'_if dest cont regenv exp constr e1 e2 pos = (* ifのレジスタ割り当て (caml2html: regalloc_if) *)
-	let (e1', regenv1, use_reg1) = g dest cont regenv e1 in
-	let (e2', regenv2, use_reg2) = g dest cont regenv e2 in
+	let (e1', regenv1) = g dest cont regenv e1 in
+	let (e2', regenv2) = g dest cont regenv e2 in
 	let regenv' = (* 両方に共通のレジスタ変数だけ利用 *)
 		List.fold_left
 			(fun regenv' x ->
@@ -244,27 +210,25 @@ and g'_if dest cont regenv exp constr e1 e2 pos = (* ifのレジスタ割り当て (caml2
 			 seq(Save(M.find x regenv, x, -1), e)) (* そうでない変数は分岐直前にセーブ *)
 		 (Ans(constr e1' e2', pos))
 		 (fv cont),
-	 regenv', S.union use_reg1 use_reg2)
-and g'_call dest cont regenv constr x ys zs id pos = (* 関数呼び出しのレジスタ割り当て (caml2html: regalloc_call) *)
-	let yrs = List.map (fun y -> find y Type.Int regenv) ys in
-	let zrs = List.map (fun z -> find z Type.Float regenv) zs in
-	if M.mem x !func_use_reg then
-		let use_reg = S.union (S.of_list (yrs @ zrs)) (M.find x !func_use_reg) in
-		List.fold_left
-	 		(fun (e, regenv', use_reg) y ->
-				 if y = fst dest || not (M.mem y regenv) then (e, regenv', use_reg) else
-				 if not (S.mem (M.find y regenv) use_reg) then (e, M.add y (M.find y regenv) regenv', use_reg) else
-				 (seq(Save(M.find y regenv, y, id), e), regenv', use_reg))
-	 		(Ans(constr yrs zrs, pos), M.empty, use_reg)
-	 		(fv cont)
-	else (* 再帰関数の中身の場合 *)
-		let use_reg = S.of_list (yrs @ zrs) in
-		List.fold_left
-	 		(fun (e, regenv', use_reg) y ->
-				 if y = fst dest || not (M.mem y regenv) then (e, regenv', use_reg) else
-				 (seq(Save(M.find y regenv, y, id), e), regenv', use_reg))
-	 		(Ans(constr yrs zrs, pos), M.empty, use_reg)
-	 		(fv cont)
+	 regenv')
+and g'_call dest cont regenv constr x ys zs pos = (* 関数呼び出しのレジスタ割り当て (caml2html: regalloc_call) *)
+	let use_reg =
+		if x = "min_caml_print_char" || x = "min_caml_print_int" || x = "min_caml_read_int" then ["x4"]
+		else if x = "min_caml_read_float" then ["f1"]
+		else if x = "min_caml_create_array" then ["x4"; "x5"; "x6"]
+		else if x = "min_caml_create_float_array" then ["x4"; "x5"; "f1"]
+		else if x = "min_caml_float_of_int" then ["x4"; "x5"; "x6"; "f1"; "f2"; "f3"]
+		else allregs @ allfregs in
+	List.fold_left
+	 (fun (e, regenv') y ->
+		 (* Format.eprintf "%s %s\n" x y; *)
+		 if y = fst dest || not (M.mem y regenv) then (e, regenv') else
+		 if not (List.mem (M.find y regenv) use_reg) then (e, M.add y (M.find y regenv) regenv') else
+		 (seq(Save(M.find y regenv, y, -1), e), regenv'))
+	 (Ans(constr
+					(List.map (fun y -> find y Type.Int regenv) ys)
+					(List.map (fun z -> find z Type.Float regenv) zs), pos), M.empty)
+	 (fv cont)
 	(* (List.fold_left
 		 (fun e r ->
 			 (* Format.eprintf "%s %s\n" x r; *)
@@ -307,24 +271,12 @@ let h { name = Id.L(x); args = ys; fargs = zs; body = e; ret = t } = (* 関数のレ
 		| Type.Float -> fregs.(0)
 		| _ -> regs.(0) in
 		match e with
-		| Ans(_, pos) | Let(_, _, _, pos) ->
-				let e', regenv', use_reg = g (a, t) (Ans(Mov(a, -1), pos)) regenv e in
-				(func_use_reg := M.add x use_reg !func_use_reg;
-				 Format.eprintf "use_reg : %s " x;
-				 S.iter (Format.eprintf "%s ") use_reg;
-				 Format.eprintf "\n";
-				 { name = Id.L(x); args = arg_regs; fargs = farg_regs; body = e'; ret = t })
+		| Ans(_, pos) | Let(_, _, _, pos) -> let (e', regenv') = g (a, t) (Ans(Mov(a, -1), pos)) regenv e in
+																				 { name = Id.L(x); args = arg_regs; fargs = farg_regs; body = e'; ret = t }
 
 let f (Prog(data, fundefs, e)) = (* プログラム全体のレジスタ割り当て (caml2html: regalloc_f) *)
 	Format.eprintf "register allocation: may take some time (up to a few minutes, depending on the size of functions)@.";
-	func_use_reg := M.add "min_caml_print_char" (S.singleton "x4")
-									(M.add "min_caml_print_int" (S.singleton "x4")
-									(M.add "min_caml_read_int" (S.singleton "x4")
-									(M.add "min_caml_read_float" (S.singleton "f1") 
-									(M.add "min_caml_create_array" (S.of_list ["x4"; "x5"; "x6"])
-									(M.add "min_caml_create_float_array" (S.of_list ["x4"; "x5"; "f1"])
-									(M.add "min_caml_float_of_int" (S.of_list ["x4"; "x5"; "x6"; "f1"; "f2"; "f3"]) !func_use_reg))))));
 	let fundefs' = List.map h fundefs in
 	match e with
-	| Ans(_, pos) | Let(_, _, _, pos) -> let e', regenv', use_reg = g (Id.gentmp Type.Unit, Type.Unit) (Ans(Nop(-1), pos)) M.empty e in
+	| Ans(_, pos) | Let(_, _, _, pos) -> let e', regenv' = g (Id.gentmp Type.Unit, Type.Unit) (Ans(Nop(-1), pos)) M.empty e in
 																			 Prog(data, fundefs', e')

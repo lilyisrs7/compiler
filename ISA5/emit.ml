@@ -88,13 +88,22 @@ let rec repl_assoc repl key =
   if M.mem key repl then repl_assoc repl (M.find key repl)
   else key
 
+let rec elim_feqfle_seq = function
+| Feq(x1, x2, lb, pos) :: Feq(x3, x4, _, _) :: tl when (x1 = x3 && x2 = x4) || (x1 = x4 && x2 = x3) ->
+    elim_feqfle_seq (Feq(x1, x2, lb, pos) :: tl)
+| Fle(x1, x2, lb, pos) :: Fle(x3, x4, _, _) :: tl when x1 = x3 && x2 = x4 ->
+    elim_feqfle_seq (Fle(x1, x2, lb, pos) :: tl)
+| [] -> []
+| hd :: tl -> hd :: (elim_feqfle_seq tl)
+
 let f oc (data, content) =
   let remove, repl =
     match content with
     | Label(s) :: tl -> separate_label tl [] s [] M.empty
     | _ -> failwith "no label in the first line\n" in
   let repl = M.map (repl_assoc repl) repl in
-  let asm = elim_jump remove repl content [] false in
+  let content' = elim_jump remove repl content [] false in
+  let asm = elim_feqfle_seq content' in
 
   Format.eprintf "generating assembly...@.";
   Printf.fprintf oc "l.0:\t# 8388608.000000\n";
