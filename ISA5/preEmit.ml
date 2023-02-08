@@ -237,7 +237,8 @@ let f (Prog(data, fundefs, e)) =
   let label_one = ref "" in
   let label_lib = ref "" in
   let cmp_dict = (* lui/oriによりロードされる回数の多い順 *)
-    [(4.5, 1); (4.0, 2); (0.01, 3); (-0.2, 4); (-0.1, 5); (100000000.0, 6); (150.0, 7); (-150.0, 8); (0.5, 9); (-0.5, 10)] in
+    [(0.01, 1); (-0.2, 2); (-0.1, 3); (100000000.0, 4); (150.0, 5); (-150.0, 6); (-1.0, 7); (10.0, 8); (0.05, 9); (20.0, 10);
+     (0.5, 11); (0.1, 12); (-2.0, 13)] in
   let cmp (Id.L(_), d1, _) (Id.L(_), d2, _) =
     compare (try List.assoc d1 cmp_dict with Not_found -> 40) (try List.assoc d2 cmp_dict with Not_found -> 40) in
   let data = List.sort cmp data in
