@@ -22,7 +22,7 @@ let rec int_of_float x =
     if x < 0.5 then 0
     else int_of_float (x -. 1.0) + 1
   else int_of_float (x +. 1.0) - 1 in *)
-let rec int_of_float_rem x acc =
+(* let rec int_of_float_rem x acc =
   if x >= -. 0.5 then
     if x < 0.5 then acc
     else int_of_float_rem (x -. 1.0) (acc + 1)
@@ -31,7 +31,7 @@ let rec int_of_float_four x acc =
   if x >= 4.5 then int_of_float_four (x -. 4.0) (acc + 4)
   else if x < -. 4.5 then int_of_float_four (x +. 4.0) (acc - 4)
   else int_of_float_rem x acc in
-let rec int_of_float x = int_of_float_four x 0 in
+let rec int_of_float x = int_of_float_four x 0 in *)
 (* let rec float_of_int x =
   if x >= 0 then
     if x >= 1 then float_of_int (x - 1) +. 1.0 else 0.0
