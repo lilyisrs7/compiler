@@ -27,7 +27,6 @@ and exp =
   (* virtual instructions *)
   | IfEq of Id.t * Id.t * t * t * int
   | IfLE of Id.t * Id.t * t * t * int
-  | IfGE of Id.t * Id.t * t * t * int
   | IfFEq of Id.t * Id.t * t * t * int
   | IfFLE of Id.t * Id.t * t * t * int
   (* closure address, integer arguments, and float arguments *)

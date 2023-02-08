@@ -273,14 +273,10 @@ let rec print_asm_exp oc tab_num e =
                                   print_tab oc (tab_num + 1); Printf.fprintf oc "%s,\n" y; print_asm_t oc (tab_num + 1) e1;
                                   Printf.fprintf oc ",\n"; print_asm_t oc (tab_num + 1) e2; Printf.fprintf oc "\n"; print_tab oc tab_num;
                                   Printf.fprintf oc ")"
-  | Asm.IfGE(x, y, e1, e2, id) -> Printf.fprintf oc "%d IfGE (\n" id; print_tab oc (tab_num + 1); Printf.fprintf oc "%s,\n" x;
-                                  print_tab oc (tab_num + 1); Printf.fprintf oc "%s,\n" y; print_asm_t oc (tab_num + 1) e1;
-                                  Printf.fprintf oc ",\n"; print_asm_t oc (tab_num + 1) e2; Printf.fprintf oc "\n"; print_tab oc tab_num;
-                                  Printf.fprintf oc ")"
   | Asm.IfFEq(x, y, e1, e2, id) -> Printf.fprintf oc "%d IfFEq (\n" id; print_tab oc (tab_num + 1); Printf.fprintf oc "%s,\n" x;
-                                  print_tab oc (tab_num + 1); Printf.fprintf oc "%s,\n" y; print_asm_t oc (tab_num + 1) e1;
-                                  Printf.fprintf oc ",\n"; print_asm_t oc (tab_num + 1) e2; Printf.fprintf oc "\n"; print_tab oc tab_num;
-                                  Printf.fprintf oc ")"
+                                   print_tab oc (tab_num + 1); Printf.fprintf oc "%s,\n" y; print_asm_t oc (tab_num + 1) e1;
+                                   Printf.fprintf oc ",\n"; print_asm_t oc (tab_num + 1) e2; Printf.fprintf oc "\n"; print_tab oc tab_num;
+                                   Printf.fprintf oc ")"
   | Asm.IfFLE(x, y, e1, e2, id) -> Printf.fprintf oc "%d IfFLE (\n" id; print_tab oc (tab_num + 1); Printf.fprintf oc "%s,\n" x;
                                   print_tab oc (tab_num + 1); Printf.fprintf oc "%s,\n" y; print_asm_t oc (tab_num + 1) e1;
                                   Printf.fprintf oc ",\n"; print_asm_t oc (tab_num + 1) e2; Printf.fprintf oc "\n"; print_tab oc tab_num;
@@ -347,7 +343,6 @@ let print_riscv_t oc e =
   | RiscV.Jalr(x, y, i, p) -> Printf.fprintf oc "\tjalr\t%s, %s, %d\t# %d\n" x y i p
   | RiscV.Beq(x, y, l, p) -> Printf.fprintf oc "\tbeq\t\t%s, %s, %s\t# %d\n" x y l p
   | RiscV.Ble(x, y, l, p) -> Printf.fprintf oc "\tble\t\t%s, %s, %s\t# %d\n" x y l p
-  | RiscV.Bge(x, y, l, p) -> Printf.fprintf oc "\tbge\t\t%s, %s, %s\t# %d\n" x y l p
   | RiscV.Feq(x, y, l, p) -> Printf.fprintf oc "\tfeq\t\t%s, %s, %s\t# %d\n" x y l p
   | RiscV.Fle(x, y, l, p) -> Printf.fprintf oc "\tfle\t\t%s, %s, %s\t# %d\n" x y l p
 

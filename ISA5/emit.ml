@@ -25,7 +25,6 @@ let print oc = function
 | Jalr(x, y, i, p) -> Printf.fprintf oc "\tjalr\t%s, %s, %d\t# %d\n" x y i p
 | Beq(x, y, l, p) -> Printf.fprintf oc "\tbeq\t\t%s, %s, %s\t# %d\n" x y l p
 | Ble(x, y, l, p) -> Printf.fprintf oc "\tble\t\t%s, %s, %s\t# %d\n" x y l p
-| Bge(x, y, l, p) -> Printf.fprintf oc "\tbge\t\t%s, %s, %s\t# %d\n" x y l p
 | Feq(x, y, l, p) -> Printf.fprintf oc "\tfeq\t\t%s, %s, %s\t# %d\n" x y l p
 | Fle(x, y, l, p) -> Printf.fprintf oc "\tfle\t\t%s, %s, %s\t# %d\n" x y l p
 
@@ -48,11 +47,6 @@ let rec elim_jump remove repl content acc remove_flg = (* ジャンプ連鎖除�
       if remove_flg then elim_jump remove repl tl acc true
       else
         let e = if M.mem l repl then Ble(x, y, M.find l repl, p) else Ble(x, y, l, p) in
-        elim_jump remove repl tl (e :: acc) false
-  | Bge(x, y, l, p) :: tl ->
-      if remove_flg then elim_jump remove repl tl acc true
-      else
-        let e = if M.mem l repl then Bge(x, y, M.find l repl, p) else Bge(x, y, l, p) in
         elim_jump remove repl tl (e :: acc) false
   | Feq(x, y, l, p) :: tl ->
       if remove_flg then elim_jump remove repl tl acc true

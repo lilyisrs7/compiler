@@ -22,7 +22,6 @@ and g' env = function (* 各命令の即値最適化 (caml2html: simm13_gprime) *)
   | StDF(x, y, V(z)) -> assert false*)
   | IfEq(x, y, e1, e2, id) -> IfEq(x, y, g env e1, g env e2, id)
   | IfLE(x, y, e1, e2, id) -> IfLE(x, y, g env e1, g env e2, id)
-  | IfGE(x, y, e1, e2, id) -> IfGE(x, y, g env e1, g env e2, id)
   | IfFEq(x, y, e1, e2, id) -> IfFEq(x, y, g env e1, g env e2, id)
   | IfFLE(x, y, e1, e2, id) -> IfFLE(x, y, g env e1, g env e2, id)
   | e -> e

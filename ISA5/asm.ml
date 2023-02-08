@@ -27,7 +27,6 @@ and exp = (* 一つ一つの命令に対応する式 (caml2html: sparcasm_exp) *)
   (* virtual instructions *)
   | IfEq of Id.t * Id.t * t * t * int
   | IfLE of Id.t * Id.t * t * t * int
-  | IfGE of Id.t * Id.t * t * t * int (* 左右対称ではないので必要 *)
   | IfFEq of Id.t * Id.t * t * t * int
   | IfFLE of Id.t * Id.t * t * t * int
   (* closure address, integer arguments, and float arguments *)
@@ -99,7 +98,7 @@ let rec fv_exp = function
   | Add(x, y', _) | Ld(x, y', _) | LdDF(x, y', _) -> x :: fv_id_or_imm y'
   | St(x, y, _, _) | StDF(x, y, _, _) | Sub(x, y, _) | Mul(x, y, _) | Div(x, y, _)
   | FAddD(x, y, _) | FSubD(x, y, _) | FMulD(x, y, _) | FDivD(x, y, _) -> [x; y]
-  | IfEq(x, y, e1, e2, _) | IfLE(x, y, e1, e2, _) | IfGE(x, y, e1, e2, _)
+  | IfEq(x, y, e1, e2, _) | IfLE(x, y, e1, e2, _)
   | IfFEq(x, y, e1, e2, _) | IfFLE(x, y, e1, e2, _) -> x :: y :: remove_and_uniq S.empty (fv e1 @ fv e2) (* uniq here just for efficiency *)
   | CallCls(x, ys, zs, _) -> x :: ys @ zs
   | CallDir(_, ys, zs, _) -> ys @ zs

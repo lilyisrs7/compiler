@@ -45,12 +45,6 @@ and g' env = function
       let e1' = g env e1 in
       let e2' = g env e2 in
       (IfLE(x, y, e1', e2', id'), id')
-  | IfGE(x, y, e1, e2, _) ->
-      let id' = !id + 1 in
-      id := id';
-      let e1' = g env e1 in
-      let e2' = g env e2 in
-      (IfGE(x, y, e1', e2', id'), id')
   | IfFEq(x, y, e1, e2, _) ->
       let id' = !id + 1 in
       id := id';

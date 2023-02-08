@@ -14,8 +14,7 @@ let rec target' src (dest, t) = function
 	| FMovD(x, _) when x = src && is_reg dest ->
 			assert (t = Type.Float);
 			false, [dest]
-	| IfEq(_, _, e1, e2, _) | IfLE(_, _, e1, e2, _) | IfGE(_, _, e1, e2, _)
-	| IfFEq(_, _, e1, e2, _) | IfFLE(_, _, e1, e2, _) ->
+	| IfEq(_, _, e1, e2, _) | IfLE(_, _, e1, e2, _)	| IfFEq(_, _, e1, e2, _) | IfFLE(_, _, e1, e2, _) ->
 			let c1, rs1 = target src (dest, t) e1 in
 			let c2, rs2 = target src (dest, t) e2 in
 			c1 && c2, rs1 @ rs2
@@ -47,7 +46,7 @@ and target_args src all n = function (* auxiliary function for Call *)
 and source' t = function
 	| Mov(x) | Neg(x) | Add(x, C _) | Sub(x, _) | FMovD(x) | FNegD(x) | FSubD(x, _) | FDivD(x, _) -> [x]
 	| Add(x, V y) | FAddD(x, y) | FMulD(x, y) -> [x; y]
-	| IfEq(_, _, e1, e2) | IfLE(_, _, e1, e2) | IfGE(_, _, e1, e2) | IfFEq(_, _, e1, e2) | IfFLE(_, _, e1, e2) ->
+	| IfEq(_, _, e1, e2) | IfLE(_, _, e1, e2) | IfFEq(_, _, e1, e2) | IfFLE(_, _, e1, e2) ->
 			source t e1 @ source t e2
 	| CallCls _ | CallDir _ -> (match t with Type.Unit -> [] | Type.Float -> [fregs.(0)] | _ -> [regs.(0)])
 	| _ -> []*)
@@ -209,7 +208,6 @@ and g' dest cont regenv pos = function (* 各命令のレジスタ割り当て (caml2html: r
 			(Ans(StDF(xr, yr, find' z' regenv, id), pos), regenv, S.of_list [xr; yr])
 	| IfEq(x, y, e1, e2, id) as exp -> g'_if dest cont regenv exp (fun e1' e2' -> IfEq(find x Type.Int regenv, find y Type.Int regenv, e1', e2', id)) e1 e2 pos
 	| IfLE(x, y, e1, e2, id) as exp -> g'_if dest cont regenv exp (fun e1' e2' -> IfLE(find x Type.Int regenv, find y Type.Int regenv, e1', e2', id)) e1 e2 pos
-	| IfGE(x, y, e1, e2, id) as exp -> g'_if dest cont regenv exp (fun e1' e2' -> IfGE(find x Type.Int regenv, find y Type.Int regenv, e1', e2', id)) e1 e2 pos
 	| IfFEq(x, y, e1, e2, id) as exp -> g'_if dest cont regenv exp (fun e1' e2' -> IfFEq(find x Type.Float regenv, find y Type.Float regenv, e1', e2', id)) e1 e2 pos
 	| IfFLE(x, y, e1, e2, id) as exp -> g'_if dest cont regenv exp (fun e1' e2' -> IfFLE(find x Type.Float regenv, find y Type.Float regenv, e1', e2', id)) e1 e2 pos
 	| CallCls(x, ys, zs, id) ->

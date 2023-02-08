@@ -133,8 +133,6 @@ and g' repl pos = function (* 各命令のアセンブリ生成 (caml2html: emit_gprime) *)
       g'_tail_if x y e1 e2 "beq" repl pos
   | Tail, IfLE(x, y, e1, e2, _) ->
       g'_tail_if x y e1 e2 "ble" repl pos
-  | Tail, IfGE(x, y, e1, e2, _) ->
-      g'_tail_if x y e1 e2 "bge" repl pos
   | Tail, IfFEq(x, y, e1, e2, _) ->
       g'_tail_if x y e1 e2 "feq" repl pos
   | Tail, IfFLE(x, y, e1, e2, _) ->
@@ -143,8 +141,6 @@ and g' repl pos = function (* 各命令のアセンブリ生成 (caml2html: emit_gprime) *)
       g'_non_tail_if (NonTail(z)) x y e1 e2 "beq" repl pos
   | NonTail(z), IfLE(x, y, e1, e2, _) ->
       g'_non_tail_if (NonTail(z)) x y e1 e2 "ble" repl pos
-  | NonTail(z), IfGE(x, y, e1, e2, _) ->
-      g'_non_tail_if (NonTail(z)) x y e1 e2 "bge" repl pos
   | NonTail(z), IfFEq(x, y, e1, e2, _) ->
       g'_non_tail_if (NonTail(z)) x y e1 e2 "feq" repl pos
   | NonTail(z), IfFLE(x, y, e1, e2, _) ->
@@ -180,7 +176,6 @@ and g'_tail_if x y e1 e2 b repl pos =
   let b_id = Id.genid b in
   content := !content @ [if b = "beq" then RiscV.Beq(find x repl, find y repl, b_id, pos)
                          else if b = "ble" then RiscV.Ble(find x repl, find y repl, b_id, pos)
-                         else if b = "bge" then RiscV.Bge(find x repl, find y repl, b_id, pos)
                          else if b = "feq" then RiscV.Feq(find x repl, find y repl, b_id, pos)
                          else RiscV.Fle(find x repl, find y repl, b_id, pos)];
   let stackset_back = !stackset in
@@ -193,7 +188,6 @@ and g'_non_tail_if dest x y e1 e2 b repl pos =
   let b_id = Id.genid b in
   content := !content @ [if b = "beq" then RiscV.Beq(find x repl, find y repl, b_id, pos)
                          else if b = "ble" then RiscV.Ble(find x repl, find y repl, b_id, pos)
-                         else if b = "bge" then RiscV.Bge(find x repl, find y repl, b_id, pos)
                          else if b = "feq" then RiscV.Feq(find x repl, find y repl, b_id, pos)
                          else RiscV.Fle(find x repl, find y repl, b_id, pos)];
   let stackset_back = !stackset in
