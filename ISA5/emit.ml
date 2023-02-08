@@ -106,12 +106,6 @@ let f oc (data, content) =
   let asm = elim_feqfle_seq content' in
 
   Format.eprintf "generating assembly...@.";
-  Printf.fprintf oc "l.0:\t# 8388608.000000\n";
-  Printf.fprintf oc "\t.word\t8388608.000000\n";
-  (* Printf.fprintf oc "l.1:\t# 0.000000\n";
-  Printf.fprintf oc "\t.word\t0.000000\n";
-  Printf.fprintf oc "l.2:\t# 1.000000\n";
-  Printf.fprintf oc "\t.word\t1.000000\n"; *)
   List.iter
     (fun (Id.L(x), d, _) ->
       Printf.fprintf oc "%s:\t# %f\n" x d;

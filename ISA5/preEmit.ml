@@ -236,14 +236,18 @@ let f (Prog(data, fundefs, e)) =
   List.iter (Format.eprintf "%d ") !AddId.func_arg_id;
   Format.eprintf "\n"; *)
   let label_zero = ref "" in
-  let cmp_dict = [(1.0, 1); (4.0, 2); (4.5, 3); (0.01, 4); (-0.2, 5); (-0.1, 6); (100000000.0, 7); (-0.5, 8); (150.0, 9); (-150.0, 10);
-                  (0.5, 11); (-4.5, 12)] in (* lui/oriによりロードされる回数の多い順 *)
+  let label_one = ref "" in
+  let label_lib = ref "" in
+  let cmp_dict = (* lui/oriによりロードされる回数の多い順 *)
+    [(4.5, 1); (4.0, 2); (0.01, 3); (-0.2, 4); (-0.1, 5); (100000000.0, 6); (150.0, 7); (-150.0, 8); (0.5, 9); (-0.5, 10)] in
   let cmp (Id.L(_), d1, _) (Id.L(_), d2, _) =
     compare (try List.assoc d1 cmp_dict with Not_found -> 40) (try List.assoc d2 cmp_dict with Not_found -> 40) in
   let data = List.sort cmp data in
   List.iter
     (fun (Id.L(x), d, _) ->
-      if d = 0.0 then label_zero := x)
+      if d = 0.0 then label_zero := x
+      else if d = 1.0 then label_one := x
+      else if d = 8388608.0 then label_lib := x)
     data;
   let data =
     if !label_zero = "" then
@@ -251,7 +255,19 @@ let f (Prog(data, fundefs, e)) =
        label_zero := x;
        (Id.L(x), 0.0, 0) :: data)
     else data in
-  loaded_labels := M.add !label_zero reg_fzero !loaded_labels;
+  let data =
+    if !label_one = "" then
+      (let x = Id.genid "l" in
+       label_one := x;
+       (Id.L(x), 1.0, 0) :: data)
+    else data in
+  let data =
+    if !label_lib = "" then
+      (let x = Id.genid "l" in
+       label_lib := x;
+       (Id.L(x), 8388608.0, 0) :: data)
+    else data in
+  loaded_labels := M.add_list [(!label_zero, reg_fzero); (!label_one, reg_fone); (!label_lib, reg_flib)] !loaded_labels;
   let reg_for_label = S.elements (S.diff (S.diff (S.of_list allfregs) (S.singleton reg_fsw)) !used_regs) in
   Format.eprintf "reg_for_label : ";
   List.iter (Format.eprintf "%s ") reg_for_label;
@@ -260,7 +276,7 @@ let f (Prog(data, fundefs, e)) =
     match reg_for_label, data with
     | [], [] -> ()
     | [], hd :: tl | hd :: tl, [] -> ()
-    | reg :: tl1, label :: tl2 -> if label <> !label_zero then
+    | reg :: tl1, label :: tl2 -> if label <> !label_zero && label <> !label_one && label <> !label_lib then
                                     (loaded_labels := M.add label reg !loaded_labels;
                                      ld_label_noprint tl1 tl2)
                                   else ld_label_noprint reg_for_label tl2 in
@@ -271,17 +287,25 @@ let f (Prog(data, fundefs, e)) =
                            RiscV.Addi(reg_sp, reg_sp, -4, 0); RiscV.Addi(reg_four, reg_zero, 4, 0);
                            RiscV.Addi(reg_hp, reg_zero, ConstFoldGlobals.addr_init, 0);
                            RiscV.LuiLb(regs.(0), !label_zero, 0); RiscV.OriLb(regs.(0), reg_zero, !label_zero, 0);
-                           RiscV.FLw(reg_fzero, 0, regs.(0), 0)]
+                           RiscV.FLw(reg_fzero, 0, regs.(0), 0);
+                           RiscV.LuiLb(regs.(0), !label_one, 0); RiscV.OriLb(regs.(0), reg_zero, !label_one, 0);
+                           RiscV.FLw(reg_fone, 0, regs.(0), 0);
+                           RiscV.LuiLb(regs.(0), !label_lib, 0); RiscV.OriLb(regs.(0), reg_zero, !label_lib, 0);
+                           RiscV.FLw(reg_flib, 0, regs.(0), 0)]
   else
     content := !content @ [RiscV.Label("min_caml_start");
                            RiscV.Addi(reg_sp, reg_sp, -4, 0); RiscV.Addi(reg_four, reg_zero, 4, 0);
                            RiscV.LuiLb(regs.(0), !label_zero, 0); RiscV.OriLb(regs.(0), reg_zero, !label_zero, 0);
-                           RiscV.FLw(reg_fzero, 0, regs.(0), 0)];
+                           RiscV.FLw(reg_fzero, 0, regs.(0), 0);
+                           RiscV.LuiLb(regs.(0), !label_one, 0); RiscV.OriLb(regs.(0), reg_zero, !label_one, 0);
+                           RiscV.FLw(reg_fone, 0, regs.(0), 0);
+                           RiscV.LuiLb(regs.(0), !label_lib, 0); RiscV.OriLb(regs.(0), reg_zero, !label_lib, 0);
+                           RiscV.FLw(reg_flib, 0, regs.(0), 0)];
   let rec ld_label reg_for_label data =
     match reg_for_label, data with
     | [], [] -> ()
     | [], hd :: tl | hd :: tl, [] -> ()
-    | reg :: tl1, label :: tl2 -> if label <> !label_zero then
+    | reg :: tl1, label :: tl2 -> if label <> !label_zero && label <> !label_one && label <> !label_lib then
                                     (content := !content @ [RiscV.LuiLb(regs.(0), label, 0); RiscV.OriLb(regs.(0), reg_zero, label, 0);
                                                             RiscV.FLw(reg, 0, regs.(0), 0)];
                                      ld_label tl1 tl2)

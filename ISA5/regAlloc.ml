@@ -330,7 +330,9 @@ let f (Prog(data, fundefs, e)) = (* プログラム全体のレジスタ割り当て (caml2html:
 									(M.add "min_caml_read_float" (S.singleton "f1") 
 									(M.add "min_caml_create_array" (S.of_list ["x4"; "x5"; "x6"])
 									(M.add "min_caml_create_float_array" (S.of_list ["x4"; "x5"; "f1"])
-									(M.add "min_caml_float_of_int" (S.of_list ["x4"; "x5"; "x6"; "f1"; "f2"; "f3"]) !func_use_reg))))));
+									(M.add "min_caml_int_of_float" (S.of_list ["x4"; "x5"; "x6"; "x7"; "f1"])
+									(M.add "min_caml_float_of_int" (S.of_list ["x4"; "x5"; "x6"; "f1"; "f2"])
+									(M.add "min_caml_floor" (S.of_list ["x4"; "x5"; "x6"; "x7"; "f1"; "f2"]) !func_use_reg))))))));
 	let fundefs' = List.map h fundefs in
 	match e with
 	| Ans(_, pos) | Let(_, _, _, pos) -> let e', regenv', use_reg = g (Id.gentmp Type.Unit, Type.Unit) (Ans(Nop(-1), pos)) M.empty e in

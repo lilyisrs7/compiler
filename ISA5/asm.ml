@@ -53,7 +53,7 @@ let regs = (* Array.init 16 (fun i -> Printf.sprintf "%%r%d" i) *)
      "x18"; "x19"; "x20"; "x21"; "x22"; "x23"; "x24"; "x25"; "x26"; "x27"; "x28"; "x29"; "x31" |]
 let fregs = (*Array.init 32 (fun i -> Printf.sprintf "f%d" i)*)
   [| "f1"; "f2"; "f3"; "f4"; "f5"; "f6"; "f7"; "f8"; "f9"; "f10"; "f11"; "f12"; "f13"; "f14"; "f15"; "f16"; "f17";
-     "f18"; "f19"; "f20"; "f21"; "f22"; "f23"; "f24"; "f25"; "f26"; "f27"; "f28"; "f29"; "f30"; "f31" |]
+     "f18"; "f19"; "f20"; "f21"; "f22"; "f23"; "f24"; "f25"; "f26"; "f27"; "f28"; "f31" |]
 let allregs = Array.to_list regs
 let allfregs = Array.to_list fregs
 let reg_cl = regs.(Array.length regs - 2) (* closure address (caml2html: sparcasm_regcl) *)
@@ -66,6 +66,8 @@ let reg_ra = "x1" (* return address *)
 let reg_zero = "x0"
 let reg_fzero = "f0"
 let reg_four = "x30"
+let reg_fone = "f30"
+let reg_flib = "f29" (* 8388608.0 *)
 (* let reg_rv = "x10"
 let reg_frv = "f10" *)
 (* let reg_size_program_section = "x28"

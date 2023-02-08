@@ -43,14 +43,19 @@ let rec float_of_int_four x acc =
 let rec float_of_int x =
   if x >= 0 then float_of_int_four x 0.0
   else -. float_of_int (-x) in *)
-let rec floor x =
-  float_of_int (int_of_float (x -. 0.5)) in
+(* let rec floor x =
+  float_of_int (int_of_float (x -. 0.5)) in *)
   (* float_of_int (truncate x) in *)
   (* if x >= 0.0 then float_of_int (truncate x)
   else float_of_int (truncate x - 1) in *)
   (* float_of_int (int_of_float (x -. 0.5)) in *)
   (* if x >= 0.0 then float_of_int (int_of_float (x -. 0.5))
   else float_of_int (int_of_float (x +. 0.5) - 1) in *)
+(* let rec floor x =
+  if x >= 0.0 then
+    if x >= 1.0 then floor (x -. 1.0) +. 1.0 else 0.0
+  else
+    floor (x +. 1.0) -. 1.0 in *)
 let pi = 3.1415927410125732421875 in
 let pi2 = pi *. 2.0 in
 let pihalf = pi *. 0.5 in
