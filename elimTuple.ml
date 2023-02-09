@@ -6,7 +6,8 @@ let rec effect = function
   | Let(_, e1, e2, _) | IfEq(_, _, e1, e2, _) | IfLE(_, _, e1, e2, _) -> effect e1 || effect e2
   | MakeCls(_, _, e, _) | LetTuple(_, _, e, _) -> effect e
   | AppCls(x, _, _) | AppDir(Id.L(x), _, _) ->
-      if String.starts_with ~prefix:"min_caml_" x then true
+      if x = "min_caml_float_of_int" || x = "min_caml_int_of_float" || x = "min_caml_floor" then false
+      else if String.starts_with ~prefix:"min_caml_" x then true
       else
         (try
            M.find x !env_fun
