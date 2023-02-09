@@ -2,10 +2,13 @@ open PrintType
 
 let limit = ref 1000
 let limit_cls = ref 1000
+let limit_asm = ref 1000
 let nocse_flag = ref false
+let nocseasm_flag = ref false
 let nologic_flag = ref false
 let nocfg_flag = ref false
 let printiter_flag = ref false
+let printiterasm_flag = ref false
 
 let rec iter n f e = (* 最適化処理をくりかえす (caml2html: main_iter) *)
   Format.eprintf "iteration %d@." n;
@@ -65,9 +68,53 @@ let rec closure_opt n e = (* タプル平坦化、tace後の最適化 *)
     else
       closure_opt (n - 1) e'
 
+let rec asm_opt n f e = (* simm後の最適化 *)
+  Format.eprintf "iteration %d@." n;
+  if n = 0 then e
+  else if !printiterasm_flag then
+    let e_cse = if !nocseasm_flag then e else CseAsm.f e in
+    let oc = open_out (f ^ string_of_int n ^ ".cseasm") in
+    let Asm.Prog(data, fundefs, e') = e_cse in
+    let _ = List.iter (print_asm_data oc 0) data in
+    let _ = List.iter (print_asm_fundef oc 0) fundefs in
+    let _ = print_asm_t oc 0 e' in
+    let _ = close_out oc in
+
+    let e_beta = BetaAsm.f e_cse in
+    let oc = open_out (f ^ string_of_int n ^ ".betaasm") in
+    let Asm.Prog(data, fundefs, e') = e_beta in
+    let _ = List.iter (print_asm_data oc 0) data in
+    let _ = List.iter (print_asm_fundef oc 0) fundefs in
+    let _ = print_asm_t oc 0 e' in
+    let _ = close_out oc in
+
+    let e_cf = ConstFoldAsm.f e_beta in
+    let oc = open_out (f ^ string_of_int n ^ ".cfasm") in
+    let Asm.Prog(data, fundefs, e') = e_cf in
+    let _ = List.iter (print_asm_data oc 0) data in
+    let _ = List.iter (print_asm_fundef oc 0) fundefs in
+    let _ = print_asm_t oc 0 e' in
+    let _ = close_out oc in
+
+    let e_elim = ElimAsm.f e_cf in
+    let oc = open_out (f ^ string_of_int n ^ ".elimasm") in
+    let Asm.Prog(data, fundefs, e') = e_elim in
+    let _ = List.iter (print_asm_data oc 0) data in
+    let _ = List.iter (print_asm_fundef oc 0) fundefs in
+    let _ = print_asm_t oc 0 e' in
+    let _ = close_out oc in
+
+    if e = e_elim then e else
+    asm_opt (n - 1) f e_elim
+  else
+    let e' = ElimAsm.f (ConstFoldAsm.f (BetaAsm.f (if !nocseasm_flag then e else CseAsm.f e))) in
+    if e = e' then e
+    else
+      asm_opt (n - 1) f e'
+
 let lexbuf outchan l f outchan_parsed outchan_normalized outchan_alpha outchan_iterated outchan_cfg outchan_closure
-                       outchan_flatten outchan_tace outchan_cls_opt outchan_block outchan_virtual outchan_simm outchan_addid
-                       outchan_regalloc outchan_preemit =
+                       outchan_flatten outchan_tace outchan_cls_opt outchan_block outchan_virtual outchan_simm outchan_asm_opt
+                       outchan_addid outchan_regalloc outchan_preemit =
   (* バッファをコンパイルしてチャンネルへ出力する (caml2html: main_lexbuf) *)
   Id.counter := 0;
   Typing.extenv := M.empty;
@@ -122,7 +169,13 @@ let lexbuf outchan l f outchan_parsed outchan_normalized outchan_alpha outchan_i
   List.iter (print_asm_fundef outchan_simm 0) fundefs;
   print_asm_t outchan_simm 0 e;
 
-  let addid = AddId.f simm in
+  let asm_opt = asm_opt !limit_asm f simm in
+  let Asm.Prog(data, fundefs, e) = asm_opt in
+  List.iter (print_asm_data outchan_asm_opt 0) data;
+  List.iter (print_asm_fundef outchan_asm_opt 0) fundefs;
+  print_asm_t outchan_asm_opt 0 e;
+
+  let addid = AddId.f asm_opt in
   let Asm.Prog(data, fundefs, e) = addid in
   List.iter (print_asm_data outchan_addid 0) data;
   List.iter (print_asm_fundef outchan_addid 0) fundefs;
@@ -175,13 +228,15 @@ let file f = (* ファイルをコンパイルしてファイルに出力する (caml2html: main_file
   let outchan_block = open_out (f ^ ".block") in
   let outchan_virtual = open_out (f ^ ".virtual") in
   let outchan_simm = open_out (f ^ ".simm") in
+  let outchan_asm_opt = open_out (f ^ ".asm_opt") in
   let outchan_addid = open_out (f ^ ".addid") in
   let outchan_regalloc = open_out (f ^ ".regalloc") in
   let outchan_preemit = open_out (f ^ ".preemit") in
   try
     lexbuf outchan (Lexing.from_channel inchan) f outchan_parsed outchan_normalized outchan_alpha outchan_iterated outchan_cfg
                                                   outchan_closure outchan_flatten outchan_tace outchan_cls_opt outchan_block
-                                                  outchan_virtual outchan_simm outchan_addid outchan_regalloc outchan_preemit;
+                                                  outchan_virtual outchan_simm outchan_asm_opt outchan_addid outchan_regalloc
+                                                  outchan_preemit;
     close_in inchan;
     close_out outchan;
     close_out outchan_parsed;
@@ -196,14 +251,15 @@ let file f = (* ファイルをコンパイルしてファイルに出力する (caml2html: main_file
     close_out outchan_block;
     close_out outchan_virtual;
     close_out outchan_simm;
+    close_out outchan_asm_opt;
     close_out outchan_addid;
     close_out outchan_regalloc;
     close_out outchan_preemit
   with e -> (close_in inchan; close_out outchan; close_out outchan_parsed; close_out outchan_normalized; close_out outchan_alpha;
              close_out outchan_iterated; close_out outchan_cfg; close_out outchan_closure;
              close_out outchan_flatten; close_out outchan_tace; close_out outchan_cls_opt; close_out outchan_block;
-             close_out outchan_virtual; close_out outchan_simm; close_out outchan_addid; close_out outchan_regalloc;
-             close_out outchan_preemit;
+             close_out outchan_virtual; close_out outchan_simm; close_out outchan_asm_opt; close_out outchan_addid;
+             close_out outchan_regalloc; close_out outchan_preemit;
              raise e)
 
 (*
@@ -223,8 +279,11 @@ let () = (* ここからコンパイラの実行が開始される (caml2html: main_entry) *)
     [("-inline", Arg.Int(fun i -> Inline.threshold := i), "maximum size of functions inlined");
      ("-iter", Arg.Int(fun i -> limit := i), "maximum number of optimizations iterated");
      ("-itercls", Arg.Int(fun i -> limit_cls := i), "maximum number of optimizations iterated (closure_opt)");
+     ("-iterasm", Arg.Int(fun i -> limit_asm := i), "maximum number of optimizations iterated (asm_opt)");
      ("-printiter", Arg.Unit(fun () -> printiter_flag := true), "printiter flag");
+     ("-printiterasm", Arg.Unit(fun () -> printiterasm_flag := true), "printiterasm flag");
      ("-nocse", Arg.Unit(fun () -> nocse_flag := true), "nocse flag");
+     ("-nocseasm", Arg.Unit(fun () -> nocseasm_flag := true), "nocseasm flag");
      ("-nologic", Arg.Unit(fun () -> nologic_flag := true), "nologic flag");
      ("-nocfg", Arg.Unit(fun () -> nocfg_flag := true), "nocfg flag")]
     (fun s -> files := !files @ [s])

@@ -31,7 +31,8 @@ alpha.mli alpha.ml cse.mli cse.ml beta.mli beta.ml assoc.mli assoc.ml \
 inline.mli inline.ml logicOpt.mli logicOpt.ml constFold.mli constFold.ml elim.mli elim.ml constFoldGlobals.mli constFoldGlobals.ml \
 closure.mli closure.ml flatten.mli flatten.ml elimTuple.mli elimTuple.ml tace.mli tace.ml betaCls.ml betaCls.mli \
 assocCls.ml assocCls.mli constFoldCls.ml constFoldCls.mli elimCls.ml elimCls.mli asm.mli asm.ml virtual.mli virtual.ml \
-simm.mli simm.ml addId.mli addId.ml regAlloc.mli regAlloc.ml riscV.mli riscV.ml preEmit.mli preEmit.ml emit.mli emit.ml printType.ml \
+simm.mli simm.ml cseAsm.mli cseAsm.ml betaAsm.mli betaAsm.ml constFoldAsm.mli constFoldAsm.ml elimAsm.mli elimAsm.ml \
+addId.mli addId.ml regAlloc.mli regAlloc.ml riscV.mli riscV.ml preEmit.mli preEmit.ml emit.mli emit.ml printType.ml \
 main.mli main.ml
 
 # ↓テストプログラムが増えたら、これも増やす
@@ -45,25 +46,28 @@ manyargs fiszero fless fib2 ack2 adder2 global
 do_test: $(TESTS:%=test/%.s) # do_test: $(TESTS:%=test/%.cmp)
 
 .PRECIOUS: test/%.s test/% test/%.res test/%.ans test/%.cmp test/%.parsed test/%.normalized test/%.alpha test/%.iterated \
-test/%.cfg test/%.closure test/%.flatten test/%.tace test/%.cls_opt test/%.block test/%.virtual test/%.simm test/%.addid \
+test/%.cfg test/%.closure test/%.flatten test/%.tace test/%.cls_opt test/%.block test/%.virtual test/%.simm test/%.asm_opt test/%.addid \
 test/%.regalloc test/%.preemit test/%main.ml test/%main.s test/%main test/%main.res test/%main.ans test/%main.cmp \
 test/%main.parsed test/%main.normalized test/%main.alpha test/%main.iterated test/%main.cfg test/%main.closure test/%main.flatten \
-test/%main.tace test/%main.cls_opt test/%main.block test/%main.virtual test/%main.simm test/%main.addid test/%main.regalloc \
-test/%main.preemit \
+test/%main.tace test/%main.cls_opt test/%main.block test/%main.virtual test/%main.simm test/%main.asm_opt test/%main.addid \
+test/%main.regalloc test/%main.preemit \
 minrt.* test/*.cse test/*.beta test/*.assoc test/*.inline test/*.cf test/*.elim test/*.logic \
-*.cse *.beta *.assoc *.inline *.cf *.elim *.logic
+test/*.cseasm test/*.betaasm test/*.cfasm test/*.elimasm \
+*.cse *.beta *.assoc *.inline *.cf *.elim *.logic *.cseasm *.betaasm *.cfasm *.elimasm
 TRASH = $(TESTS:%=test/%.s) $(TESTS:%=test/%) $(TESTS:%=test/%.res) $(TESTS:%=test/%.ans) $(TESTS:%=test/%.cmp) \
 $(TESTS:%=test/%.parsed) $(TESTS:%=test/%.normalized) $(TESTS:%=test/%.alpha) $(TESTS:%=test/%.iterated) $(TESTS:%=test/%.cfg) \
 $(TESTS:%=test/%.closure) $(TESTS:%=test/%.flatten) $(TESTS:%=test/%.tace) $(TESTS:%=test/%.cls_opt) $(TESTS:%=test/%.block) \
-$(TESTS:%=test/%.virtual) $(TESTS:%=test/%.simm) $(TESTS:%=test/%.addid) $(TESTS:%=test/%.regalloc) $(TESTS:%=test/%.preemit) \
+$(TESTS:%=test/%.virtual) $(TESTS:%=test/%.simm) $(TESTS:%=test/%.asm_opt) $(TESTS:%=test/%.addid) $(TESTS:%=test/%.regalloc) \
+$(TESTS:%=test/%.preemit) \
 $(TESTS:%=test/%main.ml) $(TESTS:%=test/%main.s) $(TESTS:%=test/%main) $(TESTS:%=test/%main.res) $(TESTS:%=test/%main.ans) \
 $(TESTS:%=test/%main.cmp) $(TESTS:%=test/%main.parsed) $(TESTS:%=test/%main.normalized) $(TESTS:%=test/%main.alpha) \
 $(TESTS:%=test/%main.iterated) $(TESTS:%=test/%main.cfg) $(TESTS:%=test/%main.closure) $(TESTS:%=test/%main.flatten) \
 $(TESTS:%=test/%main.tace) $(TESTS:%=test/%main.cls_opt) $(TESTS:%=test/%main.block) \
-$(TESTS:%=test/%main.virtual) $(TESTS:%=test/%main.simm) $(TESTS:%=test/%main.addid) $(TESTS:%=test/%main.regalloc) \
-$(TESTS:%=test/%main.preemit) \
+$(TESTS:%=test/%main.virtual) $(TESTS:%=test/%main.simm) $(TESTS:%=test/%main.asm_opt) $(TESTS:%=test/%main.addid) \
+$(TESTS:%=test/%main.regalloc) $(TESTS:%=test/%main.preemit) \
 minrt.* test/*.cse test/*.beta test/*.assoc test/*.inline test/*.cf test/*.elim test/*.logic \
-*.cse *.beta *.assoc *.inline *.cf *.elim *.logic
+test/*.cseasm test/*.betaasm test/*.cfasm test/*.elimasm \
+*.cse *.beta *.assoc *.inline *.cf *.elim *.logic *.cseasm *.betaasm *.cfasm *.elimasm
 
 test/%main.ml: library.ml test/%.ml
 	cp /dev/null $@
@@ -86,7 +90,8 @@ min-caml.html: main.mli main.ml id.ml m.ml s.ml \
 		inline.mli inline.ml logicOpt.mli logicOpt.ml constFold.mli constFold.ml elim.mli elim.ml \
 		constFoldGlobals.mli constFoldGlobals.ml closure.mli closure.ml flatten.mli flatten.ml elimTuple.mli elimTuple.ml \
 		tace.mli tace.mli betaCls.ml betaCls.mli assocCls.ml assocCls.mli constFoldCls.ml constFoldCls.mli elimCls.ml elimCls.mli \
-		asm.mli asm.ml virtual.mli virtual.ml simm.mli simm.ml addId.mli addId.ml regAlloc.mli regAlloc.ml \
+		asm.mli asm.ml virtual.mli virtual.ml simm.mli simm.ml cseAsm.mli cseAsm.ml betaAsm.mli betaAsm.ml \
+		constFoldAsm.mli constFoldAsm.ml elimAsm.mli elimAsm.ml addId.mli addId.ml regAlloc.mli regAlloc.ml \
 		riscV.mli riscV.ml preEmit.mli preEmit.ml emit.mli emit.ml printType.ml 
 	./to_sparc
 	caml2html -o min-caml.html $^
