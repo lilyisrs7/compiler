@@ -40,12 +40,10 @@ type prog = Prog of (Id.l * float * int) list * fundef list * t
 
 let fletd(x, e1, e2) =
   match e2 with
-  | Ans(_, pos) -> Let((x, Type.Float), e1, e2, pos)
-  | Let(_, _, _, pos) -> Let((x, Type.Float), e1, e2, pos)
+  | Ans(_, pos) | Let(_, _, _, pos) -> Let((x, Type.Float), e1, e2, pos)
 let seq(e1, e2) =
   match e2 with
-  | Ans(_, pos) -> Let((Id.gentmp Type.Unit, Type.Unit), e1, e2, pos)
-  | Let(_, _, _, pos) -> Let((Id.gentmp Type.Unit, Type.Unit), e1, e2, pos)
+  | Ans(_, pos) | Let(_, _, _, pos) -> Let((Id.gentmp Type.Unit, Type.Unit), e1, e2, pos)
 
 let regs = (* Array.init 16 (fun i -> Printf.sprintf "%%r%d" i) *)
   [| "x4"; "x5"; "x6"; "x7"; "x8"; "x9"; "x10"; "x11"; "x12"; "x13"; "x14"; "x15"; "x16"; "x17";
