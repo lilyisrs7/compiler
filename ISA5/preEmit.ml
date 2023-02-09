@@ -233,11 +233,11 @@ let f (Prog(data, fundefs, e)) =
   let cmp_dict = (* lui/oriによりロードされる回数の多い順 *)
     [(0.01, 1); (-0.2, 2); (-0.1, 3); (100000000.0, 4); (150.0, 5); (-150.0, 6); (-1.0, 7); (10.0, 8); (0.05, 9); (20.0, 10);
      (0.5, 11); (0.1, 12); (-2.0, 13)] in
-  let cmp (Id.L(_), d1, _) (Id.L(_), d2, _) =
+  let cmp (Id.L(_), d1) (Id.L(_), d2) =
     compare (try List.assoc d1 cmp_dict with Not_found -> 40) (try List.assoc d2 cmp_dict with Not_found -> 40) in
   let data = List.sort cmp data in
   List.iter
-    (fun (Id.L(x), d, _) ->
+    (fun (Id.L(x), d) ->
       if d = 0.0 then label_zero := x
       else if d = 1.0 then label_one := x
       else if d = 8388608.0 then label_lib := x)
@@ -246,19 +246,19 @@ let f (Prog(data, fundefs, e)) =
     if !label_zero = "" then
       (let x = Id.genid "l" in
        label_zero := x;
-       (Id.L(x), 0.0, 0) :: data)
+       (Id.L(x), 0.0) :: data)
     else data in
   let data =
     if !label_one = "" then
       (let x = Id.genid "l" in
        label_one := x;
-       (Id.L(x), 1.0, 0) :: data)
+       (Id.L(x), 1.0) :: data)
     else data in
   let data =
     if !label_lib = "" then
       (let x = Id.genid "l" in
        label_lib := x;
-       (Id.L(x), 8388608.0, 0) :: data)
+       (Id.L(x), 8388608.0) :: data)
     else data in
   loaded_labels := M.add_list [(!label_zero, reg_fzero); (!label_one, reg_fone); (!label_lib, reg_flib)] !loaded_labels;
   let reg_for_label = S.elements (S.diff (S.diff (S.of_list allfregs) (S.singleton reg_fsw)) !used_regs) in
@@ -273,7 +273,7 @@ let f (Prog(data, fundefs, e)) =
                                     (loaded_labels := M.add label reg !loaded_labels;
                                      ld_label_noprint tl1 tl2)
                                   else ld_label_noprint reg_for_label tl2 in
-  ld_label_noprint reg_for_label (List.map (fun (Id.L(x), _, _) -> x) data);
+  ld_label_noprint reg_for_label (List.map (fun (Id.L(x), _) -> x) data);
   List.iter h fundefs;
   content := !content @ [RiscV.Label("min_caml_start");
                          RiscV.Addi(reg_sp, reg_sp, -4, 0); RiscV.Addi(reg_four, reg_zero, 4, 0);
@@ -293,7 +293,7 @@ let f (Prog(data, fundefs, e)) =
                                                             RiscV.FLw(reg, 0, regs.(0), 0)];
                                      ld_label tl1 tl2)
                                   else ld_label reg_for_label tl2 in
-  ld_label reg_for_label (List.map (fun (Id.L(x), _, _) -> x) data);
+  ld_label reg_for_label (List.map (fun (Id.L(x), _) -> x) data);
   stackset := S.empty;
   stackmap := [];
   g M.empty (NonTail(regs.(0)), e);

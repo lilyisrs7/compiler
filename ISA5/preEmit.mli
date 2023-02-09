@@ -1,1 +1,1 @@
-val f : Asm.prog -> (Id.l * float * int) list * RiscV.t list
+val f : Asm.prog -> (Id.l * float) list * RiscV.t list

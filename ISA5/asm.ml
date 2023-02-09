@@ -36,7 +36,7 @@ and exp = (* 一つ一つの命令に対応する式 (caml2html: sparcasm_exp) *)
   | Restore of Id.t * int (* スタック変数から値を復元 (caml2html: sparcasm_restore) *)
 type fundef = { name : Id.l; args : Id.t list; fargs : Id.t list; body : t; ret : Type.t }
 (* プログラム全体 = 浮動小数点数テーブル + トップレベル関数 + メインの式 (caml2html: sparcasm_prog) *)
-type prog = Prog of (Id.l * float * int) list * fundef list * t
+type prog = Prog of (Id.l * float) list * fundef list * t
 
 let fletd(x, e1, e2) =
   match e2 with

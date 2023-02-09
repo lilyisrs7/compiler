@@ -39,9 +39,9 @@ let rec g env = function (* ¼°¤Î²¾ÁÛ¥Þ¥·¥ó¥³¡¼¥ÉÀ¸À® (caml2html: virtual_g); id¤
       let l =
         try
           (* ¤¹¤Ç¤ËÄê¿ô¥Æ¡¼¥Ö¥ë¤Ë¤¢¤Ã¤¿¤éºÆÍøÍÑ Cf. https://github.com/esumii/min-caml/issues/13 *)
-          (* let (l, _) = List.find (fun (_, d') -> d = d') !data in
-          l *)
-          let rec update lst d acc =
+          let (l, _) = List.find (fun (_, d') -> d = d') !data in
+          l
+          (* let rec update lst d acc =
             match lst with
             | [] -> raise Not_found
             | (l, d', num) :: tl when d = d' -> (l, ((l, d', num + 1) :: tl) @ acc)
@@ -49,10 +49,10 @@ let rec g env = function (* ¼°¤Î²¾ÁÛ¥Þ¥·¥ó¥³¡¼¥ÉÀ¸À® (caml2html: virtual_g); id¤
             | _ -> assert false in
           let (l, new_data) = update !data d [] in
           data := new_data;
-          l
+          l *)
         with Not_found ->
           let l = Id.L(Id.genid "l") in
-          data := (l, d, 1) :: !data;
+          data := (l, d) :: !data;
           l in
       let x = Id.genid "l" in
       Let((x, Type.Int), SetL(l, -1), Ans(LdDF(x, C(0), -1), pos), pos)

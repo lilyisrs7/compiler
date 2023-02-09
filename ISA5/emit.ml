@@ -101,7 +101,7 @@ let f oc (data, content) =
 
   Format.eprintf "generating assembly...@.";
   List.iter
-    (fun (Id.L(x), d, _) ->
+    (fun (Id.L(x), d) ->
       Printf.fprintf oc "%s:\t# %f\n" x d;
       Printf.fprintf oc "\t.word\t%f\n" d)
     data;

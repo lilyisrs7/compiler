@@ -1,1 +1,1 @@
-val f : out_channel -> (Id.l * float * int) list * RiscV.t list -> unit
+val f : out_channel -> (Id.l * float) list * RiscV.t list -> unit
