@@ -1,4 +1,4 @@
-(* constFoldGlobalsで定数化した部分が消える *)
+(* 配列アドレスが定数に *)
 open Asm
 
 let datamap = ref M.empty
@@ -40,11 +40,12 @@ let rec g env = function
      | Ans(exp_, _) -> let e' = g (M.add x exp_ env) e in Let((x, t), exp_, e', pos)
      | Let _ -> concat' exp' (x, t) e g env)
 
-(* intがaddiできる範囲を超えるなら元の方が良い？floatで定数レジスタに入らないなら元の方が良い？ *)
 and g' env = function
   | Mov(x, id) when memi x env -> Format.eprintf "mov %s\n" x; Ans(Set(findi x env, id), -1)
   | Neg(x, id) when memi x env -> Format.eprintf "neg %s\n" x; Ans(Set(-(findi x env), id), -1)
-  | Add(x, y, id) when memi x env && memi' y env -> Format.eprintf "add %s %s\n" x (match y with V(y) -> y | C(y) -> string_of_int y); Ans(Set(findi x env + findi' y env, id), -1) (* 足し算のケース (caml2html: constfold_add) *)
+  | Add(x, y, id) when memi x env && memi' y env ->
+      Format.eprintf "add %s %s\n" x (match y with V(y) -> y | C(y) -> string_of_int y);
+      Ans(Set(findi x env + findi' y env, id), -1)
   | Sub(x, y, id) when memi x env && memi y env -> Format.eprintf "sub %s %s\n" x y; Ans(Set(findi x env - findi y env, id), -1)
   | Mul(x, y, id) when memi x env && memi y env -> Format.eprintf "mul %s %s\n" x y; Ans(Set(findi x env * findi y env, id), -1)
   | Div(x, y, id) when memi x env && memi y env -> Format.eprintf "div %s %s\n" x y; Ans(Set(findi x env / findi y env, id), -1)
@@ -68,7 +69,7 @@ let h { name = l; args = ys; fargs = zs; body = e; ret = t } =
   { name = l; args = ys; fargs = zs; body = g (M.add "x30" (Set(4, -1)) M.empty) e; ret = t }
 
 let f (Prog(data, fundefs, e)) =
-  List.iter (fun (Id.L(x), f, _) -> datamap := M.add x f !datamap) data;
+  List.iter (fun (Id.L(x), f) -> datamap := M.add x f !datamap) data;
   let fundefs' = List.map h fundefs in
   let e' = g (M.add "x30" (Set(4, -1)) M.empty) e in
   Prog(data, fundefs', e')
