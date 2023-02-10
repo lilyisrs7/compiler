@@ -116,7 +116,6 @@ let rec g env env_get e = (* 共通部分式削除ルーチン本体 *)
           | LetRec({ name = (x, t); args = yts; body = e1 }, e2, pos) ->
               let e1' = g env env_get e1 in
               let eff = effect e1' in
-              Format.eprintf "%s %b\n" x eff;
               env_fun := M.add x eff !env_fun;
               let e2' = g env env_get e2 in
               LetRec({ name = (x, t); args = yts; body = e1' }, e2', pos)
