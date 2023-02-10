@@ -67,7 +67,7 @@ let env_fun = ref M.empty (* 関数ごとに副作用の有無を持っておく
 
 let rec effect = function
 | Ans(exp, _) -> effect' exp
-| Let(_, exp, e, _) -> effect' exp || effect e
+| Let((x, t), exp, e, _) -> x = reg_hp || effect' exp || effect e
 
 and effect' = function (* 副作用の有無 *)
 | IfEq(x, y, e1, e2, _) | IfLE(x, y, e1, e2, _) | IfFEq(x, y, e1, e2, _) | IfFLE(x, y, e1, e2, _) ->
