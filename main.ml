@@ -163,19 +163,19 @@ let lexbuf outchan l f outchan_parsed outchan_normalized outchan_alpha outchan_i
   List.iter (print_asm_fundef outchan_virtual 0) fundefs;
   print_asm_t outchan_virtual 0 e;
 
-  let simm = Simm.f vt in
-  let Asm.Prog(data, fundefs, e) = simm in
-  List.iter (print_asm_data outchan_simm 0) data;
-  List.iter (print_asm_fundef outchan_simm 0) fundefs;
-  print_asm_t outchan_simm 0 e;
-
-  let asm_opt = asm_opt !limit_asm f simm in
+  let asm_opt = asm_opt !limit_asm f vt in
   let Asm.Prog(data, fundefs, e) = asm_opt in
   List.iter (print_asm_data outchan_asm_opt 0) data;
   List.iter (print_asm_fundef outchan_asm_opt 0) fundefs;
   print_asm_t outchan_asm_opt 0 e;
 
-  let addid = AddId.f asm_opt in
+  let simm = Simm.f asm_opt in
+  let Asm.Prog(data, fundefs, e) = simm in
+  List.iter (print_asm_data outchan_simm 0) data;
+  List.iter (print_asm_fundef outchan_simm 0) fundefs;
+  print_asm_t outchan_simm 0 e;
+
+  let addid = AddId.f simm in
   let Asm.Prog(data, fundefs, e) = addid in
   List.iter (print_asm_data outchan_addid 0) data;
   List.iter (print_asm_fundef outchan_addid 0) fundefs;
