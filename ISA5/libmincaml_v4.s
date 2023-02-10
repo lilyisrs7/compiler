@@ -81,8 +81,6 @@ ftoi_pos:
 	addi	x4, x0, 0
 	lui		x5, 1258291200
 	ori		x5, x0, 1258291200
-	lui		x6, 8388608
-	ori		x6, x0, 8388608
 	fle		f29, f1, ftoi_g
 ftoi_l:
 	fadd	f1, f1, f29
@@ -91,6 +89,8 @@ ftoi_l:
 	sub		x4, x4, x5
 	jalr	x0, x1, 0
 ftoi_g:
+	lui		x6, 8388608
+	ori		x6, x0, 8388608
 	fsub	f1, f1, f29
 	add		x4, x4, x6
 	fle		f29, f1, ftoi_g
