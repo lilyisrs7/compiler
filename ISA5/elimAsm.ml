@@ -4,21 +4,21 @@ let env_fun = ref M.empty (* 関数ごとに副作用の有無を持っておく *)
 
 let rec effect = function
 | Ans(exp, _) -> effect' exp
-| Let(_, exp, e, _) -> effect' exp || effect e
+| Let((x, t), exp, e, _) -> x = reg_hp || effect' exp || effect e
 
 and effect' = function (* 副作用の有無 *)
 | IfEq(x, y, e1, e2, _) | IfLE(x, y, e1, e2, _) | IfFEq(x, y, e1, e2, _) | IfFLE(x, y, e1, e2, _) ->
-    x = reg_hp || y = reg_hp || effect e1 || effect e2
+    (* x = reg_hp || y = reg_hp || *)effect e1 || effect e2
 | CallCls(x, ys, zs, _) | CallDir(Id.L(x), ys, zs, _) ->
     (try
-       List.exists (fun y -> y = reg_hp) ys || List.exists (fun z -> z = reg_hp) zs || M.find x !env_fun
-     with Not_found -> List.exists (fun y -> y = reg_hp) ys || List.exists (fun z -> z = reg_hp) zs (* 関数内で再帰的に呼ばれた場合 *))
+       (* List.exists (fun y -> y = reg_hp) ys || List.exists (fun z -> z = reg_hp) zs || *)M.find x !env_fun
+     with Not_found -> false(* List.exists (fun y -> y = reg_hp) ys || List.exists (fun z -> z = reg_hp) zs *)(* 関数内で再帰的に呼ばれた場合 *))
 | St _ | StDF _ | Save _ -> true
-| Mov(x, _) | Neg(x, _) | FMovD(x, _) | FNegD(x, _) | Sqrt(x, _)
+(* | Mov(x, _) | Neg(x, _) | FMovD(x, _) | FNegD(x, _) | Sqrt(x, _)
 | Add(x, C(_), _) | Ld(x, C(_), _) | LdDF(x, C(_), _) -> x = reg_hp
 | Add(x, V(y), _) | Ld(x, V(y), _) | LdDF(x, V(y), _)
 | Sub(x, y, _) | Mul(x, y, _) | Div(x, y, _)
-| FAddD(x, y, _) | FSubD(x, y, _) | FMulD(x, y, _) | FDivD(x, y, _) -> x = reg_hp || y = reg_hp
+| FAddD(x, y, _) | FSubD(x, y, _) | FMulD(x, y, _) | FDivD(x, y, _) -> x = reg_hp || y = reg_hp *)
 | _ -> false
 
 let rec g = function
