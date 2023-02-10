@@ -105,7 +105,7 @@ let rec g env = function (* ¼°¤Î²¾ÁÛ¥Þ¥·¥ó¥³¡¼¥ÉÀ¸À® (caml2html: virtual_g); id¤
           (fun y offset store_fv -> seq(StDF(y, x, C(offset), -1), store_fv))
           (fun y _ offset store_fv -> seq(St(y, x, C(offset), -1), store_fv)) in
       Let((x, t), Mov(reg_hp, -1),
-          Let((reg_hp, Type.Int), Add(reg_hp, C(offset), -1), (* Let((reg_hp, Type.Int), Add(reg_hp, C(align offset)), *)
+          Let((reg_hp, Type.Int), Add(reg_hp, C(offset), -1), (* -65536 <= offset <= 65535 *) (* Let((reg_hp, Type.Int), Add(reg_hp, C(align offset)), *)
               (let z = Id.genid "l" in
               Let((z, Type.Int), SetL(l, -1),
                   seq(St(z, x, C(0), -1),
@@ -130,7 +130,7 @@ let rec g env = function (* ¼°¤Î²¾ÁÛ¥Þ¥·¥ó¥³¡¼¥ÉÀ¸À® (caml2html: virtual_g); id¤
           (fun x offset store -> seq(StDF(x, y, C(offset), -1), store))
           (fun x _ offset store -> seq(St(x, y, C(offset), -1), store)) in
       Let((y, Type.Tuple(List.map (fun x -> M.find x env) xs)), Mov(reg_hp, -1),
-          Let((reg_hp, Type.Int), Add(reg_hp, C(offset), -1), (* Let((reg_hp, Type.Int), Add(reg_hp, C(align offset)), *)
+          Let((reg_hp, Type.Int), Add(reg_hp, C(offset), -1),  (* -65536 <= offset <= 65535 *)(* Let((reg_hp, Type.Int), Add(reg_hp, C(align offset)), *)
               store, pos), pos)
   | Closure.LetTuple(xts, y, e2, pos) ->
       let s = Closure.fv e2 in

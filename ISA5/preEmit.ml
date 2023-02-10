@@ -59,6 +59,11 @@ let rec g repl = function (* 命令列のアセンブリ生成 (caml2html: emit_g) *)
       if List.mem id !func_arg_id then content := !content @ [RiscV.Addi(x, reg_zero, 0, pos)]
       else Format.eprintf "deleted addi %s %s 0 %d\n" x reg_zero pos;
       g (M.add x reg_zero repl) (dest, e)
+  (* add(_, 0), mov(_)の処理 *)
+  | dest, Let((x, Type.Int), Add(y, C(0), id), e, pos) | dest, Let((x, Type.Int), Mov(y, id), e, pos) ->
+      if List.mem id !func_arg_id then content := !content @ [RiscV.Addi(x, y, 0, pos)]
+      else Format.eprintf "deleted addi %s %s 0 %d\n" x y pos;
+      g (M.add x y repl) (dest, e)
   | dest, Let((x, t), exp, e, pos) ->
       g' repl pos (NonTail(x), exp);
       g (M.remove x repl) (dest, e)

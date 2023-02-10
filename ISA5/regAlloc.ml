@@ -253,7 +253,9 @@ and g'_if dest cont regenv exp constr e1 e2 pos = (* ifのレジスタ割り当て (caml2
 and g'_call dest cont regenv constr x ys zs id pos = (* 関数呼び出しのレジスタ割り当て (caml2html: regalloc_call) *)
 	let yrs = List.map (fun y -> find y Type.Int regenv) ys in
 	let zrs = List.map (fun z -> find z Type.Float regenv) zs in
-	let use_reg = S.union (S.of_list [reg_cl; reg_sw; reg_fsw]) (S.of_list (yrs @ zrs)) in
+	let use_reg =
+		if String.starts_with ~prefix:"min_caml_" x then S.of_list (yrs @ zrs)
+		else S.union (S.of_list [reg_cl; reg_sw; reg_fsw]) (S.of_list (yrs @ zrs)) in
 	if M.mem x !func_use_reg then
 		let use_reg = S.union use_reg (M.find x !func_use_reg) in
 		List.fold_left
