@@ -61,7 +61,7 @@ and g' env = function
           datamap := (l, v) :: !datamap;
           l in
       Ans(SetL(Id.L(l), id), -1)
-  | FAddD(x, y, id) when memf x env && memf y env ->
+  (* | FAddD(x, y, id) when memf x env && memf y env ->
       Format.eprintf "faddd %s %s\n" x y;
       let v = List.assoc (findf x env) !datamap +. List.assoc (findf y env) !datamap in
       let l =
@@ -115,7 +115,7 @@ and g' env = function
           let l = Id.genid "l" in
           datamap := (l, v) :: !datamap;
           l in
-      Ans(SetL(Id.L(l), id), -1)
+      Ans(SetL(Id.L(l), id), -1) *)
   | IfEq(x, y, e1, e2, id) when memi x env && memi y env -> if findi x env = findi y env then g env e1 else g env e2
   | IfEq(x, y, e1, e2, id) -> Ans(IfEq(x, y, g env e1, g env e2, id), -1)
   | IfLE(x, y, e1, e2, id) when memi x env && memi y env -> if findi x env <= findi y env then g env e1 else g env e2
