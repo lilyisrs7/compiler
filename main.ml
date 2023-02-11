@@ -10,12 +10,12 @@ let nocfg_flag = ref false
 let printiter_flag = ref false
 let printiterasm_flag = ref false
 
-let rec iter n f e = (* 最適化処理をくりかえす (caml2html: main_iter) *)
+let rec iter n f e env_int = (* 最適化処理をくりかえす (caml2html: main_iter) *)
   Format.eprintf "iteration %d@." n;
   Inline.inline_rec := if n = !limit then true else false;
   if n = 0 then e else
   if !printiter_flag then
-    let e_cse = if !nocse_flag then e else Cse.f e in
+    let e_cse = if !nocse_flag then e else Cse.f env_int e in
     let oc = open_out (f ^ string_of_int n ^ ".cse") in
     let _ = print_knormal_t oc 0 e_cse in
     let _ = close_out oc in
@@ -40,7 +40,7 @@ let rec iter n f e = (* 最適化処理をくりかえす (caml2html: main_iter) *)
     let _ = print_knormal_t oc 0 e_cf in
     let _ = close_out oc in
 
-    let e_elim = Elim.f e_cf in
+    let e_elim, env_int = Elim.f e_cf in
     let oc = open_out (f ^ string_of_int n ^ ".elim") in
     let _ = print_knormal_t oc 0 e_elim in
     let _ = close_out oc in
@@ -51,13 +51,13 @@ let rec iter n f e = (* 最適化処理をくりかえす (caml2html: main_iter) *)
     let _ = close_out oc in
 
     if e = e_logic then e else
-    iter (n - 1) f e_logic
+    iter (n - 1) f e_logic env_int
   else
-    let e' =
-      (fun e -> if !nologic_flag then e else LogicOpt.f e)
-        (Elim.f (ConstFold.f (Inline.f (Assoc.f (Beta.f (if !nocse_flag then e else Cse.f e)))))) in
+    let e', env_int =
+      (fun (e, env) -> if !nologic_flag then e, env else LogicOpt.f e, env)
+        (Elim.f (ConstFold.f (Inline.f (Assoc.f (Beta.f (if !nocse_flag then e else Cse.f env_int e)))))) in
     if e = e' then e else
-    iter (n - 1) f e'
+    iter (n - 1) f e' env_int
 
 let rec closure_opt n e = (* タプル平坦化、tace後の最適化 *)
   Format.eprintf "iteration %d@." n;
@@ -125,13 +125,13 @@ let lexbuf outchan l f outchan_parsed outchan_normalized outchan_alpha outchan_i
   let normalized = KNormal.f (Typing.f parsed) in
   print_knormal_t outchan_normalized 0 normalized;
 
-  let alpha = Alpha.f normalized in
+  let alpha, env_int = Alpha.f normalized in
   print_knormal_t outchan_alpha 0 alpha;
 
-  let iterated = iter !limit f alpha in
+  let iterated = iter !limit f alpha env_int in
   print_knormal_t outchan_iterated 0 iterated;
   
-  let cfg = if !nocfg_flag then iterated else Alpha.f (ConstFoldGlobals.f iterated) in
+  let cfg = if !nocfg_flag then iterated else fst (Alpha.f (ConstFoldGlobals.f iterated)) in
   print_knormal_t outchan_cfg 0 cfg;
 
   let closure = Closure.f cfg in

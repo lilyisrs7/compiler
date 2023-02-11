@@ -25,5 +25,5 @@ type t =
 | NPExtArray of Id.t
 | NPExtFunApp of Id.t * Id.t list
 
-val g : (t * Id.t) list -> (t * Id.t) list -> KNormal.t -> KNormal.t
-val f : KNormal.t -> KNormal.t
+val g : (t * Id.t) list -> (t * Id.t) list -> int M.t -> KNormal.t -> KNormal.t
+val f : int M.t -> KNormal.t -> KNormal.t

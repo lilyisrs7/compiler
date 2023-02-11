@@ -2,6 +2,8 @@
 
 open KNormal
 
+let env_int = ref M.empty
+
 let find x env = try M.find x env with Not_found -> x
 
 let rec g env = function (* α変換ルーチン本体 (caml2html: alpha_g) *)
@@ -24,7 +26,9 @@ let rec g env = function (* α変換ルーチン本体 (caml2html: alpha_g) *)
       Let(("reg_hp_init", t), g env e1, g env e2, pos)
   | Let((x, t), e1, e2, pos) -> (* letのα変換 (caml2html: alpha_let) *)
       let x' = Id.genid x in
-      Let((x', t), g env e1, g (M.add x x' env) e2, pos)
+      let e1' = g env e1 in
+      let _ = match e1' with Int(i, _) -> env_int := M.add x' i !env_int | _ -> () in
+      Let((x', t), e1', g (M.add x x' env) e2, pos)
   | Var(x, pos) -> Var(find x env, pos)
   | LetRec({ name = (x, t); args = yts; body = e1 }, e2, pos) -> (* let recのα変換 (caml2html: alpha_letrec) *)
       let env = M.add x (Id.genid x) env in
@@ -47,4 +51,6 @@ let rec g env = function (* α変換ルーチン本体 (caml2html: alpha_g) *)
   | ExtArray(x, pos) -> ExtArray(x, pos)
   | ExtFunApp(x, ys, pos) -> ExtFunApp(x, List.map (fun y -> find y env) ys, pos)
 
-let f = g M.empty
+let f e =
+  let e' = g M.empty e in
+  e', !env_int
