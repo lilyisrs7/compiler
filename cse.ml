@@ -64,7 +64,7 @@ let rec effect = function (* 副作用の有無 *)
       (try
          M.find x !env_fun
        with Not_found -> false (* 関数内で再帰的に呼ばれた場合はfalseとしておく *))
-  | ExtFunApp(x, _, _) when x = "float_of_int" || x = "int_of_float" || x = "floor" -> false
+  | ExtFunApp(x, _, _) when x = "float_of_int" || x = "int_of_float" || x = "floor" || x = "sqrt" -> false
   | Put _ | ExtFunApp _ -> true
   | _ -> false
 
