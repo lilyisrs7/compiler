@@ -82,13 +82,25 @@ let rec repl_assoc repl key =
   if M.mem key repl then repl_assoc repl (M.find key repl)
   else key
 
-let rec elim_feqfle_seq = function
+let rec elim_jump_seq = function
+| Jal(x, l, pos) :: Jal _ :: tl when x = Asm.reg_zero ->
+    elim_jump_seq (Jal(x, l, pos) :: tl)
+| Beq(x1, x2, lb, pos) :: Beq(x3, x4, _, _) :: tl when (x1 = x3 && x2 = x4) || (x1 = x4 && x2 = x3) ->
+    elim_jump_seq (Beq(x1, x2, lb, pos) :: tl)
+| Ble(x1, x2, lb, pos) :: Ble(x3, x4, _, _) :: tl when x1 = x3 && x2 = x4 ->
+    elim_jump_seq (Ble(x1, x2, lb, pos) :: tl)
 | Feq(x1, x2, lb, pos) :: Feq(x3, x4, _, _) :: tl when (x1 = x3 && x2 = x4) || (x1 = x4 && x2 = x3) ->
-    elim_feqfle_seq (Feq(x1, x2, lb, pos) :: tl)
+    elim_jump_seq (Feq(x1, x2, lb, pos) :: tl)
 | Fle(x1, x2, lb, pos) :: Fle(x3, x4, _, _) :: tl when x1 = x3 && x2 = x4 ->
-    elim_feqfle_seq (Fle(x1, x2, lb, pos) :: tl)
+    elim_jump_seq (Fle(x1, x2, lb, pos) :: tl)
 | [] -> []
-| hd :: tl -> hd :: (elim_feqfle_seq tl)
+| hd :: tl -> hd :: (elim_jump_seq tl)
+
+let rec elim_jump2 = function
+| Jal(x, l1, p) :: Label(l2) :: tl when x = Asm.reg_zero && l1 = l2 ->
+    elim_jump2 (Label(l2) :: tl)
+| [] -> []
+| hd :: tl -> hd :: (elim_jump2 tl)
 
 let f oc (data, content) =
   let remove, repl =
@@ -97,7 +109,8 @@ let f oc (data, content) =
     | _ -> failwith "no label in the first line\n" in
   let repl = M.map (repl_assoc repl) repl in
   let content' = elim_jump remove repl content [] false in
-  let asm = elim_feqfle_seq content' in
+  let content'' = elim_jump_seq content' in
+  let asm = elim_jump2 content'' in
 
   Format.eprintf "generating assembly...@.";
   List.iter

@@ -65,24 +65,36 @@ let separate_id = function
 
 let env_fun = ref M.empty (* 関数ごとに副作用の有無を持っておく *)
 
-let rec effect = function
-| Ans(exp, _) -> effect' exp
-| Let((x, t), exp, e, _) -> x = reg_hp || effect' exp || effect e
+let rec effect env_ld = function
+| Ans(exp, _) -> effect' env_ld exp
+| Let((x, t), exp, e, _) ->
+    let b1, env_ld1 = effect' env_ld exp in
+    let b2, env_ld2 = effect env_ld e in
+    x = reg_hp || b1 || b2, List.filter (fun v -> List.mem v env_ld2) env_ld1 (* 共通部分 *)
 
-and effect' = function (* 副作用の有無 *)
+and effect' env_ld = function (* 副作用の有無 *)
 | IfEq(x, y, e1, e2, _) | IfLE(x, y, e1, e2, _) | IfFEq(x, y, e1, e2, _) | IfFLE(x, y, e1, e2, _) ->
-    x = reg_hp || y = reg_hp || effect e1 || effect e2
+    let b1, env_ld1 = effect env_ld e1 in
+    let b2, env_ld2 = effect env_ld e2 in
+    x = reg_hp || y = reg_hp || b1 || b2, List.filter (fun v -> List.mem v env_ld2) env_ld1 (* 共通部分 *)
 | CallCls(x, ys, zs, _) | CallDir(Id.L(x), ys, zs, _) ->
     (try
-       List.exists (fun y -> y = reg_hp) ys || List.exists (fun z -> z = reg_hp) zs || M.find x !env_fun
-     with Not_found -> List.exists (fun y -> y = reg_hp) ys || List.exists (fun z -> z = reg_hp) zs (* 関数内で再帰的に呼ばれた場合 *))
-| St _ | StDF _ | Save _ -> true
+       List.exists (fun y -> y = reg_hp) ys || List.exists (fun z -> z = reg_hp) zs || M.find x !env_fun, env_ld
+     with Not_found -> List.exists (fun y -> y = reg_hp) ys || List.exists (fun z -> z = reg_hp) zs, env_ld (* 関数内で再帰的に呼ばれた場合 *))
+| St(_, x, y, _) | StDF(_, x, y, _) ->
+    let check (ld, var) =
+      match ld with
+      | NPLd(x', y') when x' = x -> y' <> y
+      | NPLdDF(x', y') when x' = x -> y' <> y
+      | _ -> true in
+    true, List.filter check env_ld
+(* | Save(x, y, _) -> true, env_ld *)
 | Mov(x, _) | Neg(x, _) | FMovD(x, _) | FNegD(x, _) | Sqrt(x, _)
-| Add(x, C(_), _) | Ld(x, C(_), _) | LdDF(x, C(_), _) -> x = reg_hp
+| Add(x, C(_), _) | Ld(x, C(_), _) | LdDF(x, C(_), _) -> x = reg_hp, env_ld
 | Add(x, V(y), _) | Ld(x, V(y), _) | LdDF(x, V(y), _)
 | Sub(x, y, _) | Mul(x, y, _) | Div(x, y, _)
-| FAddD(x, y, _) | FSubD(x, y, _) | FMulD(x, y, _) | FDivD(x, y, _) -> x = reg_hp || y = reg_hp
-| _ -> false
+| FAddD(x, y, _) | FSubD(x, y, _) | FMulD(x, y, _) | FDivD(x, y, _) -> x = reg_hp || y = reg_hp, env_ld
+| _ -> false, env_ld
 
 let rec g env env_ld = function (* env, env_ld : t * Id.t *)
 | Ans(exp, pos) -> Ans(g' env env_ld exp, pos)
@@ -95,7 +107,10 @@ let rec g env env_ld = function (* env, env_ld : t * Id.t *)
         let exp' = Mov(List.assoc npexp env_ld, pos') in Let((x, t), exp', g env env_ld e, pos)
       with Not_found ->
         let exp' = g' env env_ld exp in
-        if effect' exp' then Let((x, t), exp', g env [] e, pos)
+        let b, env_ld' = effect' env_ld exp' in
+        if b then
+          let e' = g env env_ld' e in
+          Let((x, t), exp', e', pos)
         else
           let npexp', pos'' = separate_id exp' in
           try
@@ -105,7 +120,7 @@ let rec g env env_ld = function (* env, env_ld : t * Id.t *)
               let exp'' = Mov(List.assoc npexp' env_ld, pos') in Let((x, t), exp'', g env env_ld e, pos)
             with Not_found ->
               match npexp' with
-              | NPLd _ | NPLdDF _ | NPRestore _ -> Let((x, t), exp', g env ((npexp', x) :: env_ld) e, pos)
+              | NPLd _ | NPLdDF _ -> Let((x, t), exp', g env ((npexp', x) :: env_ld) e, pos)
               | _ -> Let((x, t), exp', g ((npexp', x) :: env) env_ld e, pos)
 
 and g' env env_ld = function
@@ -129,7 +144,7 @@ and g' env env_ld = function
 
 let h { name = Id.L(x); args = ys; fargs = zs; body = e; ret = t} =
   let e' = g [] [] e in
-  let eff = effect e' in
+  let eff = fst (effect [] e') in
   (* Format.eprintf "%s %b\n" x eff; *)
   env_fun := M.add x eff !env_fun;
   { name = Id.L(x); args = ys; fargs = zs; body = e'; ret = t }
