@@ -59,11 +59,11 @@ let rec g repl = function (* 命令列のアセンブリ生成 (caml2html: emit_g) *)
       if List.mem id !func_arg_id then content := !content @ [RiscV.Addi(x, reg_zero, 0, pos)]
       else Format.eprintf "deleted addi %s %s 0 %d\n" x reg_zero pos;
       g (M.add x reg_zero repl) (dest, e)
-  (* add(_, 0), mov(_)の処理 *)
-  | dest, Let((x, Type.Int), Add(y, C(0), id), e, pos) | dest, Let((x, Type.Int), Mov(y, id), e, pos) ->
+  (* add(_, 0), mov(_)の処理 グローバル変数と組み合わせるとバグる *)
+  (* | dest, Let((x, Type.Int), Add(y, C(0), id), e, pos) | dest, Let((x, Type.Int), Mov(y, id), e, pos) ->
       if List.mem id !func_arg_id then content := !content @ [RiscV.Addi(x, y, 0, pos)]
       else Format.eprintf "deleted addi %s %s 0 %d\n" x y pos;
-      g (M.add x y repl) (dest, e)
+      g (M.add x y repl) (dest, e) *)
   | dest, Let((x, t), exp, e, pos) ->
       g' repl pos (NonTail(x), exp);
       g (M.remove x repl) (dest, e)
@@ -76,7 +76,7 @@ and g' repl pos = function (* 各命令のアセンブリ生成 (caml2html: emit_gprime) *)
         content := !content @ [RiscV.Lui(x, i, pos); RiscV.Ori(x, reg_zero, i, pos)]
   | NonTail(x), SetL(Id.L(y), _) -> (* ラベルからレジスタに値を移す *)
       content := !content @ [RiscV.LuiLb(x, y, pos); RiscV.OriLb(x, reg_zero, y, pos)]
-  | NonTail(x), Mov(y, _) -> if x <> y then content := !content @ [RiscV.Addi(x, find y repl, 0, pos)]
+  | NonTail(x), Mov(y, _) -> if x <> find y repl then content := !content @ [RiscV.Addi(x, find y repl, 0, pos)]
   | NonTail(x), Neg(y, _) -> content := !content @ [RiscV.Sub(x, reg_zero, find y repl, pos)] (* 符号反転 *)
   | NonTail(x), Add(y, V(z), _) -> content := !content @ [RiscV.Add(x, find y repl, find z repl, pos)]
   | NonTail(x), Add(y, C(z), _) -> content := !content @ [RiscV.Addi(x, find y repl, z, pos)]
@@ -91,7 +91,7 @@ and g' repl pos = function (* 各命令のアセンブリ生成 (caml2html: emit_gprime) *)
       (match z' with
        | C(z) -> content := !content @ [RiscV.Sw(find x repl, z, find y repl, pos)]
        | _ -> failwith "second arg of St is not int")
-  | NonTail(x), FMovD(y, _) -> if x <> y then content := !content @ [RiscV.FAdd(x, reg_fzero, find y repl, pos)]
+  | NonTail(x), FMovD(y, _) -> if x <> find y repl then content := !content @ [RiscV.FAdd(x, reg_fzero, find y repl, pos)]
   | NonTail(x), FNegD(y, _) -> content := !content @ [RiscV.FSub(x, reg_fzero, find y repl, pos)] (* 符号反転 *)
   | NonTail(x), FAddD(y, z, _) -> content := !content @ [RiscV.FAdd(x, find y repl, find z repl, pos)]
   | NonTail(x), FSubD(y, z, _) -> content := !content @ [RiscV.FSub(x, find y repl, find z repl, pos)]
@@ -237,7 +237,7 @@ let f (Prog(data, fundefs, e)) =
   let label_lib = ref "" in
   let cmp_dict = (* lui/oriによりロードされる回数の多い順 *)
     [(0.01, 1); (-0.2, 2); (-0.1, 3); (100000000.0, 4); (150.0, 5); (-150.0, 6); (-1.0, 7); (10.0, 8); (0.05, 9); (20.0, 10);
-     (0.5, 11); (0.1, 12); (-2.0, 13)] in
+     (255.0, 11); (0.5, 12); (0.1, 13); (-2.0, 14)] in
   let cmp (Id.L(_), d1) (Id.L(_), d2) =
     compare (try List.assoc d1 cmp_dict with Not_found -> 40) (try List.assoc d2 cmp_dict with Not_found -> 40) in
   let data = List.sort cmp data in

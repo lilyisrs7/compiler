@@ -18,7 +18,7 @@ let rec effect = function (* 副作用の有無 (caml2html: elim_effect) *)
         (try
            M.find x !env_fun
          with Not_found -> false (* 関数内で再帰的に呼ばれた場合はfalseとしておく *))
-  | Put _ -> true
+  | Put _ | Tuple _ -> true
   | _ -> false
 
 let rec g = function (* 不要定義削除ルーチン本体 (caml2html: elim_f) *)

@@ -113,8 +113,8 @@ let rec g env known = function (* クロージャ変換ルーチン本体 (caml2html: closure
   | KNormal.ExtFunApp(x, ys, pos) -> AppDir(Id.L("min_caml_" ^ x), ys, pos)
 
 let f e =
-  Format.eprintf "global array(s):\n";
-  List.iter (fun (x, (t, i)) -> Format.eprintf "%s %d\n" x i) (M.bindings !ConstFoldGlobals.globals);
+  Format.eprintf "global(s):\n";
+  List.iter (fun (x, (_, v)) -> Format.eprintf "%s\n" x) (M.bindings !ConstFoldGlobals.globals);
   toplevel := [];
   let e' = g M.empty S.empty e in
   Prog(List.rev !toplevel, e')
