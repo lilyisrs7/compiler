@@ -276,7 +276,7 @@ let file f = (* ファイルをコンパイルしてファイルに出力する (caml2html: main_file
 let () = (* ここからコンパイラの実行が開始される (caml2html: main_entry) *)
   let files = ref [] in
   Arg.parse
-    [("-inline", Arg.Int(fun i -> Inline.threshold := i), "maximum size of functions inlined");
+    [("-inline", Arg.Int(fun i -> Inline.threshold := i), "maximum size of recursive functions inlined");
      ("-iter", Arg.Int(fun i -> limit := i), "maximum number of optimizations iterated");
      ("-itercls", Arg.Int(fun i -> limit_cls := i), "maximum number of optimizations iterated (closure_opt)");
      ("-iterasm", Arg.Int(fun i -> limit_asm := i), "maximum number of optimizations iterated (asm_opt)");
@@ -288,7 +288,8 @@ let () = (* ここからコンパイラの実行が開始される (caml2html: main_entry) *)
      ("-nocfg", Arg.Unit(fun () -> nocfg_flag := true), "nocfg flag")]
     (fun s -> files := !files @ [s])
     ("Mitou Min-Caml Compiler (C) Eijiro Sumii\n" ^
-     Printf.sprintf "usage: %s [-inline m] [-iter n] [-printiter] [-nocse] [-nologic] [-nocfg] ...filenames without \".ml\"..." Sys.argv.(0));
+     Printf.sprintf "usage: %s [-inline m] [-iter n1] [-itercls n2] [-iterasm n3] [-printiter] [-printiterasm] \
+                     [-nocse] [-nocseasm] [-nologic] [-nocfg] ...filenames without \".ml\"..." Sys.argv.(0));
   List.iter
     (fun f -> ignore (file f))
     !files

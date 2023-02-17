@@ -1,6 +1,6 @@
 open KNormal
 
-(* インライン展開する関数の最大サイズ (caml2html: inline_threshold) *)
+(* インライン展開する再帰関数の最大サイズ (caml2html: inline_threshold) *)
 let threshold = ref 0 (* Mainで-inlineオプションによりセットされる *)
 let inline_rec = ref false (* Mainのiter関数内でセットされる *)
 
