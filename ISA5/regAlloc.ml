@@ -246,7 +246,7 @@ and g'_if dest cont regenv exp constr e1 e2 pos = (* ifのレジスタ割り当て (caml2
 	List.fold_left
 	 	(fun (e, regenv', use_reg) x ->
 		 	if x = fst dest || not (M.mem x regenv) || M.mem x regenv' then (e, regenv', use_reg) else
-			(* if not (S.mem (M.find x regenv) use_reg) then (e, M.add x (M.find x regenv) regenv', use_reg) else *)
+			if not (S.mem (M.find x regenv) use_reg) then (e, M.add x (M.find x regenv) regenv', use_reg) else
 		 	seq(Save(M.find x regenv, x, -1), e), regenv', use_reg) (* そうでない変数は分岐直前にセーブ *)
 	 	(Ans(constr e1' e2', pos), regenv', S.union (S.of_list [reg_cl; reg_sw; reg_fsw]) (S.union use_reg1 use_reg2))
 	 	(fv cont)
@@ -261,7 +261,7 @@ and g'_call dest cont regenv constr x ys zs id pos = (* 関数呼び出しのレジスタ割
 		List.fold_left
 	 		(fun (e, regenv', use_reg) y ->
 				 if y = fst dest || not (M.mem y regenv) then (e, regenv', use_reg) else
-				 (* if not (S.mem (M.find y regenv) use_reg) then (e, M.add y (M.find y regenv) regenv', use_reg) else *)
+				 if not (S.mem (M.find y regenv) use_reg) then (e, M.add y (M.find y regenv) regenv', use_reg) else
 				 (seq(Save(M.find y regenv, y, id), e), regenv', use_reg))
 	 		(Ans(constr yrs zrs, pos), M.empty, use_reg)
 	 		(fv cont)
