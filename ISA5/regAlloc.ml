@@ -318,7 +318,7 @@ let h { name = Id.L(x); args = ys; fargs = zs; body = e; ret = t } = (* 関数のレ
 				let e', regenv', use_reg = g (a, t) (Ans(Mov(a, -1), pos)) regenv e in
 				(func_use_reg := M.add x use_reg !func_use_reg;
 				 Format.eprintf "use_reg : %s " x;
-				 S.iter (Format.eprintf "%s ") use_reg;
+				 S.iter (fun r -> if r <> "%g0" then Format.eprintf "%s " r) use_reg;
 				 Format.eprintf "\n";
 				 { name = Id.L(x); args = arg_regs; fargs = farg_regs; body = e'; ret = t })
 

@@ -17,6 +17,7 @@ let locate x =
 let offset x = 4 * List.hd (locate x)
 let stacksize () = (List.length !stackmap + 1) * 4
 let loaded_labels = ref M.empty
+let loaded_consts = ref M.empty
 
 let pp_id_or_imm = function
   | V(x) -> x
@@ -54,16 +55,12 @@ let rec g repl = function (* 命令列のアセンブリ生成 (caml2html: emit_g) *)
       if List.mem id !func_arg_id then content := !content @ [RiscV.FAdd(x_, reg_fzero, yreg, pos2)]
       else Format.eprintf "deleted fadd %s %s %s %d\n" x_ reg_fzero yreg pos2;
       g (M.add x_ yreg (M.remove x repl)) (dest, e)
-  (* set(0)の処理 *)
-  | dest, Let((x, Type.Int), Set(0, id), e, pos) ->
-      if List.mem id !func_arg_id then content := !content @ [RiscV.Addi(x, reg_zero, 0, pos)]
-      else Format.eprintf "deleted addi %s %s 0 %d\n" x reg_zero pos;
-      g (M.add x reg_zero repl) (dest, e)
-  (* add(_, 0), mov(_)の処理 グローバル変数と組み合わせるとバグる *)
-  (* | dest, Let((x, Type.Int), Add(y, C(0), id), e, pos) | dest, Let((x, Type.Int), Mov(y, id), e, pos) ->
-      if List.mem id !func_arg_id then content := !content @ [RiscV.Addi(x, y, 0, pos)]
-      else Format.eprintf "deleted addi %s %s 0 %d\n" x y pos;
-      g (M.add x y repl) (dest, e) *)
+  (* 既に定数レジスタにロードされたintの処理 *)
+  | dest, Let((x, Type.Int), Set(n, id), e, pos) when M.mem (string_of_int n) !loaded_consts ->
+      let xreg = M.find (string_of_int n) !loaded_consts in
+      if List.mem id !func_arg_id then content := !content @ [RiscV.Add(x, reg_zero, xreg, pos)]
+      else Format.eprintf "deleted add %s %s %s %d\n" x reg_zero xreg pos;
+      g (M.add x xreg repl) (dest, e)
   | dest, Let((x, t), exp, e, pos) ->
       g' repl pos (NonTail(x), exp);
       g (M.remove x repl) (dest, e)
@@ -236,8 +233,8 @@ let f (Prog(data, fundefs, e)) =
   let label_one = ref "" in
   let label_lib = ref "" in
   let cmp_dict = (* lui/oriによりロードされる回数の多い順 *)
-    [(0.01, 1); (-0.2, 2); (-0.1, 3); (100000000.0, 4); (150.0, 5); (-150.0, 6); (-1.0, 7); (10.0, 8); (0.05, 9); (20.0, 10);
-     (255.0, 11); (0.5, 12); (0.1, 13); (-2.0, 14)] in
+    [(0.01, 1); (-0.2, 2); (-0.1, 3); (1000000000.0, 4); (100000000.0, 5); (150.0, 6); (-150.0, 7); (-1.0, 8); (0.05, 9); (20.0, 10);
+     (10.0, 11); (255.0, 12); (0.5, 13); (0.1, 14); (-2.0, 15)] in
   let cmp (Id.L(_), d1) (Id.L(_), d2) =
     compare (try List.assoc d1 cmp_dict with Not_found -> 40) (try List.assoc d2 cmp_dict with Not_found -> 40) in
   let data = List.sort cmp data in
@@ -270,6 +267,11 @@ let f (Prog(data, fundefs, e)) =
   Format.eprintf "reg_for_label : ";
   List.iter (Format.eprintf "%s ") reg_for_label;
   Format.eprintf "\n";
+  loaded_consts := M.add_list [("0", reg_zero); ("4", reg_four)] !loaded_consts;
+  let reg_for_const = S.elements (S.diff (S.diff (S.of_list allregs) (S.of_list [reg_cl; reg_sw])) !used_regs) in
+  Format.eprintf "reg_for_const : ";
+  List.iter (Format.eprintf "%s ") reg_for_const;
+  Format.eprintf "\n";
   let rec ld_label_noprint reg_for_label data =
     match reg_for_label, data with
     | [], [] -> ()
@@ -279,6 +281,17 @@ let f (Prog(data, fundefs, e)) =
                                      ld_label_noprint tl1 tl2)
                                   else ld_label_noprint reg_for_label tl2 in
   ld_label_noprint reg_for_label (List.map (fun (Id.L(x), _) -> x) data);
+  let rec ld_const_noprint reg_for_const data =
+    match reg_for_const, data with
+    | [], [] -> ()
+    | [], hd :: tl | hd :: tl, [] -> ()
+    | reg :: tl1, const :: tl2 -> if const <> "0" && const <> "4" then
+                                    (loaded_consts := M.add const reg !loaded_consts;
+                                     ld_const_noprint tl1 tl2)
+                                  else ld_const_noprint reg_for_const tl2 in
+  let init = ConstFoldGlobals.addr_init in
+  ld_const_noprint reg_for_const ["-1"; "1"; "2"; string_of_int (init + 540); "3"; string_of_int (init + 552);
+                                  string_of_int (init + 560); string_of_int (init + 556); "99"];
   List.iter h fundefs;
   content := !content @ [RiscV.Label("min_caml_start");
                          RiscV.Addi(reg_sp, reg_sp, -4, 0); RiscV.Addi(reg_four, reg_zero, 4, 0);
@@ -299,6 +312,17 @@ let f (Prog(data, fundefs, e)) =
                                      ld_label tl1 tl2)
                                   else ld_label reg_for_label tl2 in
   ld_label reg_for_label (List.map (fun (Id.L(x), _) -> x) data);
+  let rec ld_const reg_for_const data =
+    match reg_for_const, data with
+    | [], [] -> ()
+    | [], hd :: tl | hd :: tl, [] -> ()
+    | reg :: tl1, const :: tl2 -> if const <> "0" && const <> "4" then
+                                    (content := !content @ [RiscV.Addi(reg, reg_zero, int_of_string const, 0)];
+                                     ld_const tl1 tl2)
+                                  else ld_const reg_for_const tl2 in
+  let init = ConstFoldGlobals.addr_init in
+  ld_const reg_for_const ["-1"; "1"; "2"; string_of_int (init + 540); "3"; string_of_int (init + 552);
+                          string_of_int (init + 560); string_of_int (init + 556); "99"];
   stackset := S.empty;
   stackmap := [];
   g M.empty (NonTail(regs.(0)), e);
