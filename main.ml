@@ -285,7 +285,8 @@ let () = (* ここからコンパイラの実行が開始される (caml2html: main_entry) *)
      ("-nocse", Arg.Unit(fun () -> nocse_flag := true), "nocse flag");
      ("-nocseasm", Arg.Unit(fun () -> nocseasm_flag := true), "nocseasm flag");
      ("-nologic", Arg.Unit(fun () -> nologic_flag := true), "nologic flag");
-     ("-nocfg", Arg.Unit(fun () -> nocfg_flag := true), "nocfg flag")]
+     ("-nocfg", Arg.Unit(fun () -> nocfg_flag := true), "nocfg flag");
+     ("-debug", Arg.Unit(fun () -> Emit.debug := true), "debug flag")]
     (fun s -> files := !files @ [s])
     ("Mitou Min-Caml Compiler (C) Eijiro Sumii\n" ^
      Printf.sprintf "usage: %s [-inline m] [-iter n1] [-itercls n2] [-iterasm n3] [-printiter] [-printiterasm] \

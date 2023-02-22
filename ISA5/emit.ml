@@ -1,5 +1,8 @@
 open RiscV
 
+let cnt = ref 99
+let debug = ref false
+
 let print oc = function
 | Label(s) -> Printf.fprintf oc "%s:\n" s
 | Addi(x, y, i, p) -> Printf.fprintf oc "\taddi\t%s, %s, %d\t# %d\n" x y i p
@@ -118,5 +121,12 @@ let f oc (data, content) =
       Printf.fprintf oc "%s:\t# %f\n" x d;
       Printf.fprintf oc "\t.word\t%f\n" d)
     data;
-  List.iter (print oc) asm;
+  List.iter
+    (fun x ->
+      if !debug then
+        (Printf.fprintf oc "\taddi\tx29, x0, %d\t# index\n" !cnt;
+         Printf.fprintf oc "\tsw\t\tx29, -1(x0)\t# index\n";
+         cnt := !cnt + 1);
+      print oc x)
+    asm;
   Printf.fprintf oc "\tEXIT\t\n"
