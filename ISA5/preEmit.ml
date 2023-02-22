@@ -294,9 +294,12 @@ let f (Prog(data, fundefs, e)) =
                                   string_of_int (init + 560); string_of_int (init + 556); "99"];
   List.iter h fundefs;
   content := !content @ [RiscV.Label("min_caml_start");
-                         RiscV.Addi(reg_sp, reg_sp, -4, 0); RiscV.Addi(reg_four, reg_zero, 4, 0);
-                         RiscV.Addi(reg_hp, reg_zero, ConstFoldGlobals.addr_init, 0);
-                         RiscV.LuiLb(regs.(0), !label_zero, 0); RiscV.OriLb(regs.(0), reg_zero, !label_zero, 0);
+                         RiscV.Addi(reg_sp, reg_sp, -4, 0); RiscV.Addi(reg_four, reg_zero, 4, 0)]
+                      @ (if init >= 65536 then
+                          [RiscV.Lui(reg_hp, init, 0);
+                           RiscV.Ori(reg_hp, reg_zero, init, 0)]
+                         else [RiscV.Addi(reg_hp, reg_zero, init, 0)])
+                      @ [RiscV.LuiLb(regs.(0), !label_zero, 0); RiscV.OriLb(regs.(0), reg_zero, !label_zero, 0);
                          RiscV.FLw(reg_fzero, 0, regs.(0), 0);
                          RiscV.LuiLb(regs.(0), !label_one, 0); RiscV.OriLb(regs.(0), reg_zero, !label_one, 0);
                          RiscV.FLw(reg_fone, 0, regs.(0), 0);
@@ -317,7 +320,11 @@ let f (Prog(data, fundefs, e)) =
     | [], [] -> ()
     | [], hd :: tl | hd :: tl, [] -> ()
     | reg :: tl1, const :: tl2 -> if const <> "0" && const <> "4" then
-                                    (content := !content @ [RiscV.Addi(reg, reg_zero, int_of_string const, 0)];
+                                    (content := !content @
+                                                (if int_of_string const >= 65536 then
+                                                  [RiscV.Lui(reg, int_of_string const, 0);
+                                                   RiscV.Ori(reg, reg_zero, int_of_string const, 0);]
+                                                 else [RiscV.Addi(reg, reg_zero, int_of_string const, 0)]);
                                      ld_const tl1 tl2)
                                   else ld_const reg_for_const tl2 in
   let init = ConstFoldGlobals.addr_init in

@@ -124,9 +124,12 @@ let f oc (data, content) =
   List.iter
     (fun x ->
       if !debug then
-        (Printf.fprintf oc "\taddi\tx29, x0, %d\t# index\n" !cnt;
-         Printf.fprintf oc "\tsw\t\tx29, -1(x0)\t# index\n";
-         cnt := !cnt + 1);
-      print oc x)
+        match x with
+        | Label(s) -> print oc x;
+                      Printf.fprintf oc "\taddi\tx29, x0, %d\t# index\n" !cnt;
+                      Printf.fprintf oc "\tsw\t\tx29, -1(x0)\t# index\n";
+                      cnt := !cnt + 1
+        | _ -> print oc x
+      else print oc x)
     asm;
   Printf.fprintf oc "\tEXIT\t\n"
