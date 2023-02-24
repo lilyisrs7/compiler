@@ -70,9 +70,9 @@ and g' repl pos = function (* 各命令のアセンブリ生成 (caml2html: emit_gprime) *)
   | NonTail(x), Set(i, _) ->
       if -65536 <= i && i <= 65535 then content := !content @ [RiscV.Addi(x, reg_zero, i, pos)] (* 即値をレジスタに入れる *)
       else
-        content := !content @ [RiscV.Lui(x, i, pos); RiscV.Ori(x, reg_zero, i, pos)]
+        content := !content @ [RiscV.Lui(x, i, pos); RiscV.Ori(x, x, i, pos)]
   | NonTail(x), SetL(Id.L(y), _) -> (* ラベルからレジスタに値を移す *)
-      content := !content @ [RiscV.LuiLb(x, y, pos); RiscV.OriLb(x, reg_zero, y, pos)]
+      content := !content @ [RiscV.LuiLb(x, y, pos); RiscV.OriLb(x, x, y, pos)]
   | NonTail(x), Mov(y, _) -> if x <> find y repl then content := !content @ [RiscV.Addi(x, find y repl, 0, pos)]
   | NonTail(x), Neg(y, _) -> content := !content @ [RiscV.Sub(x, reg_zero, find y repl, pos)] (* 符号反転 *)
   | NonTail(x), Add(y, V(z), _) -> content := !content @ [RiscV.Add(x, find y repl, find z repl, pos)]
@@ -297,20 +297,20 @@ let f (Prog(data, fundefs, e)) =
                          RiscV.Addi(reg_sp, reg_sp, -4, 0); RiscV.Addi(reg_four, reg_zero, 4, 0)]
                       @ (if init >= 65536 then
                           [RiscV.Lui(reg_hp, init, 0);
-                           RiscV.Ori(reg_hp, reg_zero, init, 0)]
+                           RiscV.Ori(reg_hp, reg_hp, init, 0)]
                          else [RiscV.Addi(reg_hp, reg_zero, init, 0)])
-                      @ [RiscV.LuiLb(regs.(0), !label_zero, 0); RiscV.OriLb(regs.(0), reg_zero, !label_zero, 0);
+                      @ [RiscV.LuiLb(regs.(0), !label_zero, 0); RiscV.OriLb(regs.(0), regs.(0), !label_zero, 0);
                          RiscV.FLw(reg_fzero, 0, regs.(0), 0);
-                         RiscV.LuiLb(regs.(0), !label_one, 0); RiscV.OriLb(regs.(0), reg_zero, !label_one, 0);
+                         RiscV.LuiLb(regs.(0), !label_one, 0); RiscV.OriLb(regs.(0), regs.(0), !label_one, 0);
                          RiscV.FLw(reg_fone, 0, regs.(0), 0);
-                         RiscV.LuiLb(regs.(0), !label_lib, 0); RiscV.OriLb(regs.(0), reg_zero, !label_lib, 0);
+                         RiscV.LuiLb(regs.(0), !label_lib, 0); RiscV.OriLb(regs.(0), regs.(0), !label_lib, 0);
                          RiscV.FLw(reg_flib, 0, regs.(0), 0)];
   let rec ld_label reg_for_label data =
     match reg_for_label, data with
     | [], [] -> ()
     | [], hd :: tl | hd :: tl, [] -> ()
     | reg :: tl1, label :: tl2 -> if label <> !label_zero && label <> !label_one && label <> !label_lib then
-                                    (content := !content @ [RiscV.LuiLb(regs.(0), label, 0); RiscV.OriLb(regs.(0), reg_zero, label, 0);
+                                    (content := !content @ [RiscV.LuiLb(regs.(0), label, 0); RiscV.OriLb(regs.(0), regs.(0), label, 0);
                                                             RiscV.FLw(reg, 0, regs.(0), 0)];
                                      ld_label tl1 tl2)
                                   else ld_label reg_for_label tl2 in
@@ -323,7 +323,7 @@ let f (Prog(data, fundefs, e)) =
                                     (content := !content @
                                                 (if int_of_string const >= 65536 then
                                                   [RiscV.Lui(reg, int_of_string const, 0);
-                                                   RiscV.Ori(reg, reg_zero, int_of_string const, 0);]
+                                                   RiscV.Ori(reg, reg, int_of_string const, 0);]
                                                  else [RiscV.Addi(reg, reg_zero, int_of_string const, 0)]);
                                      ld_const tl1 tl2)
                                   else ld_const reg_for_const tl2 in

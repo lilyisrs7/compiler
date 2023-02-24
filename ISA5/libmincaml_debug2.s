@@ -75,9 +75,9 @@ itof_pos:
 	sw		x29, -1(x0)
 	fadd	f1, f0, f0
 	lui		x5, 8388608
-	ori		x5, x0, 8388608
+	ori		x5, x5, 8388608
 	lui		x6, 1258291200
-	ori		x6, x0, 1258291200
+	ori		x6, x6, 1258291200
 	ble		x5, x4, itof_g
 itof_l:
 	addi	x29, x0, 14
@@ -116,7 +116,7 @@ ftoi_pos:
 	sw		x29, -1(x0)
 	addi	x4, x0, 0
 	lui		x5, 1258291200
-	ori		x5, x0, 1258291200
+	ori		x5, x5, 1258291200
 	fle		f29, f1, ftoi_g
 ftoi_l:
 	addi	x29, x0, 18
@@ -130,7 +130,7 @@ ftoi_g:
 	addi	x29, x0, 19
 	sw		x29, -1(x0)
 	lui		x6, 8388608
-	ori		x6, x0, 8388608
+	ori		x6, x6, 8388608
 	fsub	f1, f1, f29
 	add		x4, x4, x6
 	fle		f29, f1, ftoi_g
