@@ -46,14 +46,14 @@ min_caml_float_of_int:
 	jalr	x0, x1, 0
 itof_pos:
 	lui		x5, 8388608
-	ori		x5, x0, 8388608
+	ori		x5, x5, 8388608
 	lui		x6, %hi(l.0)	# 8388608.0
-	ori		x6, x0, %lo(l.0)
+	ori		x6, x6, %lo(l.0)
 	flw		f2, 0(x6)
 	ble		x5, x4, itof_g
 itof_l:
 	lui		x6, 1258291200
-	ori		x6, x0, 1258291200
+	ori		x6, x6, 1258291200
 	add		x4, x4, x6
 	sw		x4, 0(x2)
 	flw		f1, 0(x2)
@@ -64,7 +64,7 @@ itof_g:
 	fadd	f1, f1, f2
 	ble		x5, x4, itof_g
 	lui		x6, 1258291200
-	ori		x6, x0, 1258291200
+	ori		x6, x6, 1258291200
 	add		x4, x4, x6
 	sw		x4, 0(x2)
 	flw		f3, 0(x2)
