@@ -16,7 +16,10 @@ make
  - -nocseasm: disable cse optimization (asm_opt; default false)
  - -nologic: disable logic optimization (default false)
  - -nocfg: disable constfoldglobals optimization (default false)
+ - -debug: print index of each label (default false)
+ - -debugall: print index of each instruction (default false)
+ - -arrinst: use arrlw, arrsw, arrflw, arrfsw (default false)
 ### example
 ```
-./min-caml -inline 10 -printiter minrt
+./min-caml -inline 10 -printiterasm minrt
 ```
