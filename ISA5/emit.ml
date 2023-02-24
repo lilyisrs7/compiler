@@ -2,6 +2,7 @@ open RiscV
 
 let cnt = ref 99
 let debug = ref false
+let debugall = ref false
 
 let print oc = function
 | Label(s) -> Printf.fprintf oc "%s:\n" s
@@ -130,6 +131,11 @@ let f oc (data, content) =
                       Printf.fprintf oc "\tsw\t\tx29, -1(x0)\t# index\n";
                       cnt := !cnt + 1
         | _ -> print oc x
+      else if !debugall then
+        (Printf.fprintf oc "\taddi\tx29, x0, %d\t# index\n" !cnt;
+         Printf.fprintf oc "\tsw\t\tx29, -1(x0)\t# index\n";
+         cnt := !cnt + 1;
+         print oc x)
       else print oc x)
     asm;
   Printf.fprintf oc "\tEXIT\t\n"
