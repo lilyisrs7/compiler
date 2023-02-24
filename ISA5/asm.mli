@@ -1,3 +1,5 @@
+val arrinst : bool ref
+
 type id_or_imm = V of Id.t | C of int
 type t =
   | Ans of exp * int
@@ -14,6 +16,8 @@ and exp =
   | Div of Id.t * Id.t * int
   | Ld of Id.t * id_or_imm * int (*最終的には即値に*)
   | St of Id.t * Id.t * id_or_imm * int (*最終的には即値に*)
+  | ArrLd of Id.t * Id.t * int
+  | ArrSt of Id.t * Id.t * Id.t * int
   | FMovD of Id.t * int
   | FNegD of Id.t * int
   | FAddD of Id.t * Id.t * int
@@ -23,6 +27,8 @@ and exp =
   | Sqrt of Id.t * int
   | LdDF of Id.t * id_or_imm * int (*最終的には即値に*)
   | StDF of Id.t * Id.t * id_or_imm * int (*最終的には即値に*)
+  | ArrLdDF of Id.t * Id.t * int
+  | ArrStDF of Id.t * Id.t * Id.t * int
   | Comment of string * int
   (* virtual instructions *)
   | IfEq of Id.t * Id.t * t * t * int

@@ -21,6 +21,8 @@ and g' env = function
   | Ld(x, C(y), _) -> id := !id + 1; (Ld(x, C(y), !id), !id)
   | St(x, y, V(z), _) -> id := !id + 1; (St(x, y, V(z), !id), !id)
   | St(x, y, C(z), _) -> id := !id + 1; (St(x, y, C(z), !id), !id)
+  | ArrLd(x, y, _) -> id := !id + 1; (ArrLd(x, y, !id), !id)
+  | ArrSt(x, y, z, _) -> id := !id + 1; (ArrSt(x, y, z, !id), !id)
   | FMovD(x, _) -> id := !id + 1; (FMovD(x, !id), !id)
   | FNegD(x, _) -> id := !id + 1; (FNegD(x, !id), !id)
   | FAddD(x, y, _) -> id := !id + 1; (FAddD(x, y, !id), !id)
@@ -32,6 +34,8 @@ and g' env = function
   | LdDF(x, C(y), _) -> id := !id + 1; (LdDF(x, C(y), !id), !id)
   | StDF(x, y, V(z), _) -> id := !id + 1; (StDF(x, y, V(z), !id), !id)
   | StDF(x, y, C(z), _) -> id := !id + 1; (StDF(x, y, C(z), !id), !id)
+  | ArrLdDF(x, y, _) -> id := !id + 1; (ArrLdDF(x, y, !id), !id)
+  | ArrStDF(x, y, z, _) -> id := !id + 1; (ArrStDF(x, y, z, !id), !id)
   | Comment(x, _) -> id := !id + 1; (Comment(x, !id), !id)
   | IfEq(x, y, e1, e2, _) ->
       let id' = !id + 1 in

@@ -32,6 +32,8 @@ let expand xts ini addf addi =
     (fun (offset, acc) x t ->
       (offset + 4, addi x t offset acc))
 
+let env_int = ref M.empty
+
 let rec g env = function (* ¼°¤Î²¾ÁÛ¥Þ¥·¥ó¥³¡¼¥ÉÀ¸À® (caml2html: virtual_g); id¤ÏÁ´¤Ædummy *)
   | Closure.Unit(pos) -> Ans(Nop(-1), pos)
   | Closure.Int(i, pos) -> Ans(Set(i, -1), pos)
@@ -88,6 +90,7 @@ let rec g env = function (* ¼°¤Î²¾ÁÛ¥Þ¥·¥ó¥³¡¼¥ÉÀ¸À® (caml2html: virtual_g); id¤
             concat e1' (reg_hp_init, t1) e2'
       else *)
         let e1' = g env e1 in
+        let _ = match e1' with Ans(Set(i, _), _) -> env_int := M.add x i !env_int | _ -> () in
         let e2' = g (M.add x t1 env) e2 in
         concat e1' (x, t1) e2'
   | Closure.Var(x, pos) ->
@@ -158,9 +161,11 @@ let rec g env = function (* ¼°¤Î²¾ÁÛ¥Þ¥·¥ó¥³¡¼¥ÉÀ¸À® (caml2html: virtual_g); id¤
               Let((offset, Type.Int), Mul(y, V(z)),
                   Let((x', Type.Int), Add(x, V(offset)),
                       Ans(LdDF(x', C(0)), pos), pos), pos), pos) *)
-          Let((offset, Type.Int), Mul(reg_four, y, -1),
-              Let((x', Type.Int), Add(x, V(offset), -1),
-                  Ans(LdDF(x', C(0), -1), pos), pos), pos)
+          if !arrinst then Ans(ArrLdDF(x, y, -1), pos)
+          else
+            Let((offset, Type.Int), Mul(reg_four, y, -1),
+                Let((x', Type.Int), Add(x, V(offset), -1),
+                    Ans(LdDF(x', C(0), -1), pos), pos), pos)
           (*offset¤òx¤ËÂ­¤·¤Æ¤«¤é¥í¡¼¥É*)
       | Type.Array(_) -> (*Ans(Ld(x, V(y)), pos)*)
           (*Let((offset, Type.Int), Mul(y, C(4)),
@@ -169,9 +174,11 @@ let rec g env = function (* ¼°¤Î²¾ÁÛ¥Þ¥·¥ó¥³¡¼¥ÉÀ¸À® (caml2html: virtual_g); id¤
               Let((offset, Type.Int), Mul(y, V(z)),
                   Let((x', Type.Int), Add(x, V(offset)),
                       Ans(Ld(x', C(0)), pos), pos), pos), pos) *)
-          Let((offset, Type.Int), Mul(reg_four, y, -1),
-              Let((x', Type.Int), Add(x, V(offset), -1),
-                  Ans(Ld(x', C(0), -1), pos), pos), pos)
+          if !arrinst then Ans(ArrLd(x, y, -1), pos)
+          else
+            Let((offset, Type.Int), Mul(reg_four, y, -1),
+                Let((x', Type.Int), Add(x, V(offset), -1),
+                    Ans(Ld(x', C(0), -1), pos), pos), pos)
       | _ -> assert false)
   | Closure.Put(x, y, z, pos) ->
       let offset = Id.genid "o" in
@@ -182,15 +189,19 @@ let rec g env = function (* ¼°¤Î²¾ÁÛ¥Þ¥·¥ó¥³¡¼¥ÉÀ¸À® (caml2html: virtual_g); id¤
       | Type.Array(Type.Float) -> (*Ans(StDF(z, x, V(y)), pos)*)
           (*Let((offset, Type.Int), Mul(y, C(8)),
               Ans(StDF(z, x, V(offset)), pos), pos)*)
-          Let((offset, Type.Int), Mul(reg_four, y, -1),
-              Let((x', Type.Int), Add(x, V(offset), -1),
-                  Ans(StDF(z, x', C(0), -1), pos), pos), pos)
+          if !arrinst then Ans(ArrStDF(z, x, y, -1), pos)
+          else
+            Let((offset, Type.Int), Mul(reg_four, y, -1),
+                Let((x', Type.Int), Add(x, V(offset), -1),
+                    Ans(StDF(z, x', C(0), -1), pos), pos), pos)
       | Type.Array(_) -> (*Ans(St(z, x, V(y)), pos)*)
           (*Let((offset, Type.Int), Mul(y, C(4)),
               Ans(St(z, x, V(offset)), pos), pos)*)
-          Let((offset, Type.Int), Mul(reg_four, y, -1),
-              Let((x', Type.Int), Add(x, V(offset), -1),
-                  Ans(St(z, x', C(0), -1), pos), pos), pos)
+          if !arrinst then Ans(ArrSt(z, x, y, -1), pos)
+          else
+            Let((offset, Type.Int), Mul(reg_four, y, -1),
+                Let((x', Type.Int), Add(x, V(offset), -1),
+                    Ans(St(z, x', C(0), -1), pos), pos), pos)
       | _ -> assert false)
   | Closure.ExtArray(Id.L(x), pos) -> Ans(SetL(Id.L("min_caml_" ^ x), -1), pos)
 
@@ -222,4 +233,4 @@ let f (Closure.Prog(fundefs, e)) =
   let fundefs = List.map h fundefs in
   let e = g M.empty e in
   (* data := List.sort (fun (_, _, n1) (_, _, n2) -> compare n2 n1) !data; *) (* ¥¢¥»¥ó¥Ö¥ê¤Ç¤Î½Ð¸½²ó¿ô¤Ç¹ß½ç¥½¡¼¥È *)
-  Prog(!data, fundefs, e)
+  Prog(!data, fundefs, e), !env_int

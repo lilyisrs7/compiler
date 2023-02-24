@@ -1,6 +1,7 @@
 open Asm
 
 let env_fun = ref M.empty (* 関数ごとに副作用の有無を持っておく *)
+let env_int = ref M.empty
 
 let rec effect = function
 | Ans(exp, _) -> effect' exp
@@ -25,6 +26,7 @@ let rec g = function
 | Ans(exp, pos) -> Ans(g' exp, pos)
 | Let((x, t), exp, e, pos) ->
     let exp' = g' exp in
+    let _ = match exp' with Set(i, _) -> env_int := M.add x i !env_int | _ -> () in
     let e' = g e in
     if effect' exp' || List.mem x (fv e') || x = reg_hp then Let((x, t), exp', e', pos) else
     (Format.eprintf "eliminating variable %s@." x;
@@ -50,4 +52,4 @@ let f (Prog(data, fundefs, e)) =
                          ("min_caml_int_of_float", false); ("min_caml_float_of_int", false); ("min_caml_floor", false)] M.empty;
   let fundefs' = List.map h fundefs in
   let e' = g e in
-  Prog(data, fundefs', e')
+  Prog(data, fundefs', e'), !env_int

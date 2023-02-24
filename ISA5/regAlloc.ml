@@ -182,6 +182,15 @@ and g' dest cont regenv pos = function (* 各命令のレジスタ割り当て (caml2html: r
 			let xr = find x Type.Int regenv in
 			let yr = find y Type.Int regenv in
 			(Ans(St(xr, yr, find' z' regenv, id), pos), regenv, S.of_list [xr; yr])
+	| ArrLd(x, y, id) ->
+			let xr = find x Type.Int regenv in
+			let yr = find y Type.Int regenv in
+			(Ans(ArrLd(xr, yr, id), pos), regenv, S.of_list [xr; yr])
+	| ArrSt(x, y, z, id) ->
+			let xr = find x Type.Int regenv in
+			let yr = find y Type.Int regenv in
+			let zr = find z Type.Int regenv in
+			(Ans(ArrSt(xr, yr, zr, id), pos), regenv, S.of_list [xr; yr; zr])
 	| FMovD(x, id) -> let xr = find x Type.Float regenv in (Ans(FMovD(xr, id), pos), regenv, S.singleton xr)
 	| FNegD(x, id) -> let xr = find x Type.Float regenv in (Ans(FNegD(xr, id), pos), regenv, S.singleton xr)
 	| FAddD(x, y, id) ->
@@ -206,6 +215,15 @@ and g' dest cont regenv pos = function (* 各命令のレジスタ割り当て (caml2html: r
 			let xr = find x Type.Float regenv in
 			let yr = find y Type.Int regenv in
 			(Ans(StDF(xr, yr, find' z' regenv, id), pos), regenv, S.of_list [xr; yr])
+	| ArrLdDF(x, y, id) ->
+			let xr = find x Type.Int regenv in
+			let yr = find y Type.Int regenv in
+			(Ans(ArrLdDF(xr, yr, id), pos), regenv, S.of_list [xr; yr])
+	| ArrStDF(x, y, z, id) ->
+			let xr = find x Type.Float regenv in
+			let yr = find y Type.Int regenv in
+			let zr = find z Type.Int regenv in
+			(Ans(ArrStDF(xr, yr, zr, id), pos), regenv, S.of_list [xr; yr; zr])
 	| IfEq(x, y, e1, e2, id) as exp -> g'_if dest cont regenv exp (fun e1' e2' -> IfEq(find x Type.Int regenv, find y Type.Int regenv, e1', e2', id)) e1 e2 pos
 	| IfLE(x, y, e1, e2, id) as exp -> g'_if dest cont regenv exp (fun e1' e2' -> IfLE(find x Type.Int regenv, find y Type.Int regenv, e1', e2', id)) e1 e2 pos
 	| IfFEq(x, y, e1, e2, id) as exp -> g'_if dest cont regenv exp (fun e1' e2' -> IfFEq(find x Type.Float regenv, find y Type.Float regenv, e1', e2', id)) e1 e2 pos

@@ -13,6 +13,8 @@ type t =
   | OriLb of Id.t * Id.t * label * pos
   | Lw of Id.t * int * Id.t * pos
   | Sw of Id.t * int * Id.t * pos
+  | ArrLw of Id.t * Id.t * Id.t * pos
+  | ArrSw of Id.t * Id.t * Id.t * pos
   | FAdd of Id.t * Id.t * Id.t * pos
   | FSub of Id.t * Id.t * Id.t * pos
   | FMul of Id.t * Id.t * Id.t * pos
@@ -20,6 +22,8 @@ type t =
   | FSqrt of Id.t * Id.t * pos
   | FLw of Id.t * int * Id.t * pos
   | FSw of Id.t * int * Id.t * pos
+  | ArrFLw of Id.t * Id.t * Id.t * pos
+  | ArrFSw of Id.t * Id.t * Id.t * pos
   | Comment of string * pos
   | Jal of Id.t * label * pos
   | Jalr of Id.t * Id.t * int * pos

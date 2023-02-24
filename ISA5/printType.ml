@@ -253,6 +253,8 @@ let rec print_asm_exp oc tab_num e =
   | Asm.Ld(x, C(y), id) -> Printf.fprintf oc "%d Ld (%s, %d)" id x y
   | Asm.St(x, y, V(z), id) -> Printf.fprintf oc "%d St (%s, %s, %s)" id x y z
   | Asm.St(x, y, C(z), id) -> Printf.fprintf oc "%d St (%s, %s, %d)" id x y z
+  | Asm.ArrLd(x, y, id) -> Printf.fprintf oc "%d ArrLd (%s, %s)" id x y
+  | Asm.ArrSt(x, y, z, id) -> Printf.fprintf oc "%d ArrSt (%s, %s, %s)" id x y z
   | Asm.FMovD(x, id) -> Printf.fprintf oc "%d FMovD (%s)" id x
   | Asm.FNegD(x, id) -> Printf.fprintf oc "%d FNegD (%s)" id x
   | Asm.FAddD(x, y, id) -> Printf.fprintf oc "%d FAddD (%s, %s)" id x y
@@ -264,6 +266,8 @@ let rec print_asm_exp oc tab_num e =
   | Asm.LdDF(x, C(y), id) -> Printf.fprintf oc "%d LdDF (%s, %d)" id x y
   | Asm.StDF(x, y, V(z), id) -> Printf.fprintf oc "%d StDF (%s, %s, %s)" id x y z
   | Asm.StDF(x, y, C(z), id) -> Printf.fprintf oc "%d StDF (%s, %s, %d)" id x y z
+  | Asm.ArrLdDF(x, y, id) -> Printf.fprintf oc "%d ArrLdDF (%s, %s)" id x y
+  | Asm.ArrStDF(x, y, z, id) -> Printf.fprintf oc "%d ArrStDF (%s, %s, %s)" id x y z
   | Asm.Comment(x, id) -> Printf.fprintf oc "%d Comment (%s)" id x
   | Asm.IfEq(x, y, e1, e2, id) -> Printf.fprintf oc "%d IfEq (\n" id; print_tab oc (tab_num + 1); Printf.fprintf oc "%s,\n" x;
                                   print_tab oc (tab_num + 1); Printf.fprintf oc "%s,\n" y; print_asm_t oc (tab_num + 1) e1;
@@ -331,6 +335,8 @@ let print_riscv_t oc e =
   | RiscV.OriLb(x, y, l, p) -> Printf.fprintf oc "\tori\t\t%s, %s, %%lo(%s)\t# %d\n" x y l p
   | RiscV.Lw(x, i, y, p) ->   Printf.fprintf oc "\tlw\t\t%s, %d(%s)\t# %d\n" x i y p
   | RiscV.Sw(x, i, y, p) ->   Printf.fprintf oc "\tsw\t\t%s, %d(%s)\t# %d\n" x i y p
+  | RiscV.ArrLw(x, y, z, p) -> Printf.fprintf oc "\tarrlw\t%s, %s, %s\t# %d\n" x y z p
+  | RiscV.ArrSw(x, y, z, p) -> Printf.fprintf oc "\tarrsw\t%s, %s, %s\t# %d\n" x y z p
   | RiscV.FAdd(x, y, z, p) -> Printf.fprintf oc "\tfadd\t%s, %s, %s\t# %d\n" x y z p
   | RiscV.FSub(x, y, z, p) -> Printf.fprintf oc "\tfsub\t%s, %s, %s\t# %d\n" x y z p
   | RiscV.FMul(x, y, z, p) -> Printf.fprintf oc "\tfmul\t%s, %s, %s\t# %d\n" x y z p
@@ -338,6 +344,8 @@ let print_riscv_t oc e =
   | RiscV.FSqrt(x, y, p) ->   Printf.fprintf oc "\tfsqrt\t%s, %s\t# %d\n" x y p
   | RiscV.FLw(x, i, y, p) -> Printf.fprintf oc "\tflw\t\t%s, %d(%s)\t# %d\n" x i y p
   | RiscV.FSw(x, i, y, p) -> Printf.fprintf oc "\tfsw\t\t%s, %d(%s)\t# %d\n" x i y p
+  | RiscV.ArrFLw(x, y, z, p) -> Printf.fprintf oc "\tarrflw\t%s, %s, %s\t# %d\n" x y z p
+  | RiscV.ArrFSw(x, y, z, p) -> Printf.fprintf oc "\tarrfsw\t%s, %s, %s\t# %d\n" x y z p
   | RiscV.Comment(s, p) ->   Printf.fprintf oc "\t# %s\t# %d\n" s p
   | RiscV.Jal(x, l, p) ->    Printf.fprintf oc "\tjal\t\t%s, %s\t# %d\n" x l p
   | RiscV.Jalr(x, y, i, p) -> Printf.fprintf oc "\tjalr\t%s, %s, %d\t# %d\n" x y i p

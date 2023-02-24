@@ -17,6 +17,8 @@ let print oc = function
 | OriLb(x, y, l, p) -> Printf.fprintf oc "\tori\t\t%s, %s, %%lo(%s)\t# %d\n" x y l p
 | Lw(x, i, y, p) ->   Printf.fprintf oc "\tlw\t\t%s, %d(%s)\t# %d\n" x i y p
 | Sw(x, i, y, p) ->   Printf.fprintf oc "\tsw\t\t%s, %d(%s)\t# %d\n" x i y p
+| ArrLw(x, y, z, p) -> Printf.fprintf oc "\tarrlw\t%s, %s, %s\t# %d\n" x y z p
+| ArrSw(x, y, z, p) -> Printf.fprintf oc "\tarrsw\t%s, %s, %s\t# %d\n" x y z p
 | FAdd(x, y, z, p) -> Printf.fprintf oc "\tfadd\t%s, %s, %s\t# %d\n" x y z p
 | FSub(x, y, z, p) -> Printf.fprintf oc "\tfsub\t%s, %s, %s\t# %d\n" x y z p
 | FMul(x, y, z, p) -> Printf.fprintf oc "\tfmul\t%s, %s, %s\t# %d\n" x y z p
@@ -24,6 +26,8 @@ let print oc = function
 | FSqrt(x, y, p) ->   Printf.fprintf oc "\tfsqrt\t%s, %s\t# %d\n" x y p
 | FLw(x, i, y, p) -> Printf.fprintf oc "\tflw\t\t%s, %d(%s)\t# %d\n" x i y p
 | FSw(x, i, y, p) -> Printf.fprintf oc "\tfsw\t\t%s, %d(%s)\t# %d\n" x i y p
+| ArrFLw(x, y, z, p) -> Printf.fprintf oc "\tarrflw\t%s, %s, %s\t# %d\n" x y z p
+| ArrFSw(x, y, z, p) -> Printf.fprintf oc "\tarrfsw\t%s, %s, %s\t# %d\n" x y z p
 | Comment(s, p) ->   Printf.fprintf oc "\t# %s\t# %d\n" s p
 | Jal(x, l, p) ->    Printf.fprintf oc "\tjal\t\t%s, %s\t# %d\n" x l p
 | Jalr(x, y, i, p) -> Printf.fprintf oc "\tjalr\t%s, %s, %d\t# %d\n" x y i p

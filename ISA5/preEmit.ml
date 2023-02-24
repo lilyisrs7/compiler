@@ -88,6 +88,8 @@ and g' repl pos = function (* 各命令のアセンブリ生成 (caml2html: emit_gprime) *)
       (match z' with
        | C(z) -> content := !content @ [RiscV.Sw(find x repl, z, find y repl, pos)]
        | _ -> failwith "second arg of St is not int")
+  | NonTail(x), ArrLd(y, z, _) -> content := !content @ [RiscV.ArrLw(x, find y repl, find z repl, pos)]
+  | NonTail(_), ArrSt(x, y, z, _) -> content := !content @ [RiscV.ArrSw(find x repl, find y repl, find z repl, pos)]
   | NonTail(x), FMovD(y, _) -> if x <> find y repl then content := !content @ [RiscV.FAdd(x, reg_fzero, find y repl, pos)]
   | NonTail(x), FNegD(y, _) -> content := !content @ [RiscV.FSub(x, reg_fzero, find y repl, pos)] (* 符号反転 *)
   | NonTail(x), FAddD(y, z, _) -> content := !content @ [RiscV.FAdd(x, find y repl, find z repl, pos)]
@@ -103,6 +105,8 @@ and g' repl pos = function (* 各命令のアセンブリ生成 (caml2html: emit_gprime) *)
       (match z' with
        | C(z) -> content := !content @ [RiscV.FSw(find x repl, z, find y repl, pos)]
        | _ -> failwith "second arg of StDF is not int")
+  | NonTail(x), ArrLdDF(y, z, _) -> content := !content @ [RiscV.ArrFLw(x, find y repl, find z repl, pos)]
+  | NonTail(_), ArrStDF(x, y, z, _) -> content := !content @ [RiscV.ArrFSw(find x repl, find y repl, find z repl, pos)]
   | NonTail(_), Comment(s, _) -> content := !content @ [RiscV.Comment(s, pos)]
   (* 退避の仮想命令の実装 (caml2html: emit_save) *)
   | NonTail(_), Save(x, y, _) when List.mem x allregs && not (S.mem y !stackset) ->
@@ -116,13 +120,13 @@ and g' repl pos = function (* 各命令のアセンブリ生成 (caml2html: emit_gprime) *)
       assert (List.mem x allfregs);
       content := !content @ [RiscV.FLw(x, - (offset y), reg_sp, pos)]
   (* 末尾だったら計算結果を第一レジスタにセットしてret (caml2html: emit_tailret) *)
-  | Tail, (Nop _ | St _ | StDF _ | Comment _ | Save _ as exp) ->
+  | Tail, (Nop _ | St _ | StDF _ | ArrSt _ | ArrStDF _ | Comment _ | Save _ as exp) ->
       g' repl pos (NonTail(Id.gentmp Type.Unit), exp);
       content := !content @ [RiscV.Jalr(reg_zero, reg_ra, 0, pos)]
-  | Tail, (Set _ | SetL _ | Mov _ | Neg _ | Add _ | Sub _ | Mul _ | Div _ | Ld _ as exp) ->
+  | Tail, (Set _ | SetL _ | Mov _ | Neg _ | Add _ | Sub _ | Mul _ | Div _ | Ld _ | ArrLd _ as exp) ->
       g' repl pos (NonTail(regs.(0)), exp);
       content := !content @ [RiscV.Jalr(reg_zero, reg_ra, 0, pos)]
-  | Tail, (FMovD _ | FNegD _ | FAddD _ | FSubD _ | FMulD _ | FDivD _ | Sqrt _ | LdDF _  as exp) ->
+  | Tail, (FMovD _ | FNegD _ | FAddD _ | FSubD _ | FMulD _ | FDivD _ | Sqrt _ | LdDF _ | ArrLdDF _ as exp) ->
       g' repl pos (NonTail(fregs.(0)), exp);
       content := !content @ [RiscV.Jalr(reg_zero, reg_ra, 0, pos)]
   | Tail, (Restore(x, _) as exp) ->

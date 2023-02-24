@@ -10,7 +10,7 @@ let nocfg_flag = ref false
 let printiter_flag = ref false
 let printiterasm_flag = ref false
 
-let rec iter n f e env_int = (* 最適化処理をくりかえす (caml2html: main_iter) *)
+let rec iter n f env_int e = (* 最適化処理をくりかえす (caml2html: main_iter) *)
   Format.eprintf "iteration %d@." n;
   Inline.inline_rec := if n = !limit then true else false;
   if n = 0 then e, env_int else
@@ -51,13 +51,13 @@ let rec iter n f e env_int = (* 最適化処理をくりかえす (caml2html: main_iter) *)
     let _ = close_out oc in
 
     if e = e_logic then e, env_int else
-    iter (n - 1) f e_logic env_int
+    iter (n - 1) f env_int e_logic
   else
     let e', env_int =
       (fun (e, env) -> if !nologic_flag then e, env else LogicOpt.f e, env)
         (Elim.f (ConstFold.f (Inline.f (Assoc.f (Beta.f (if !nocse_flag then e else Cse.f env_int e)))))) in
     if e = e' then e, env_int else
-    iter (n - 1) f e' env_int
+    iter (n - 1) f env_int e'
 
 let rec closure_opt n e = (* タプル平坦化、tace後の最適化 *)
   Format.eprintf "iteration %d@." n;
@@ -68,11 +68,11 @@ let rec closure_opt n e = (* タプル平坦化、tace後の最適化 *)
     else
       closure_opt (n - 1) e'
 
-let rec asm_opt n f e = (* simm後の最適化 *)
+let rec asm_opt n f env_int e = (* simm後の最適化 *)
   Format.eprintf "iteration %d@." n;
   if n = 0 then e
   else if !printiterasm_flag then
-    let e_cse = if !nocseasm_flag then e else CseAsm.f e in
+    let e_cse = if !nocseasm_flag then e else CseAsm.f env_int e in
     let oc = open_out (f ^ string_of_int n ^ ".cseasm") in
     let Asm.Prog(data, fundefs, e') = e_cse in
     let _ = List.iter (print_asm_data oc 0) data in
@@ -96,7 +96,7 @@ let rec asm_opt n f e = (* simm後の最適化 *)
     let _ = print_asm_t oc 0 e' in
     let _ = close_out oc in
 
-    let e_elim = ElimAsm.f e_cf in
+    let e_elim, env_int = ElimAsm.f e_cf in
     let oc = open_out (f ^ string_of_int n ^ ".elimasm") in
     let Asm.Prog(data, fundefs, e') = e_elim in
     let _ = List.iter (print_asm_data oc 0) data in
@@ -105,12 +105,12 @@ let rec asm_opt n f e = (* simm後の最適化 *)
     let _ = close_out oc in
 
     if e = e_elim then e else
-    asm_opt (n - 1) f e_elim
+    asm_opt (n - 1) f env_int e_elim
   else
-    let e' = ElimAsm.f (ConstFoldAsm.f (BetaAsm.f (if !nocseasm_flag then e else CseAsm.f e))) in
+    let e', env_int = ElimAsm.f (ConstFoldAsm.f (BetaAsm.f (if !nocseasm_flag then e else CseAsm.f env_int e))) in
     if e = e' then e
     else
-      asm_opt (n - 1) f e'
+      asm_opt (n - 1) f env_int e'
 
 let lexbuf outchan l f outchan_parsed outchan_normalized outchan_alpha outchan_iterated outchan_cfg outchan_closure
                        outchan_flatten outchan_tace outchan_cls_opt outchan_block outchan_virtual outchan_simm outchan_asm_opt
@@ -128,7 +128,7 @@ let lexbuf outchan l f outchan_parsed outchan_normalized outchan_alpha outchan_i
   let alpha, env_int = Alpha.f normalized in
   print_knormal_t outchan_alpha 0 alpha;
 
-  let iterated, env_int = iter !limit f alpha env_int in
+  let iterated, env_int = iter !limit f env_int alpha in
   print_knormal_t outchan_iterated 0 iterated;
   
   let cfg = if !nocfg_flag then iterated else fst (Alpha.f (ConstFoldGlobals.f env_int iterated)) in
@@ -157,13 +157,13 @@ let lexbuf outchan l f outchan_parsed outchan_normalized outchan_alpha outchan_i
   (* Cfg_closure.f closure;
   print_block outchan_block !Cfg_closure.graph; *)
 
-  let vt = Virtual.f cls_opt in
+  let vt, env_int = Virtual.f cls_opt in
   let Asm.Prog(data, fundefs, e) = vt in
   List.iter (print_asm_data outchan_virtual 0) data;
   List.iter (print_asm_fundef outchan_virtual 0) fundefs;
   print_asm_t outchan_virtual 0 e;
 
-  let asm_opt = asm_opt !limit_asm f vt in
+  let asm_opt = asm_opt !limit_asm f env_int vt in
   let Asm.Prog(data, fundefs, e) = asm_opt in
   List.iter (print_asm_data outchan_asm_opt 0) data;
   List.iter (print_asm_fundef outchan_asm_opt 0) fundefs;
@@ -195,20 +195,21 @@ let lexbuf outchan l f outchan_parsed outchan_normalized outchan_alpha outchan_i
   Emit.f outchan
     (PreEmit.f
        (RegAlloc.f
-          (Simm.f
-             (AddId.f
-                (Virtual.f
-                   (closure_opt
-                      (Tace.f
-                         (Flatten.f
-                            (Closure.f
-                               (Alpha.f
-                                  (ConstFoldGlobals.f
-                                     (iter !limit
-                                        (Alpha.f
-                                           (KNormal.f
-                                              (Typing.f
-                                                 (Parser.exp Lexer.token l))))))))))))))))
+          (AddId.f
+             (Simm.f
+                (asm_opt !limit_asm f env_int
+                   (Virtual.f
+                      (closure_opt !limit_cls
+                         (Tace.f
+                            (Flatten.f
+                               (Closure.f
+                                  (Alpha.f
+                                     (ConstFoldGlobals.f env_int
+                                        (iter !limit f env_int
+                                           (Alpha.f
+                                              (KNormal.f
+                                                 (Typing.f
+                                                    (Parser.exp Lexer.token l)))))))))))))))))
   *)
 
 let string s = lexbuf stdout (Lexing.from_string s) (* 文字列をコンパイルして標準出力に表示する (caml2html: main_string) *)
@@ -287,7 +288,8 @@ let () = (* ここからコンパイラの実行が開始される (caml2html: main_entry) *)
      ("-nologic", Arg.Unit(fun () -> nologic_flag := true), "nologic flag");
      ("-nocfg", Arg.Unit(fun () -> nocfg_flag := true), "nocfg flag");
      ("-debug", Arg.Unit(fun () -> Emit.debug := true), "debug flag");
-     ("-debugall", Arg.Unit(fun () -> Emit.debugall := true), "debugall flag")]
+     ("-debugall", Arg.Unit(fun () -> Emit.debugall := true), "debugall flag");
+     ("-arrinst", Arg.Unit(fun () -> Asm.arrinst := true), "use arrlw, arrsw, arrflw, arrfsw flag")]
     (fun s -> files := !files @ [s])
     ("Mitou Min-Caml Compiler (C) Eijiro Sumii\n" ^
      Printf.sprintf "usage: %s [-inline m] [-iter n1] [-itercls n2] [-iterasm n3] [-printiter] [-printiterasm] \

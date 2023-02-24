@@ -1,3 +1,5 @@
+let arrinst = ref false
+
 type id_or_imm = V of Id.t | C of int
 type t = (* 命令の列 (caml2html: sparcasm_t) *)
   | Ans of exp * int
@@ -14,6 +16,8 @@ and exp = (* 一つ一つの命令に対応する式 (caml2html: sparcasm_exp) *)
   | Div of Id.t * Id.t * int
   | Ld of Id.t * id_or_imm * int (*最終的には即値に*)
   | St of Id.t * Id.t * id_or_imm * int (*最終的には即値に*)
+  | ArrLd of Id.t * Id.t * int
+  | ArrSt of Id.t * Id.t * Id.t * int
   | FMovD of Id.t * int
   | FNegD of Id.t * int
   | FAddD of Id.t * Id.t * int
@@ -23,6 +27,8 @@ and exp = (* 一つ一つの命令に対応する式 (caml2html: sparcasm_exp) *)
   | Sqrt of Id.t * int
   | LdDF of Id.t * id_or_imm * int (*最終的には即値に*)
   | StDF of Id.t * Id.t * id_or_imm * int (*最終的には即値に*)
+  | ArrLdDF of Id.t * Id.t * int
+  | ArrStDF of Id.t * Id.t * Id.t * int
   | Comment of string * int
   (* virtual instructions *)
   | IfEq of Id.t * Id.t * t * t * int
@@ -94,8 +100,10 @@ let rec fv_exp = function
   | Nop(_) | Set(_) | SetL(_) | Comment(_) | Restore(_) -> []
   | Mov(x, _) | Neg(x, _) | FMovD(x, _) | FNegD(x, _) | Sqrt(x, _) | Save(x, _, _) -> [x]
   | Add(x, y', _) | Ld(x, y', _) | LdDF(x, y', _) -> x :: fv_id_or_imm y'
-  | St(x, y, _, _) | StDF(x, y, _, _) | Sub(x, y, _) | Mul(x, y, _) | Div(x, y, _)
-  | FAddD(x, y, _) | FSubD(x, y, _) | FMulD(x, y, _) | FDivD(x, y, _) -> [x; y]
+  | Sub(x, y, _) | Mul(x, y, _) | Div(x, y, _) | ArrLd(x, y, _)
+  | FAddD(x, y, _) | FSubD(x, y, _) | FMulD(x, y, _) | FDivD(x, y, _) | ArrLdDF(x, y, _) -> [x; y]
+  | St(x, y, z', _) | StDF(x, y, z', _) -> x :: y :: fv_id_or_imm z'
+  | ArrSt(x, y, z, _) | ArrStDF(x, y, z, _) -> [x; y; z]
   | IfEq(x, y, e1, e2, _) | IfLE(x, y, e1, e2, _)
   | IfFEq(x, y, e1, e2, _) | IfFLE(x, y, e1, e2, _) -> x :: y :: remove_and_uniq S.empty (fv e1 @ fv e2) (* uniq here just for efficiency *)
   | CallCls(x, ys, zs, _) -> x :: ys @ zs
