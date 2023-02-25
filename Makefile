@@ -41,7 +41,7 @@ adder funcomp cls-rec cls-bug cls-bug2 cls-reg-bug \
 shuffle spill spill2 spill3 join-stack join-stack2 join-stack3 \
 join-reg join-reg2 non-tail-if non-tail-if2 \
 inprod inprod-rec inprod-loop matmul matmul-flat \
-manyargs fiszero fless fib2 ack2 adder2 global
+manyargs fiszero fib2 ack2 adder2 global print_int
 
 do_test: $(TESTS:%=test/%.s) # do_test: $(TESTS:%=test/%.cmp)
 

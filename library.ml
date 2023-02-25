@@ -105,6 +105,12 @@ let rec atan x =
     x -. 0.3333333 *. x3 +. 0.2 *. x2 *. x3 -. 0.142857142 *. x4 *. x3
     +. 0.111111104 *. x2 *. x4 *. x3 -. 0.08976446 *. x4 *. x4 *. x3 in
 
+let rec print_int x =
+  if x < 10 then print_char (x + 48)
+  else
+    let y = x / 10 in
+    (print_int y; print_char (x - y * 10 + 48)) in
+
 let rec print_newline _ = print_char 10 in
 let rec truncate x =
   if x >= 0.0 then
