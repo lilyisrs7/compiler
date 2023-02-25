@@ -42,9 +42,9 @@ let rec g = function (* 不要定義削除ルーチン本体 (caml2html: elim_f) *)
   | e -> e
 
 let h { name = (Id.L(x), t); args = yts; formal_fv = zts; body = e } =
-  let e' = g e in
-  let eff = effect e' in
+  let eff = effect e in
   env_fun := M.add x eff !env_fun;
+  let e' = g e in
   { name = (Id.L(x), t); args = yts; formal_fv = zts; body = e' }
 
 let f (Prog(fundefs, e)) =

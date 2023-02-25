@@ -31,9 +31,9 @@ let rec g = function (* 不要定義削除ルーチン本体 (caml2html: elim_f) *)
       (Format.eprintf "eliminating variable %s@." x;
        e2')
   | LetRec({ name = (x, t); args = yts; body = e1 }, e2, pos) -> (* let recの場合 (caml2html: elim_letrec) *)
-      let e1' = g e1 in
-      let eff = effect e1' in
+      let eff = effect e1 in
       env_fun := M.add x eff !env_fun;
+      let e1' = g e1 in
       let e2' = g e2 in
       if S.mem x (fv e2') then
         LetRec({ name = (x, t); args = yts; body = e1' }, e2', pos)

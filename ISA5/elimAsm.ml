@@ -40,9 +40,9 @@ and g' = function
 | e -> e
 
 let h { name = Id.L(x); args = ys; fargs = zs; body = e; ret = t } =
-  let e' = g e in
-  let eff = effect e' in
+  let eff = effect e in
   env_fun := M.add x eff !env_fun;
+  let e' = g e in
   { name = Id.L(x); args = ys; fargs = zs; body = e'; ret = t }
 
 let f (Prog(data, fundefs, e)) =
