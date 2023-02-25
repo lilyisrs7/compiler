@@ -105,10 +105,17 @@ let rec atan x =
     x -. 0.3333333 *. x3 +. 0.2 *. x2 *. x3 -. 0.142857142 *. x4 *. x3
     +. 0.111111104 *. x2 *. x4 *. x3 -. 0.08976446 *. x4 *. x4 *. x3 in
 
+let rec div_rem x acc =
+  if x >= 10 then div_rem (x - 10) (acc + 1) else acc in
+let rec div_fifty x acc =
+  if x >= 50 then div_fifty (x - 50) (acc + 5) else div_rem x acc in
+let rec div x =
+  div_fifty x 0 in
+
 let rec print_int x =
   if x < 10 then print_char (x + 48)
   else
-    let y = x / 10 in
+    let y = div x in
     (print_int y; print_char (x - y * 10 + 48)) in
 
 let rec print_newline _ = print_char 10 in
