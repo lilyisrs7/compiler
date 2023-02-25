@@ -131,9 +131,10 @@ let f oc (data, content) =
       if !debug then
         match x with
         | Label(s) -> print oc x;
-                      Printf.fprintf oc "\taddi\tx29, x0, %d\t# index\n" !cnt;
+                      (* Printf.fprintf oc "\taddi\tx29, x0, %d\t# index\n" !cnt;
                       Printf.fprintf oc "\tsw\t\tx29, -1(x0)\t# index\n";
-                      cnt := !cnt + 1
+                      cnt := !cnt + 1 *)
+                      Printf.fprintf oc "\taddi\tx0, x0, 0\t# index\n"
         | _ -> print oc x
       else if !debugall then
         (Printf.fprintf oc "\taddi\tx29, x0, %d\t# index\n" !cnt;
