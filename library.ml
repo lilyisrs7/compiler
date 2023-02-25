@@ -109,14 +109,16 @@ let rec div_rem x acc =
   if x >= 10 then div_rem (x - 10) (acc + 1) else acc in
 let rec div_fifty x acc =
   if x >= 50 then div_fifty (x - 50) (acc + 5) else div_rem x acc in
-let rec div x =
-  div_fifty x 0 in
-
-let rec print_int x =
+let rec print_int_main x =
   if x < 10 then print_char (x + 48)
   else
-    let y = div x in
-    (print_int y; print_char (x - y * 10 + 48)) in
+    let y = div_fifty x 0 in
+    (print_int_main y; print_char (x - y * 10 + 48)) in
+
+let rec print_int x =
+  let _ = if x < 100 then print_char 48 else () in
+  let _ = if x < 10 then print_char 48 else () in
+  print_int_main x in
 
 let rec print_newline _ = print_char 10 in
 let rec truncate x =
