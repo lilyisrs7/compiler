@@ -1,5 +1,8 @@
 (* give names to intermediate values (K-normalization) *)
 
+let debug = ref false
+let debugall = ref false
+
 type t = (* K正規化後の式 (caml2html: knormal_t) *)
   | Unit of int
   | Int of int * int

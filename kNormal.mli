@@ -1,3 +1,6 @@
+val debug : bool ref
+val debugall : bool ref
+
 type t =
   | Unit of int
   | Int of int * int
