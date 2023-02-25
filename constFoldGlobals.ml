@@ -1,7 +1,7 @@
 open KNormal
 
 let globals = ref M.empty
-let addr_init = 130000
+let addr_init = if !debug || !debugall then 130000 else 40000
 let addr = ref addr_init
 let last = ref false
 

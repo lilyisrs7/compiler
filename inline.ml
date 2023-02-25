@@ -16,7 +16,6 @@ let rec g env = function (* インライン展開ルーチン本体 (caml2html: inline_g) *)
   | Let(xt, e1, e2, pos) -> Let(xt, g env e1, g env e2, pos)
   | LetRec({ name = (x, t); args = yts; body = e1 }, e2, pos) -> (* 関数定義の場合 (caml2html: inline_letrec) *)
       if S.mem x (fv e1) then (* 再帰関数 *)
-        let size_e1 = size e1 in
         let env =
           if !inline_rec = true &&
              (String.starts_with ~prefix:"solve_each_element_fast" x || String.starts_with ~prefix:"solve_one_or_network_fast" x)
