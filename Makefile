@@ -74,7 +74,7 @@ test/%main.ml: library.ml test/%.ml
 	cat library.ml >> $@
 	cat test/$*.ml >> $@
 test/%.s: $(RESULT) test/%main.ml
-	./$(RESULT) -inline 10 -nocfg -printiterasm test/$*main
+	./$(RESULT) -inline 10 -nocfg -printiterasm -arrinst test/$*main
 test/%: test/%.s libmincaml.S stub.c
 	$(CC) $(CFLAGS) -m32 $^ -lm -o $@
 test/%.res: test/%
