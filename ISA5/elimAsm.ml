@@ -14,7 +14,7 @@ and effect' = function (* 副作用の有無 *)
     (try
        (* List.exists (fun y -> y = reg_hp) ys || List.exists (fun z -> z = reg_hp) zs || *)M.find x !env_fun
      with Not_found -> false(* List.exists (fun y -> y = reg_hp) ys || List.exists (fun z -> z = reg_hp) zs *)(* 関数内で再帰的に呼ばれた場合 *))
-| St _ | StDF _ | Save _ -> true
+| St _ | StDF _ | ArrSt _ | ArrStDF _ | Save _ -> true
 (* | Mov(x, _) | Neg(x, _) | FMovD(x, _) | FNegD(x, _) | Sqrt(x, _)
 | Add(x, C(_), _) | Ld(x, C(_), _) | LdDF(x, C(_), _) -> x = reg_hp
 | Add(x, V(y), _) | Ld(x, V(y), _) | LdDF(x, V(y), _)
