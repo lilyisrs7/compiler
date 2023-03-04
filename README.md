@@ -23,3 +23,4 @@ make
 ```
 ./min-caml -inline 10 -printiterasm minrt
 ```
+Pass minrt.s and ISA5/libmincaml_v5.s to the simulator.
