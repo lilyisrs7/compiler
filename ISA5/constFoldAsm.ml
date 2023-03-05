@@ -9,6 +9,9 @@ let memi x env =
 let memf x env =
   try (match M.find x env with SetL(_) -> true | _ -> false)
   with Not_found -> false
+let memadd x env =
+  try (match M.find x env with Add(_, C(y), _) -> if y mod 4 = 0 then true else false | _ -> false)
+  with Not_found -> false
 
 let memi' x env =
   match x with
@@ -17,6 +20,7 @@ let memi' x env =
 
 let findi x env = (match M.find x env with Set(i, _) -> i | _ -> raise Not_found)
 let findf x env = (match M.find x env with SetL(Id.L(x), _) -> x | _ -> raise Not_found)
+let findadd x env = (match M.find x env with Add(x, C(y), _) -> x, y | _ -> raise Not_found)
 
 let findi' x env =
   match x with
@@ -41,17 +45,26 @@ let rec g env = function
      | Let _ -> concat' exp' (x, t) e g env)
 
 and g' env = function
-  | Mov(x, id) when memi x env -> Format.eprintf "mov %s\n" x; Ans(Set(findi x env, id), -1)
-  | Neg(x, id) when memi x env -> Format.eprintf "neg %s\n" x; Ans(Set(-(findi x env), id), -1)
-  | Add(x, y, id) when memi x env && memi' y env ->
-      Format.eprintf "add %s %s\n" x (match y with V(y) -> y | C(y) -> string_of_int y);
-      Ans(Set(findi x env + findi' y env, id), -1)
-  | Sub(x, y, id) when memi x env && memi y env -> Format.eprintf "sub %s %s\n" x y; Ans(Set(findi x env - findi y env, id), -1)
-  | Mul(x, y, id) when memi x env && memi y env -> Format.eprintf "mul %s %s\n" x y; Ans(Set(findi x env * findi y env, id), -1)
-  | Div(x, y, id) when memi x env && memi y env -> Format.eprintf "div %s %s\n" x y; Ans(Set(findi x env / findi y env, id), -1)
-  | FMovD(x, id) when memf x env -> Format.eprintf "fmovd %s\n" x; Ans(SetL(Id.L(findf x env), id), -1)
+  | Mov(x, id) when memi x env -> Ans(Set(findi x env, id), -1)
+  | Neg(x, id) when memi x env -> Ans(Set(-(findi x env), id), -1)
+  | Add(x, y, id) when memi x env && memi' y env -> Ans(Set(findi x env + findi' y env, id), -1)
+  | Add(x, y, id) when memi' y env ->
+      let y' = findi' y env in
+      if -65536 <= y' && y' <= 65535 then Ans(Add(x, C(y'), id), -1)
+      else Ans(Add(x, y, id), -1)
+  | Sub(x, y, id) when memi x env && memi y env -> Ans(Set(findi x env - findi y env, id), -1)
+  | Mul(x, y, id) when memi x env && memi y env -> Ans(Set(findi x env * findi y env, id), -1)
+  | Div(x, y, id) when memi x env && memi y env -> Ans(Set(findi x env / findi y env, id), -1)
+  | Ld(x, C(y), id) when memadd x env ->
+      let x', y' = findadd x env in
+      if -2048 <= y + y' && y + y' <= 2047 then Ans(Ld(x', C(y + y'), id), -1)
+      else Ans(Ld(x, C(y), id), -1)
+  | St(x, y, C(z), id) when memadd y env ->
+      let y', z' = findadd y env in
+      if -2048 <= z + z' && z + z' <= 2047 then Ans(St(x, y', C(z + z'), id), -1)
+      else Ans(St(x, y, C(z), id), -1)
+  | FMovD(x, id) when memf x env -> Ans(SetL(Id.L(findf x env), id), -1)
   | FNegD(x, id) when memf x env ->
-      Format.eprintf "fnegd %s\n" x;
       let v = -.(List.assoc (findf x env) !datamap) in
       let l =
         try
@@ -61,6 +74,14 @@ and g' env = function
           datamap := (l, v) :: !datamap;
           l in
       Ans(SetL(Id.L(l), id), -1)
+  | LdDF(x, C(y), id) when memadd x env ->
+      let x', y' = findadd x env in
+      if -2048 <= y + y' && y + y' <= 2047 then Ans(LdDF(x', C(y + y'), id), -1)
+      else Ans(LdDF(x, C(y), id), -1)
+  | StDF(x, y, C(z), id) when memadd y env ->
+      let y', z' = findadd y env in
+      if -2048 <= z + z' && z + z' <= 2047 then Ans(StDF(x, y', C(z + z'), id), -1)
+      else Ans(StDF(x, y, C(z), id), -1)
   (* | FAddD(x, y, id) when memf x env && memf y env ->
       Format.eprintf "faddd %s %s\n" x y;
       let v = List.assoc (findf x env) !datamap +. List.assoc (findf y env) !datamap in
