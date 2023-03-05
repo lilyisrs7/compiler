@@ -52,13 +52,15 @@ let rec g repl = function (* 命令列のアセンブリ生成 (caml2html: emit_g) *)
       content := !content @ [RiscV.FAdd(fregs.(0), reg_fzero, M.find y !loaded_labels, pos2); RiscV.Jalr(reg_zero, reg_ra, 0, pos2)]
   | dest, Let((x, Type.Int), SetL(Id.L(y), _), Let((x_, _), LdDF(z, C(0), id), e, pos1), pos2) when x = z && M.mem y !loaded_labels ->
       let yreg = M.find y !loaded_labels in
-      if List.mem id !func_arg_id then content := !content @ [RiscV.FAdd(x_, reg_fzero, yreg, pos2)]
+      if M.mem (string_of_int id) !func_arg_id && Array.mem x_ (Array.sub fregs 0 (M.find (string_of_int id) !func_arg_id)) then
+				content := !content @ [RiscV.FAdd(x_, reg_fzero, yreg, pos2)]
       else Format.eprintf "deleted fadd %s %s %s %d\n" x_ reg_fzero yreg pos2;
       g (M.add x_ yreg (M.remove x repl)) (dest, e)
   (* 既に定数レジスタにロードされたintの処理 *)
   | dest, Let((x, _), Set(n, id), e, pos) when M.mem (string_of_int n) !loaded_consts ->
       let xreg = M.find (string_of_int n) !loaded_consts in
-      if List.mem id !func_arg_id then content := !content @ [RiscV.Add(x, reg_zero, xreg, pos)]
+      if M.mem (string_of_int id) !func_arg_id && Array.mem x (Array.sub regs 0 (M.find (string_of_int id) !func_arg_id)) then
+				content := !content @ [RiscV.Add(x, reg_zero, xreg, pos)]
       else Format.eprintf "deleted add %s %s %s %d\n" x reg_zero xreg pos;
       g (M.add x xreg repl) (dest, e)
   | dest, Let((x, t), exp, e, pos) ->

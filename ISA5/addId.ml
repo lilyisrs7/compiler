@@ -1,7 +1,7 @@
 open Asm
 
 let id = ref (-1)
-let func_arg_id = ref [] (* 関数引数の定義式idリスト *)
+let func_arg_id = ref M.empty (* 各関数引数について、定義式idをkey, その関数の引数のうち注目している引数と型が同じものの数をvalとするmap *)
 
 let rec g env = function (* 各命令にidを付加 *)
   | Ans(exp, pos) -> Ans(fst (g' env exp), pos)
@@ -62,12 +62,12 @@ and g' env = function
       let e2' = g env e2 in
       (IfFLE(x, y, e1', e2', id'), id')
   | CallCls(x, ys, zs, _) ->
-      List.iter (fun y -> if M.mem y env then func_arg_id := M.find y env :: !func_arg_id) ys;
-      List.iter (fun z -> if M.mem z env then func_arg_id := M.find z env :: !func_arg_id) zs;
+      List.iter (fun y -> if M.mem y env then func_arg_id := M.add (string_of_int (M.find y env)) (List.length ys) !func_arg_id) ys;
+      List.iter (fun z -> if M.mem z env then func_arg_id := M.add (string_of_int (M.find z env)) (List.length zs) !func_arg_id) zs;
       id := !id + 1; (CallCls(x, ys, zs, !id), !id)
   | CallDir(x, ys, zs, _) ->
-      List.iter (fun y -> if M.mem y env then func_arg_id := M.find y env :: !func_arg_id) ys;
-      List.iter (fun z -> if M.mem z env then func_arg_id := M.find z env :: !func_arg_id) zs;
+      List.iter (fun y -> if M.mem y env then func_arg_id := M.add (string_of_int (M.find y env)) (List.length ys) !func_arg_id) ys;
+      List.iter (fun z -> if M.mem z env then func_arg_id := M.add (string_of_int (M.find z env)) (List.length zs) !func_arg_id) zs;
       id := !id + 1; (CallDir(x, ys, zs, !id), !id)
   | Save(x, y, _) -> id := !id + 1; (Save(x, y, !id), !id)
   | Restore(x, _) -> id := !id + 1; (Restore(x, !id), !id)
