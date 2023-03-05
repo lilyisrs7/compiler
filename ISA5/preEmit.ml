@@ -237,8 +237,10 @@ let f (Prog(data, fundefs, e)) =
   let label_one = ref "" in
   let label_lib = ref "" in
   let cmp_dict = (* lui/oriによりロードされる回数の多い順 *)
-    [(0.01, 1); (-0.2, 2); (-0.1, 3); (1000000000.0, 4); (100000000.0, 5); (150.0, 6); (-150.0, 7); (-1.0, 8); (255.0, 9); (0.05, 10);
-     (20.0, 11); (10.0, 12); (0.5, 13); (0.1, 14); (-2.0, 15)] in
+    if !arrinst then [(0.01, 1); (-0.2, 2); (-0.1, 3); (1000000000.0, 4); (100000000.0, 5); (150.0, 6); (-150.0, 7); (-1.0, 8); (255.0, 9); (0.05, 10);
+     									(20.0, 11); (10.0, 12); (0.5, 13); (0.1, 14); (-2.0, 15)]
+		else [(0.01, 1); (-0.2, 2); (-0.1, 3); (1000000000.0, 4); (100000000.0, 5); (150.0, 6); (-150.0, 7); (-1.0, 8); (0.05, 9); (20.0, 10);
+					(10.0, 11); (255.0, 12); (0.5, 13); (0.1, 14); (-2.0, 15)]in
   let cmp (Id.L(_), d1) (Id.L(_), d2) =
     compare (try List.assoc d1 cmp_dict with Not_found -> 40) (try List.assoc d2 cmp_dict with Not_found -> 40) in
   let data = List.sort cmp data in
@@ -294,8 +296,13 @@ let f (Prog(data, fundefs, e)) =
                                      ld_const_noprint tl1 tl2)
                                   else ld_const_noprint reg_for_const tl2 in
   let init = ConstFoldGlobals.addr_init in
-  ld_const_noprint reg_for_const ["-1"; "1"; "2"; "3"; string_of_int (init + 48); string_of_int (init + 332);
-                                  string_of_int (init + 540); string_of_int (init + 552); string_of_int (init + 748)];
+	let _ =
+		if !arrinst then
+			ld_const_noprint reg_for_const ["-1"; "1"; "2"; "3"; string_of_int (init + 48); string_of_int (init + 332);
+                                  		string_of_int (init + 540); string_of_int (init + 552); string_of_int (init + 748)]
+		else
+			ld_const_noprint reg_for_const ["-1"; "1"; "2"; "3"; "99"; string_of_int (init + 540); string_of_int (init + 552);
+                                  		string_of_int (init + 560); string_of_int (init + 556)] in
   List.iter h fundefs;
   content := !content @ [RiscV.Label("min_caml_start");
                          RiscV.Addi(reg_sp, reg_sp, -4, 0); RiscV.Addi(reg_four, reg_zero, 4, 0)]
@@ -332,8 +339,13 @@ let f (Prog(data, fundefs, e)) =
                                      ld_const tl1 tl2)
                                   else ld_const reg_for_const tl2 in
   let init = ConstFoldGlobals.addr_init in
-  ld_const reg_for_const ["-1"; "1"; "2"; "3"; string_of_int (init + 48); string_of_int (init + 332);
-                          string_of_int (init + 540); string_of_int (init + 552); string_of_int (init + 748)];
+	let _ =
+		if !arrinst then
+			ld_const reg_for_const ["-1"; "1"; "2"; "3"; string_of_int (init + 48); string_of_int (init + 332);
+                              string_of_int (init + 540); string_of_int (init + 552); string_of_int (init + 748)]
+		else
+			ld_const reg_for_const ["-1"; "1"; "2"; "3"; "99"; string_of_int (init + 540); string_of_int (init + 552);
+                              string_of_int (init + 560); string_of_int (init + 556)] in
   stackset := S.empty;
   stackmap := [];
   g M.empty (NonTail(regs.(0)), e);
