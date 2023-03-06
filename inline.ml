@@ -18,7 +18,8 @@ let rec g env = function (* インライン展開ルーチン本体 (caml2html: inline_g) *)
       if S.mem x (fv e1) then (* 再帰関数 *)
         let env =
           if !inline_rec = true &&
-             (String.starts_with ~prefix:"solve_each_element_fast" x || String.starts_with ~prefix:"solve_one_or_network_fast" x)
+             (String.starts_with ~prefix:"solve_each_element_fast" x || String.starts_with ~prefix:"solve_one_or_network_fast" x
+              || size e1 <= !threshold)
           then M.add x (yts, e1) env
           else env in
         (* let _ = Format.eprintf "%s %d\n" x size_e1 in *)
